@@ -1,16 +1,24 @@
 import torch
-
+import numpy as np
 
 # q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
-def qj_entropy(h, k, beta):
-    lmbda = (h+1)/(2*k)
-    logz = qj_lognorm(h, k, beta)
-    return h*(torch.digamma(lmbda) - torch.log(beta))/(2*k) - lmbda - logz
+def qj_entropy(args):
+
+    if args.mf_mode == 'nf_gamma':
+        hs = args.hs
+        ks = args.ks
+        betas = args.betas
+        lmbda = (hs+1)/(2*ks)
+        logz = qj_gengamma_lognorm(hs, ks, betas)
+        return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+    elif args.mf_mode == 'nf_gaussian':
+        stds = np.sqrt(args.lmbdas)/args.betas # TODO: should allow custom mean/std for nf_gaussian
+        return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
 
 
-# normalizing constnat of q_j: Z_j = \frac{\Gamma(\lambda_j')}{2k_j' \beta_j^{\lambda_j'}}
-def qj_lognorm(h, k, beta):
+# normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}): Z_j = \frac{\Gamma(\lambda_j')}{2k_j' \beta_j^{\lambda_j'}}
+def qj_gengamma_lognorm(h, k, beta):
     lmbda = (h+1)/(2*k)
     G = torch.lgamma(lmbda)
     return G - torch.log(2*k) - lmbda*torch.log(beta)

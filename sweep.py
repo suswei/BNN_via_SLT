@@ -26,7 +26,7 @@ def set_sweep_config():
         'dataset': ['reducedrank'],
         'nf_hidden': [16],
         'nf_layers': [20],
-        'mf_mode': ['gengamma']
+        'mf_mode': ['nf_gamma']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -52,7 +52,7 @@ def set_sweep_config():
         'dataset': ['tanh'],
         'nf_hidden': [16],
         'nf_layers': [20],
-        'mf_mode': ['gengamma']
+        'mf_mode': ['nf_gamma']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]

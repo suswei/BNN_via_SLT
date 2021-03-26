@@ -18,6 +18,25 @@ def varphi_logprob(args, thetas):
            - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
 
 
+def sample_q(args):
+
+    if args.mf_mode == 'nf_gamma':
+
+        shape = args.lmbdas.repeat(1, args.R).T
+        rate = args.betas.repeat(1, args.R).T
+        vs = gamma_icdf(shape=shape, rate=rate, args=args)
+        k = args.ks.repeat(1, args.R).T
+        xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
+
+    elif args.mf_mode == 'nf_gaussian':
+        mean = args.lmbda_star/args.sample_size # TODO: this can be default value but allow custom input
+        std = np.sqrt(args.lmbda_star)/args.sample_size
+        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=100 / 5000, std=10 / 5000)
+        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=mean, std=std)
+
+    return xis
+
+
 def train(args):
 
     resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
@@ -34,14 +53,9 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            # log_jacobians.mean() = E_q log |g'(xi)|
-            shape = args.lmbdas.repeat(1, args.R).T
-            rate = args.betas.repeat(1, args.R).T
-            vs = gamma_icdf(shape=shape, rate=rate, args=args)
-            k = args.ks.repeat(1, args.R).T
-            xis = vs ** (1 / (2 * k))
+            xis = sample_q(args)
 
-            # xis R by args.w_dim
+            # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)  # g
 
             # E_q 1/m \sum_i=1^m p(y_i |x_i , g(\xi))
@@ -52,6 +66,7 @@ def train(args):
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
             prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
+
             elbo = loglik_elbo + (log_jacobians.mean() - prior_elbo)/args.sample_size
             running_loss += loglik_elbo * args.batch_size / args.sample_size + (log_jacobians.mean() - prior_elbo)/args.sample_size
 
@@ -86,8 +101,7 @@ def evaluate(resolution_network, args, R):
 
         thetas, log_jacobians = resolution_network(xis)
 
-
-        prior_elbo = qj_entropy(args.hs, args.ks, args.betas).sum() - varphi_logprob(args, thetas).mean()
+        prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -138,12 +152,11 @@ def main():
 
     parser.add_argument('--path', type=str)
 
-    parser.add_argument('--mf_mode', type=str, default='gengamma', choices=['gengamma','gaussian'])
+    parser.add_argument('--mf_mode', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','gaussian'])
 
     parser.add_argument('--display_interval',type=int,default=500)
 
     args = parser.parse_args()
-
 
     get_dataset_by_id(args)
     args.prior_var = 1/args.H
@@ -151,15 +164,14 @@ def main():
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
-
-    if args.mf_mode == 'gengamma':
+    if args.mf_mode == 'nf_gamma' or args.mf_mode == 'nf_gaussian':
 
         print(args)
 
-        betas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        print('non beta* set to {}'.format(args.lmbda_star))
-        betas[0] = args.sample_size
-
+        # betas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        # betas[0] = args.sample_size
+        betas = args.sample_size*torch.ones(args.w_dim, 1)
+        print('all betas set to sample size {}'.format(args.sample_size))
 
         lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1) # other lambdas should be >= global lambda
         print('all lambdas set to conjectured lambda {}'.format(args.lmbda_star))
@@ -173,7 +185,7 @@ def main():
         args.betas = betas
         args.lmbdas = lmbdas
 
-        args.qentropy = qj_entropy(args.hs, args.ks, args.betas).sum()
+        args.qentropy = qj_entropy(args).sum()
 
         net = train(args)
         elbo, _, _, _ = evaluate(net, args, R=100)
