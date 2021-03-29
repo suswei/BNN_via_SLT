@@ -46,7 +46,7 @@ def get_dataset_by_id(args):
     if args.dataset == 'tanh':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
-        args.model = tanh_network(H=args.H)
+        # args.model = tanh_network(H=args.H)
         args.w_dim = 2 * args.H
         max_integer = int(math.sqrt(args.H))
         args.trueRLCT = (args.H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
