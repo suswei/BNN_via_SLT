@@ -3,25 +3,22 @@ import numpy as np
 
 # q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
-def qj_entropy(args):
+def qj_entropy(lmbdas, ks, betas, args):
 
-    if args.mf_mode == 'nf_gamma':
-        hs = args.hs
-        ks = args.ks
-        betas = args.betas
-        lmbda = (hs+1)/(2*ks)
-        logz = qj_gengamma_lognorm(hs, ks, betas)
-        return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+    hs = 2*ks*lmbdas - 1
+    if args.mf_mode == 'nf_gamma' or args.mf_mode == 'nf_gamma_stripped':
+        logz = qj_gengamma_lognorm(lmbdas, ks, betas)
+        return hs*(torch.digamma(lmbdas) - torch.log(betas))/(2*ks) - lmbdas - logz
+
     elif args.mf_mode == 'nf_gaussian':
         stds = np.sqrt(args.lmbdas)/args.betas # TODO: should allow custom mean/std for nf_gaussian
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
 
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}): Z_j = \frac{\Gamma(\lambda_j')}{2k_j' \beta_j^{\lambda_j'}}
-def qj_gengamma_lognorm(h, k, beta):
-    lmbda = (h+1)/(2*k)
-    G = torch.lgamma(lmbda)
-    return G - torch.log(2*k) - lmbda*torch.log(beta)
+def qj_gengamma_lognorm(lmbdas, ks, betas):
+    G = torch.lgamma(lmbdas)
+    return G - torch.log(2*ks) - lmbdas*torch.log(betas)
 
 
 # generate gamma(shape,rate)

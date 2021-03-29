@@ -18,7 +18,7 @@ def varphi_logprob(args, thetas):
            - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
 
 
-def sample_q(args):
+def sample_q(args, resolution_network):
 
     if args.mf_mode == 'nf_gamma':
 
@@ -28,18 +28,26 @@ def sample_q(args):
         k = args.ks.repeat(1, args.R).T
         xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
 
+    elif args.mf_mode == 'nf_gamma_stripped':
+
+        zs = torch.FloatTensor(args.R, args.w_dim).normal_(mean=0, std=1)
+        ls = resolution_network.lmbdas.repeat(1,args.R).T
+        zs = torch.sqrt(ls)*zs + ls
+        xis = (zs/args.betas.T) ** (1/(2*resolution_network.ks.T))
+
     elif args.mf_mode == 'nf_gaussian':
+
         mean = args.lmbda_star/args.sample_size # TODO: this can be default value but allow custom input
         std = np.sqrt(args.lmbda_star)/args.sample_size
-        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=100 / 5000, std=10 / 5000)
+        mean = 0
+        std = 1
         xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=mean, std=std)
 
     return xis
 
 
-def train(args):
+def train(args, resolution_network):
 
-    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
@@ -53,7 +61,7 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args)
+            xis = sample_q(args, resolution_network)
 
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)  # g
@@ -65,13 +73,18 @@ def train(args):
             # q(\xi_1,...,\xi_d) = q(\xi_1)*...*q(\xi_d)
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
-            prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
+            if args.mf_mode == 'nf_gamma_stripped':
+                qentropy = qj_entropy(resolution_network.lmbdas, resolution_network.ks, args.betas, args).sum()
+            else:
+                qentropy = qj_entropy(args.lmbdas, args.ks, args.betas, args).sum()
+
+            prior_elbo = qentropy - varphi_logprob(args, thetas).mean()
 
             elbo = loglik_elbo + (log_jacobians.mean() - prior_elbo)/args.sample_size
             running_loss += loglik_elbo * args.batch_size / args.sample_size + (log_jacobians.mean() - prior_elbo)/args.sample_size
 
             loss = -elbo
-            loss.backward()
+            loss.backward(retain_graph=True)
             optimizer.step()
 
         if epoch % args.display_interval == 0:
@@ -101,7 +114,15 @@ def evaluate(resolution_network, args, R):
 
         thetas, log_jacobians = resolution_network(xis)
 
-        prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
+        if args.mf_mode == 'nf_gamma_stripped':
+            print(resolution_network.lmbdas.max())
+            print(resolution_network.ks.max())
+            qentropy = qj_entropy(resolution_network.lmbdas, resolution_network.ks, args.betas,
+                                  args).sum()
+        else:
+            qentropy = qj_entropy(args.lmbdas, args.ks, args.betas, args).sum()
+
+        prior_elbo = qentropy - varphi_logprob(args, thetas).mean()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -152,7 +173,7 @@ def main():
 
     parser.add_argument('--path', type=str)
 
-    parser.add_argument('--mf_mode', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','gaussian'])
+    parser.add_argument('--mf_mode', type=str, default='nf_gamma', choices=['nf_gamma', 'nf_gamma_stripped', 'nf_gaussian','gaussian'])
 
     parser.add_argument('--display_interval',type=int,default=500)
 
@@ -164,14 +185,19 @@ def main():
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
-    if args.mf_mode == 'nf_gamma' or args.mf_mode == 'nf_gaussian':
+    torch.autograd.set_detect_anomaly(True)
+
+    if args.mf_mode == 'nf_gamma' or args.mf_mode == 'nf_gaussian' or args.mf_mode == 'nf_gamma_stripped':
 
         print(args)
 
-        # betas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        # betas[0] = args.sample_size
+        resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers,
+                                     sample_size=args.sample_size)
+
         betas = args.sample_size*torch.ones(args.w_dim, 1)
-        print('all betas set to sample size {}'.format(args.sample_size))
+        betas[0] = args.sample_size
+        # betas = args.sample_size*torch.ones(args.w_dim, 1)
+        # print('all betas set to sample size {}'.format(args.sample_size))
 
         lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1) # other lambdas should be >= global lambda
         print('all lambdas set to conjectured lambda {}'.format(args.lmbda_star))
@@ -185,9 +211,9 @@ def main():
         args.betas = betas
         args.lmbdas = lmbdas
 
-        args.qentropy = qj_entropy(args).sum()
+        args.qentropy = qj_entropy(hs, ks, betas, args).sum()
 
-        net = train(args)
+        net = train(args, resolution_network)
         elbo, _, _, _ = evaluate(net, args, R=100)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))

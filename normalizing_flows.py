@@ -33,13 +33,17 @@ class RealNVP(nn.Module):
     Non-volume preserving flow.
     [Dinh et. al. 2017]
     """
-    def __init__(self, dim, hidden_dim=8, layers=10, base_network=FCNN):
+    def __init__(self, dim, hidden_dim=8, layers=10, base_network=FCNN, sample_size=1000):
         super().__init__()
         self.dim = dim
         self.t1 = base_network(dim // 2, dim // 2, hidden_dim, layers)
         self.s1 = base_network(dim // 2, dim // 2, hidden_dim, layers)
         self.t2 = base_network(dim // 2, dim // 2, hidden_dim, layers)
         self.s2 = base_network(dim // 2, dim // 2, hidden_dim, layers)
+
+        self.lmbdas = torch.nn.Parameter(torch.rand(dim, 1) + 100, requires_grad=True)
+        self.ks = torch.nn.Parameter(torch.ones(dim, 1) , requires_grad=True)
+
 
     def forward(self, x):
         lower, upper = x[:,:self.dim // 2], x[:,self.dim // 2:]
