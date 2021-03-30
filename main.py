@@ -62,8 +62,9 @@ def train(args):
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
             prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
-
+            # print(prior_elbo - log_jacobians.mean()) #TODO: this should always be positive but can become negative as we train
             elbo = loglik_elbo + (log_jacobians.mean() - prior_elbo)/args.sample_size
+            # TODO: isn't this the wrong sign for running_loss??
             running_loss += loglik_elbo * args.batch_size / args.sample_size + (log_jacobians.mean() - prior_elbo)/args.sample_size
 
             loss = -elbo
@@ -90,19 +91,7 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        # generate xis R by args.w_dim
-        if args.var_mode == 'nf_gamma':
-            # m = Gamma(args.lmbdas, args.betas)
-            # vs = m.sample(torch.Size([R])).squeeze(dim=2)
-            # xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
-            shape = args.lmbdas.repeat(1, R).T
-            rate = args.betas.repeat(1, R).T
-            vs = gamma_icdf(shape=shape, rate=rate, args=args)
-            k = args.ks.repeat(1, R).T
-            xis = vs ** (1 / (2 * k))  # xis R by args.w_dim
-        elif args.var_mode == 'nf_gaussian':
-            xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
-
+        xis = sample_q(args)
         thetas, log_jacobians = resolution_network(xis)
 
         prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
@@ -161,8 +150,8 @@ def main():
 
     get_dataset_by_id(args)
     args.prior_var = 1/args.H
-    args.prior_var = 1e-3
 
+    args.prior_var = 0.1 # TODO: does this prevent too high ELBO
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
@@ -170,7 +159,12 @@ def main():
 
         print(args)
 
-        print('all betas set to sample size {}'.format(args.sample_size))
+
+        # betas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        # betas = torch.ones(args.w_dim, 1)
+        # betas[0] = args.sample_size
+        betas = args.sample_size*torch.ones(args.w_dim, 1)
+        # print('all betas set to sample size {}'.format(args.sample_size))
 
         print('all lambdas set to conjectured lambda {}'.format(args.lmbda_star))
 
@@ -183,7 +177,7 @@ def main():
         args.qentropy = qj_entropy(args).sum()
 
         net = train(args)
-        elbo, _, _, _ = evaluate(net, args, R=100)
+        elbo, _, _, _ = evaluate(net, args, R=1000)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
@@ -193,7 +187,7 @@ def main():
 
         print(args)
         net = train_pyvarinf(args)
-        elbo, _, _ = evaluate_pyvarinf(net, args, R=100)
+        elbo, _, _ = evaluate_pyvarinf(net, args, R=1000)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(

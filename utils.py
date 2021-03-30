@@ -13,6 +13,7 @@ def qj_entropy(args):
         logz = qj_gengamma_lognorm(hs, ks, betas)
         return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
     elif args.var_mode == 'nf_gaussian':
+
         stds = 1 # TODO: should allow custom mean/std for nf_gaussian
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
 
