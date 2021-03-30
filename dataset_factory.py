@@ -46,7 +46,7 @@ def get_dataset_by_id(args):
     if args.dataset == 'tanh':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
-        # args.model = tanh_network(H=args.H)
+        args.model = tanh_network(H=args.H)
         args.w_dim = 2 * args.H
         max_integer = int(math.sqrt(args.H))
         args.trueRLCT = (args.H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
@@ -156,7 +156,7 @@ def get_lmbda(Hs, dataset):
     return trueRLCT
 
 
-def loglik(theta, data, target, args, R):
+def loglik(theta, data, target, args):
     """
 
     :param theta: $R$ samples of theta
@@ -170,7 +170,7 @@ def loglik(theta, data, target, args, R):
     if args.dataset == 'reducedrank':
 
         a_dim = args.a_params.shape[0] * args.a_params.shape[1]
-
+        R = theta.shape[0]
         logprob = torch.empty(R, data.shape[0])
         for r in range(R):
             theta_a = theta[r, 0:a_dim].reshape(args.a_params.shape[0], args.a_params.shape[1])

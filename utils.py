@@ -28,17 +28,17 @@ def qj_gengamma_lognorm(h, k, beta):
 # generate gamma(shape,rate)
 def gamma_icdf(shape, rate, args):
 
+    R = rate.shape[0]
     # TODO: add warning if not all entries in shape are the same
-
     if shape[0,0] < 36.0: #u is unif 0,1
         # inverse cdf of gamma with shape and rate
         # using approximation in Knowles
-        u = torch.FloatTensor(args.R, args.w_dim).uniform_(0)
+        u = torch.FloatTensor(R, args.w_dim).uniform_(0)
         g = torch.exp(torch.lgamma(shape))
         num = (u*shape*g)**(1/shape)
         return num/rate
     else: # here u is N(0,1)
-        z = torch.FloatTensor(args.R, args.w_dim).normal_(mean=0,std=1)
+        z = torch.FloatTensor(R, args.w_dim).normal_(mean=0,std=1)
         if ((shape+torch.sqrt(shape)*z)<0).sum() >0:
             print('warning xi generated negative')
         return (shape+torch.sqrt(shape)*z)/rate

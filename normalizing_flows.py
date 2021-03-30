@@ -2,6 +2,7 @@ import torch
 import torch.nn
 import torch.nn as nn
 import numpy as np
+from torch.distributions.multivariate_normal import MultivariateNormal
 
 import itertools
 
@@ -66,3 +67,69 @@ class RealNVP(nn.Module):
         log_det = torch.sum(-s1_transformed, dim=1) + \
                   torch.sum(-s2_transformed, dim=1)
         return x, log_det
+
+
+
+
+class R_NVP(nn.Module):
+    def __init__(self, d, k, hidden, layers):
+        super().__init__()
+        self.d, self.k = d, k
+
+        self.sizes = np.concatenate(
+            ([k], np.repeat(hidden, layers + 1), [d-k])).tolist()
+        blocks = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
+                  for in_f, out_f in zip(self.sizes, self.sizes[1:])]
+        blocks = list(itertools.chain(*blocks))
+        del blocks[-1]  # remove the last activation, don't need it in output layer
+
+        self.sig_net = nn.Sequential(*blocks)
+
+        self.mu_net = nn.Sequential(*blocks)
+
+        # self.sig_net = nn.Sequential(
+        #     nn.Linear(k, hidden),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(hidden, d - k))
+        #
+        # self.mu_net = nn.Sequential(
+        #     nn.Linear(k, hidden),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(hidden, d - k))
+
+        base_mu, base_cov = torch.zeros(d), torch.eye(d)
+        self.base_dist = MultivariateNormal(base_mu, base_cov)
+
+    def forward(self, x, flip=True):
+        x1, x2 = x[:, :self.k], x[:, self.k:]
+
+        if flip:
+            x2, x1 = x1, x2
+
+        # forward
+        sig = self.sig_net(x1)
+        z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
+
+        if flip:
+            z2, z1 = z1, z2
+
+        z_hat = torch.cat([z1, z2], dim=-1)
+
+        # log_pz = self.base_dist.log_prob(z_hat)
+        log_jacob = sig.sum(-1)
+
+        # return z_hat, log_pz, log_jacob
+        return z_hat, log_jacob
+
+    def inverse(self, Z, flip=False):
+        z1, z2 = Z[:, :self.k], Z[:, self.k:]
+
+        if flip:
+            z2, z1 = z1, z2
+
+        x1 = z1
+        x2 = (z2 - self.mu_net(z1)) * torch.exp(-self.sig_net(z1))
+
+        if flip:
+            x2, x1 = x1, x2
+        return torch.cat([x1, x2], -1)

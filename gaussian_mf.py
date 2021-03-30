@@ -5,7 +5,7 @@ from torch.distributions.normal import Normal
 
 def train_pyvarinf(args):
 
-    var_model = pyvarinf.Variationalize(args.model)
+    var_model = pyvarinf.Variationalize(args.model, prior_std=args.prior_var)
     optimizer = torch.optim.Adam(var_model.parameters(), lr=args.lr)
 
     for epoch in range(1, args.epochs):

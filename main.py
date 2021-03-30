@@ -6,7 +6,7 @@ import numpy as np
 import custom_lr_scheduler
 from dataset_factory import *
 from gaussian_mf import *
-from normalizing_flows import RealNVP
+from normalizing_flows import *
 from utils import *
 
 
@@ -18,63 +18,70 @@ def varphi_logprob(args, thetas):
            - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
 
 
-def sample_q(args):
+def sample_q(args, R):
 
     if args.var_mode == 'nf_gamma':
-        shape = args.lmbdas.repeat(1, args.R).T
-        rate = args.betas.repeat(1, args.R).T
+        shape = args.lmbdas.repeat(1, R).T
+        rate = args.betas.repeat(1, R).T
         vs = gamma_icdf(shape=shape, rate=rate, args=args)
-        k = args.ks.repeat(1, args.R).T
+        k = args.ks.repeat(1, R).T
         xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
 
     elif args.var_mode == 'nf_gaussian':
-        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=0, std=1)
+        xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
 
     return xis
 
 
 def train(args):
 
-    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
+    resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
+    # resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
 
+    counter = 1
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
 
+        inv_temp = min(1, 0.01 + counter / args.epochs)
+
         for batch_idx, (data, target) in enumerate(args.train_loader):
+
+
 
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args)
+            xis = sample_q(args, R=10)
 
             # log_jacobians.mean() = E_q log |g'(xi)|
-            thetas, log_jacobians = resolution_network(xis)  # g
+            thetas, log_jacobians = resolution_network(xis)
 
             # E_q 1/m \sum_i=1^m p(y_i |x_i , g(\xi))
-            loglik_elbo = loglik(thetas, data, target, args, R=args.R).mean()
+            loglik_elbo = loglik(thetas, data, target, args).mean()
 
             # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi)))
             # q(\xi_1,...,\xi_d) = q(\xi_1)*...*q(\xi_d)
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
-            prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
-            # print(prior_elbo - log_jacobians.mean()) #TODO: this should always be positive but can become negative as we train
-            elbo = loglik_elbo + (log_jacobians.mean() - prior_elbo)/args.sample_size
-            # TODO: isn't this the wrong sign for running_loss??
-            running_loss += loglik_elbo * args.batch_size / args.sample_size + (log_jacobians.mean() - prior_elbo)/args.sample_size
+            complexity = args.qentropy - inv_temp*varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+            # if complexity < 0:
+            #     print(complexity) #TODO: this should always be positive but can become negative as we train
+            elbo = loglik_elbo - complexity/args.sample_size
+            running_loss += -loglik_elbo * args.batch_size / args.sample_size + complexity/args.sample_size
 
             loss = -elbo
             loss.backward()
             optimizer.step()
-
         if epoch % args.display_interval == 0:
-            elbo, elbo1, elbo2, elbo3 = evaluate(resolution_network, args, R=1)
-            print('epoch {}: loss {}, nSn {}, exact elbo {} = loglik {} + jacob {} - prior {}'
-                  .format(epoch, loss, args.nSn, elbo, elbo1, elbo2, elbo3))
+            elbo, elbo_loglik, complexity = evaluate(resolution_network, args, R=1)
+            print('epoch {}: loss {}, nSn {}, exact elbo {} = loglik {} - complexity {}'
+                  .format(epoch, loss, args.nSn, elbo, elbo_loglik, complexity))
+
+        counter += 1
 
         scheduler.step(running_loss.item())
 
@@ -91,18 +98,18 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        xis = sample_q(args)
+        xis = sample_q(args, R)
         thetas, log_jacobians = resolution_network(xis)
 
-        prior_elbo = args.qentropy - varphi_logprob(args, thetas).mean()
+        complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
-            elbo_loglik += loglik(thetas, data, target, args, R=R).sum(dim=1)
+            elbo_loglik += loglik(thetas, data, target, args).sum(dim=1)
 
-        elbo = elbo_loglik.mean() + log_jacobians.mean() - prior_elbo
+        elbo = elbo_loglik.mean() - complexity
 
-    return elbo, elbo_loglik.mean(), log_jacobians.mean(), prior_elbo
+    return elbo, elbo_loglik.mean(), complexity
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -122,6 +129,8 @@ def main():
     parser.add_argument('--sample_size', type=int, default=5000,
                         help='sample size of synthetic dataset')
 
+    parser.add_argument('--prior_var', type=float, default=1e-3, metavar='N')
+
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
 
     parser.add_argument('--epochs', type=int, default=2000, metavar='N',
@@ -133,9 +142,6 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=16)
 
     parser.add_argument('--nf_layers', type=int, default=20)
-
-    parser.add_argument('--R', type=int, default=1, metavar='N',
-                        help='?')
 
     parser.add_argument('--lmbda_star', type=float, default=40, metavar='N',
                         help='?')
@@ -149,9 +155,8 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
-    args.prior_var = 1/args.H
+    # args.prior_var = 1/args.H
 
-    args.prior_var = 0.1 # TODO: does this prevent too high ELBO
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
@@ -159,17 +164,8 @@ def main():
 
         print(args)
 
-
-        # betas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        # betas = torch.ones(args.w_dim, 1)
-        # betas[0] = args.sample_size
-        betas = args.sample_size*torch.ones(args.w_dim, 1)
-        # print('all betas set to sample size {}'.format(args.sample_size))
-
-        print('all lambdas set to conjectured lambda {}'.format(args.lmbda_star))
-
         args.ks = torch.ones(args.w_dim, 1)
-        args.betas = args.sample_size*torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
         args.betas[0] = args.sample_size
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
@@ -177,7 +173,7 @@ def main():
         args.qentropy = qj_entropy(args).sum()
 
         net = train(args)
-        elbo, _, _, _ = evaluate(net, args, R=1000)
+        elbo, _, _ = evaluate(net, args, R=1000)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
@@ -187,7 +183,7 @@ def main():
 
         print(args)
         net = train_pyvarinf(args)
-        elbo, _, _ = evaluate_pyvarinf(net, args, R=1000)
+        elbo, _, _ = evaluate_pyvarinf(net, args, R=10)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(

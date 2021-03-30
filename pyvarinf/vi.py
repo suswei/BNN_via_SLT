@@ -79,7 +79,7 @@ def prior_std(p):
     return stdv
 
 
-def sub_prior_loss(dico):
+def sub_prior_loss(dico, prior_std):
     """ Compute the KL divergence between prior and parameters for
     all Variational Parameters in the tree dictionary dico.
 
@@ -91,12 +91,12 @@ def sub_prior_loss(dico):
         if isinstance(p, VariationalParameter):
             mean = p.mean
             std = (1 + p.rho.exp()).log()
-            std_prior = prior_std(mean)
-            loss += (-(std / std_prior).log() +
+            # prior_std = prior_std(mean)
+            loss += (-(std / prior_std).log() +
                      (std.pow(2) + mean.pow(2)) /
-                     (2 * std_prior ** 2) - 1 / 2).sum()
+                     (2 * prior_std ** 2) - 1 / 2).sum()
         elif p != None:
-            loss += sub_prior_loss(p)
+            loss += sub_prior_loss(p, prior_std)
     return loss
 
 
@@ -222,18 +222,20 @@ class Variationalize(nn.Module):
     :args learn_mean: if True, learn the posterior mean
     :args learn_rho: if True, learn the posterior rho
     """
-    def __init__(self, model, zero_mean=True, learn_mean=True, learn_rho=True):
+    def __init__(self, model, zero_mean=True, prior_std=1e-4, learn_mean=True, learn_rho=True):
         super().__init__()
         self.model = model
 
         self.dico = OrderedDict()
-        self._variationalize_module(self.dico, self.model, '', zero_mean,
+        self._variationalize_module(self.dico, prior_std, self.model, '', zero_mean,
                                     learn_mean, learn_rho)
+        # self.prior_std = prior_std
+
         self._prior_loss_function = functools.partial(
             sub_prior_loss,
-            dico=self.dico)
+            dico=self.dico, prior_std = prior_std)
 
-    def _variationalize_module(self, dico, module, prefix, zero_mean,
+    def _variationalize_module(self, dico, stdv, module, prefix, zero_mean,
                                learn_mean, learn_rho):
         to_erase = []
         paras = module._parameters.items()  # pylint: disable=protected-access
@@ -241,7 +243,7 @@ class Variationalize(nn.Module):
             if p is None:
                 dico[name] = None
             else:
-                stdv = prior_std(p)
+                # stdv = prior_std(p)
                 init_rho = math.log(math.exp(stdv) - 1)
 
                 init_mean = p.data.clone()
@@ -267,7 +269,7 @@ class Variationalize(nn.Module):
 
         for mname, sub_module in module.named_children():
             sub_dico = OrderedDict()
-            self._variationalize_module(sub_dico, sub_module,
+            self._variationalize_module(sub_dico, stdv, sub_module,
                                         prefix + ('_' if prefix else '') +
                                         mname, zero_mean,
                                         learn_mean, learn_rho)
