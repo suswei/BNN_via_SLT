@@ -5,15 +5,15 @@ import numpy as np
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
 def qj_entropy(args):
 
-    if args.mf_mode == 'nf_gamma':
+    if args.var_mode == 'nf_gamma':
         hs = args.hs
         ks = args.ks
         betas = args.betas
         lmbda = (hs+1)/(2*ks)
         logz = qj_gengamma_lognorm(hs, ks, betas)
         return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
-    elif args.mf_mode == 'nf_gaussian':
-        stds = np.sqrt(args.lmbdas)/args.betas # TODO: should allow custom mean/std for nf_gaussian
+    elif args.var_mode == 'nf_gaussian':
+        stds = 1 # TODO: should allow custom mean/std for nf_gaussian
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
 
 

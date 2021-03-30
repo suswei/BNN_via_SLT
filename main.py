@@ -20,19 +20,15 @@ def varphi_logprob(args, thetas):
 
 def sample_q(args):
 
-    if args.mf_mode == 'nf_gamma':
-
+    if args.var_mode == 'nf_gamma':
         shape = args.lmbdas.repeat(1, args.R).T
         rate = args.betas.repeat(1, args.R).T
         vs = gamma_icdf(shape=shape, rate=rate, args=args)
         k = args.ks.repeat(1, args.R).T
         xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
 
-    elif args.mf_mode == 'nf_gaussian':
-        mean = args.lmbda_star/args.sample_size # TODO: this can be default value but allow custom input
-        std = np.sqrt(args.lmbda_star)/args.sample_size
-        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=100 / 5000, std=10 / 5000)
-        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=mean, std=std)
+    elif args.var_mode == 'nf_gaussian':
+        xis = torch.FloatTensor(args.R, args.w_dim).normal_(mean=0, std=1)
 
     return xis
 
@@ -93,11 +89,19 @@ def evaluate(resolution_network, args, R):
     resolution_network.eval()
 
     with torch.no_grad():
+
         # generate xis R by args.w_dim
-        args.betas[0] = args.sample_size
-        m = Gamma(args.lmbdas, args.betas)
-        vs = m.sample(torch.Size([R])).squeeze(dim=2)
-        xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
+        if args.var_mode == 'nf_gamma':
+            # m = Gamma(args.lmbdas, args.betas)
+            # vs = m.sample(torch.Size([R])).squeeze(dim=2)
+            # xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
+            shape = args.lmbdas.repeat(1, R).T
+            rate = args.betas.repeat(1, R).T
+            vs = gamma_icdf(shape=shape, rate=rate, args=args)
+            k = args.ks.repeat(1, R).T
+            xis = vs ** (1 / (2 * k))  # xis R by args.w_dim
+        elif args.var_mode == 'nf_gaussian':
+            xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
 
         thetas, log_jacobians = resolution_network(xis)
 
@@ -137,22 +141,19 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
                         help='input batch size for training (default: 100)')
 
-    parser.add_argument('--nf_hidden', type=int, default=8)
+    parser.add_argument('--nf_hidden', type=int, default=16)
 
-    parser.add_argument('--nf_layers', type=int, default=10)
+    parser.add_argument('--nf_layers', type=int, default=20)
 
     parser.add_argument('--R', type=int, default=1, metavar='N',
                         help='?')
 
-    parser.add_argument('--lmbda_star', type=float, default=1, metavar='N',
+    parser.add_argument('--lmbda_star', type=float, default=40, metavar='N',
                         help='?')
-
-    parser.add_argument('--k', type=float, default=1, metavar='N',
-                        help='k associated with global RLCT')
 
     parser.add_argument('--path', type=str)
 
-    parser.add_argument('--mf_mode', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','gaussian'])
+    parser.add_argument('--var_mode', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','mf_gaussian'])
 
     parser.add_argument('--display_interval',type=int,default=500)
 
@@ -160,30 +161,24 @@ def main():
 
     get_dataset_by_id(args)
     args.prior_var = 1/args.H
+    args.prior_var = 1e-3
 
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
-    if args.mf_mode == 'nf_gamma' or args.mf_mode == 'nf_gaussian':
+    if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian':
 
         print(args)
 
-        # betas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        # betas[0] = args.sample_size
-        betas = args.sample_size*torch.ones(args.w_dim, 1)
         print('all betas set to sample size {}'.format(args.sample_size))
 
-        lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1) # other lambdas should be >= global lambda
         print('all lambdas set to conjectured lambda {}'.format(args.lmbda_star))
 
-        ks = torch.ones(args.w_dim, 1)
-        ks[0] = args.k
-        hs = lmbdas*2*ks-1
-
-        args.hs = hs
-        args.ks = ks
-        args.betas = betas
-        args.lmbdas = lmbdas
+        args.ks = torch.ones(args.w_dim, 1)
+        args.betas = args.sample_size*torch.ones(args.w_dim, 1)
+        args.betas[0] = args.sample_size
+        args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        args.hs = args.lmbdas*2*args.ks-1
 
         args.qentropy = qj_entropy(args).sum()
 
@@ -194,7 +189,7 @@ def main():
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
         print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
-    elif args.mf_mode == 'gaussian':
+    elif args.var_mode == 'mf_gaussian':
 
         print(args)
         net = train_pyvarinf(args)

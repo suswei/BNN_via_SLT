@@ -1,62 +1,21 @@
 import sys
 import os
 import itertools
-from dataset_factory import get_lmbda
+import numpy as np
 
 
 def set_sweep_config():
 
+    tanh_Hs = [1, 6400, 8100, 10000]
     rr_Hs = [80, 90, 100]
-    rr_ls = get_lmbda(rr_Hs, 'reducedrank')
-
-    tanh_Hs = [6400, 8100, 10000]
-    tanh_ls = [1000, 2000, 4000]
-
+    ns = [int(round(np.exp(4)))*20, int(round(np.exp(5)))*20, int(round(np.exp(6)))*20,
+          int(round(np.exp(7)))*20]
     seeds = [1, 2, 3, 4, 5]
+    var_modes = ['nf_gamma', 'mf_gaussian', 'nf_gaussian']
 
-    sweep_params = {'rr_Hs': rr_Hs, 'tanh_Hs': tanh_Hs, 'rr_ls': rr_ls, 'tanh_ls': tanh_ls, 'seeds': seeds}
+    sweep_params = {'rr_Hs': rr_Hs, 'tanh_Hs': tanh_Hs, 'seeds': seeds}
     hyperparameter_experiments = []
 
-    ####################################################################################################
-
-    hyperparameter_config = {
-        'H': rr_Hs,
-        'lmbda': rr_ls,
-        'seed': seeds,
-        'dataset': ['reducedrank'],
-        'nf_hidden': [16],
-        'nf_layers': [20],
-        'mf_mode': ['nf_gamma']
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-
-    ####################################################################################################
-
-    hyperparameter_config = {
-        'H': rr_Hs,
-        'seed': seeds,
-        'dataset': ['reducedrank'],
-        'mf_mode': ['gaussian']
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-    ####################################################################################################
-
-    hyperparameter_config = {
-        'H': tanh_Hs,
-        'lmbda': tanh_ls,
-        'seed': seeds,
-        'dataset': ['tanh'],
-        'nf_hidden': [16],
-        'nf_layers': [20],
-        'mf_mode': ['nf_gamma']
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
 
     ####################################################################################################
 
@@ -64,7 +23,21 @@ def set_sweep_config():
         'H': tanh_Hs,
         'seed': seeds,
         'dataset': ['tanh'],
-        'mf_mode': ['gaussian']
+        'var_mode': var_modes,
+        'n': ns
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+
+    ####################################################################################################
+
+    hyperparameter_config = {
+        'H': rr_Hs,
+        'seed': seeds,
+        'dataset': ['reducedrank'],
+        'var_mode': var_modes,
+        'n': ns
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -78,29 +51,17 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    if temp['mf_mode'] == 'gaussian':
-        path = 'untransformed/untransformed_{}_H{}_seed{}'.format(temp['dataset'], temp['H'], temp['seed'])
+    path = '{}_{}_n{}_H{}_seed{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'], temp['seed'])
 
-        os.system("python3 main.py "
-                  "--dataset %s "
-                  "--seed %s "
-                  "--H %s "
-                  "--mf_mode gaussian "
-                  "--path %s"
-                  % (temp['dataset'], temp['seed'], temp['H'], path))
-
-    else:
-
-        path = 'transformed/transformed_{}_H{}_lmbda{}_seed{}'.format(temp['dataset'],temp['H'],round(temp['lmbda']),temp['seed'])
-        os.system("python3 main.py "
-                  "--dataset %s "
-                  "--seed %s "
-                  "--H %s "
-                  "--lmbda_star %s "
-                  "--nf_hidden %s "
-                  "--nf_layers %s "
-                  "--path %s"
-                  %(temp['dataset'], temp['seed'], temp['H'], temp['lmbda'], temp['nf_hidden'],temp['nf_layers'], path))
+    os.system("python3 main.py "
+              "--dataset %s "
+              "--sample_size %s "
+              "--seed %s "
+              "--H %s "
+              "--var_mode %s "
+              "--epochs 100 "
+              "--path %s"
+              % (temp['dataset'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], path))
 
 
 if __name__ == "__main__":
