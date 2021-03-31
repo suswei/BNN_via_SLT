@@ -6,10 +6,11 @@ import numpy as np
 
 def set_sweep_config():
 
-    tanh_Hs = [1, 6400, 8100, 10000]
+    tanh_Hs = [6400, 8100, 10000]
     rr_Hs = [80, 90, 100]
     ns = [int(round(np.exp(4)))*20, int(round(np.exp(5)))*20, int(round(np.exp(6)))*20,
           int(round(np.exp(7)))*20]
+    prior_vars = [1, 1e-2, 1e-4]
     seeds = [1, 2, 3, 4, 5]
     var_modes = ['nf_gamma', 'mf_gaussian', 'nf_gaussian']
 
@@ -24,6 +25,7 @@ def set_sweep_config():
         'seed': seeds,
         'dataset': ['tanh'],
         'var_mode': var_modes,
+        'prior_var': prior_vars,
         'n': ns
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -37,6 +39,7 @@ def set_sweep_config():
         'seed': seeds,
         'dataset': ['reducedrank'],
         'var_mode': var_modes,
+        'prior_var': prior_vars,
         'n': ns
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -59,9 +62,10 @@ def main(taskid):
               "--seed %s "
               "--H %s "
               "--var_mode %s "
+              "--prior_var %s "
               "--epochs 100 "
               "--path %s"
-              % (temp['dataset'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], path))
+              % (temp['dataset'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], temp['prior_var'], path))
 
 
 if __name__ == "__main__":
