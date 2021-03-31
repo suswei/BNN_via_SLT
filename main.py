@@ -35,8 +35,8 @@ def sample_q(args, R):
 
 def train(args):
 
-    resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
-    # resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
+    # resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
+    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
@@ -50,12 +50,10 @@ def train(args):
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
-
-
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args, R=10)
+            xis = sample_q(args, R=1)
 
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)
@@ -67,9 +65,9 @@ def train(args):
             # q(\xi_1,...,\xi_d) = q(\xi_1)*...*q(\xi_d)
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
-            complexity = args.qentropy - inv_temp*varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+            complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
             # if complexity < 0:
-            #     print(complexity) #TODO: this should always be positive but can become negative as we train
+            #     print(complexity) #TODO: should be positive, but could be negative for small lambda since the sampling approximation is poor
             elbo = loglik_elbo - complexity/args.sample_size
             running_loss += -loglik_elbo * args.batch_size / args.sample_size + complexity/args.sample_size
 
@@ -146,6 +144,9 @@ def main():
     parser.add_argument('--lmbda_star', type=float, default=40, metavar='N',
                         help='?')
 
+    parser.add_argument('--k', type=float, default=1, metavar='N',
+                        help='?')
+
     parser.add_argument('--path', type=str)
 
     parser.add_argument('--var_mode', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','mf_gaussian'])
@@ -164,8 +165,8 @@ def main():
 
         print(args)
 
-        args.ks = torch.ones(args.w_dim, 1)
-        args.betas = torch.ones(args.w_dim, 1)
+        args.ks = args.k*torch.ones(args.w_dim, 1)
+        args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.betas[0] = args.sample_size
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1

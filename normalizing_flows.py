@@ -83,10 +83,15 @@ class R_NVP(nn.Module):
         blocks = list(itertools.chain(*blocks))
         del blocks[-1]  # remove the last activation, don't need it in output layer
 
+        blocks2 = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
+                  for in_f, out_f in zip(self.sizes, self.sizes[1:])]
+        blocks2 = list(itertools.chain(*blocks2))
+        del blocks2[-1]  # remove the last activation, don't need it in output layer
+
         self.sig_net = nn.Sequential(*blocks)
-
-        self.mu_net = nn.Sequential(*blocks)
-
+        print(self.sig_net)
+        self.mu_net = nn.Sequential(*blocks2)
+        print(self.mu_net)
         # self.sig_net = nn.Sequential(
         #     nn.Linear(k, hidden),
         #     nn.LeakyReLU(),
