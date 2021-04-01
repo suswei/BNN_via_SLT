@@ -6,12 +6,12 @@ import numpy as np
 
 def set_sweep_config():
 
-    tanh_Hs = [1, 6400, 8100, 10000]
+    tanh_Hs = [6400, 8100, 10000]
     rr_Hs = [80, 90, 100]
     ns = [int(round(np.exp(4)))*20, int(round(np.exp(5)))*20, int(round(np.exp(6)))*20,
           int(round(np.exp(7)))*20]
     seeds = [1, 2, 3, 4, 5]
-    var_modes = ['nf_gamma', 'mf_gaussian', 'nf_gaussian']
+    var_modes = ['nf_gamma', 'nf_gaussian']
 
     sweep_params = {'rr_Hs': rr_Hs, 'tanh_Hs': tanh_Hs, 'seeds': seeds}
     hyperparameter_experiments = []
@@ -59,7 +59,6 @@ def main(taskid):
               "--seed %s "
               "--H %s "
               "--var_mode %s "
-              "--epochs 100 "
               "--path %s"
               % (temp['dataset'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], path))
 

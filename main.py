@@ -18,14 +18,19 @@ def varphi_logprob(args, thetas):
            - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
 
 
-def sample_q(args, R):
+def sample_q(args, R, train=True):
 
     if args.var_mode == 'nf_gamma':
-        shape = args.lmbdas.repeat(1, R).T
-        rate = args.betas.repeat(1, R).T
-        vs = gamma_icdf(shape=shape, rate=rate, args=args)
-        k = args.ks.repeat(1, R).T
-        xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
+        if train:
+            shape = args.lmbdas.repeat(1, R).T
+            rate = args.betas.repeat(1, R).T
+            vs = gamma_icdf(shape=shape, rate=rate, args=args)
+            k = args.ks.repeat(1, R).T
+            xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
+        else:
+            m = Gamma(args.lmbdas, args.betas)
+            vs = m.sample(torch.Size([R])).squeeze(dim=2)
+            xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
 
     elif args.var_mode == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
@@ -96,7 +101,7 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        xis = sample_q(args, R)
+        xis = sample_q(args, R, train=False)
         thetas, log_jacobians = resolution_network(xis)
 
         complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
@@ -165,6 +170,8 @@ def main():
 
         print(args)
 
+        # TODO: currently running nf_gamma with oracle lmbda value
+        args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
         args.ks = args.k*torch.ones(args.w_dim, 1)
         args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.betas[0] = args.sample_size
