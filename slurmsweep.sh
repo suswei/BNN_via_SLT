@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="highHtanh"
+#SBATCH --job-name="nf_gaussian_vs_gamma"
 #SBATCH -p physical
 
 #SBATCH --mem=64G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-12:0:00
 
 # Batch arrays
-#SBATCH --array=0-299
+#SBATCH --array=0-35
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

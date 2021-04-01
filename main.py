@@ -136,7 +136,7 @@ def main():
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
 
-    parser.add_argument('--epochs', type=int, default=2000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=5000, metavar='N',
                         help='number of epochs to train (default: 200)')
 
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
