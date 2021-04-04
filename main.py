@@ -41,7 +41,7 @@ def sample_q(args, R, train=True):
 def train(args):
 
     # resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
-    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers)
+    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
@@ -158,17 +158,18 @@ def main():
 
     parser.add_argument('--display_interval',type=int,default=500)
 
+    parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
+
     args = parser.parse_args()
 
     get_dataset_by_id(args)
-    # args.prior_var = 1/args.H
+    args.prior_var = 1/args.H
 
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
     if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian':
 
-        print(args)
 
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
@@ -177,6 +178,8 @@ def main():
         args.betas[0] = args.sample_size
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
+
+        print(args)
 
         args.qentropy = qj_entropy(args).sum()
 

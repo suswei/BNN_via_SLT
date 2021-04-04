@@ -4,10 +4,10 @@
 #SBATCH --job-name="nf_gaussian_vs_gamma"
 #SBATCH -p physical
 
-#SBATCH --mem=64G
+#SBATCH --mem=1G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-12:0:00
+#SBATCH --time=0-2:0:00
 
 # Batch arrays
 #SBATCH --array=0-35

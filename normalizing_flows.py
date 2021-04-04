@@ -11,13 +11,17 @@ class FCNN(nn.Module):
     """
     Simple fully connected neural network.
     """
-    def __init__(self, in_dim, out_dim, hidden_dim, layers):
+    def __init__(self, in_dim, out_dim, hidden_dim, layers, af):
         super().__init__()
 
         self.sizes = np.concatenate(
             ([in_dim], np.repeat(hidden_dim, layers + 1), [out_dim])).tolist()
-        blocks = [[nn.Linear(in_f, out_f), nn.Tanh()]
-                  for in_f, out_f in zip(self.sizes, self.sizes[1:])]
+        if af == 'relu':
+            blocks = [[nn.Linear(in_f, out_f), nn.ReLU()] #TODO: does the activation matter?
+                      for in_f, out_f in zip(self.sizes, self.sizes[1:])]
+        elif af == 'tanh':
+            blocks = [[nn.Linear(in_f, out_f), nn.Tanh()] #TODO: does the activation matter?
+                      for in_f, out_f in zip(self.sizes, self.sizes[1:])]
         blocks = list(itertools.chain(*blocks))
         del blocks[-1]  # remove the last activation, don't need it in output layer
 
@@ -34,13 +38,13 @@ class RealNVP(nn.Module):
     Non-volume preserving flow.
     [Dinh et. al. 2017]
     """
-    def __init__(self, dim, hidden_dim=8, layers=10, base_network=FCNN):
+    def __init__(self, dim, hidden_dim=8, layers=10, base_network=FCNN, af='relu'):
         super().__init__()
         self.dim = dim
-        self.t1 = base_network(dim // 2, dim // 2, hidden_dim, layers)
-        self.s1 = base_network(dim // 2, dim // 2, hidden_dim, layers)
-        self.t2 = base_network(dim // 2, dim // 2, hidden_dim, layers)
-        self.s2 = base_network(dim // 2, dim // 2, hidden_dim, layers)
+        self.t1 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
+        self.s1 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
+        self.t2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
+        self.s2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
 
     def forward(self, x):
         lower, upper = x[:,:self.dim // 2], x[:,self.dim // 2:]
