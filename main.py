@@ -18,19 +18,25 @@ def varphi_logprob(args, thetas):
            - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
 
 
-def sample_q(args, R, train=True):
+def sample_q(args, R, resolution_network, train=True):
 
     if args.var_mode == 'nf_gamma':
+
+        lmbdas = resolution_network.lmbdas
+        ks = resolution_network.ks
+        hs = 2 * ks * lmbdas - 1
+        betas = args.betas
+
         if train:
-            shape = args.lmbdas.repeat(1, R).T
-            rate = args.betas.repeat(1, R).T
+            shape = lmbdas.repeat(1, R).T
+            rate = betas.repeat(1, R).T
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
-            k = args.ks.repeat(1, R).T
+            k = ks.repeat(1, R).T
             xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
         else:
-            m = Gamma(args.lmbdas, args.betas)
+            m = Gamma(lmbdas, betas)
             vs = m.sample(torch.Size([R])).squeeze(dim=2)
-            xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
+            xis = vs ** (1 / (2 * ks.repeat(1, R).T))
 
     elif args.var_mode == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
@@ -38,11 +44,19 @@ def sample_q(args, R, train=True):
     return xis
 
 
-def train(args):
+def train(args, resolution_network):
 
     # resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
-    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
-    optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
+    # optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam([
+        {'params': resolution_network.lmbdas, 'lr': 1e-3},
+        {'params': resolution_network.ks, 'lr': 1e-3},
+        {'params': resolution_network.t1.parameters()},
+        {'params': resolution_network.s1.parameters()},
+        {'params': resolution_network.t2.parameters()},
+        {'params': resolution_network.s2.parameters()},
+    ], lr=args.lr)
+
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
 
@@ -56,9 +70,14 @@ def train(args):
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
             resolution_network.train()
+
+            lmbdas = resolution_network.lmbdas
+            ks = resolution_network.ks
+            hs = 2 * ks * lmbdas - 1
+
             optimizer.zero_grad()
 
-            xis = sample_q(args, R=1)
+            xis = sample_q(args, R=1, resolution_network=resolution_network)
 
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)
@@ -70,7 +89,10 @@ def train(args):
             # q(\xi_1,...,\xi_d) = q(\xi_1)*...*q(\xi_d)
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
-            complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+            if args.var_mode == 'nf_gaussian':
+                complexity = qj_entropy(args, hs, ks, args.betas).sum() - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+            elif args.var_mode == 'nf_gamma':
+                complexity = -(lmbdas - torch.log(2*ks) + torch.lgamma(lmbdas) - lmbdas*torch.log(args.betas)).sum()
             # if complexity < 0:
             #     print(complexity) #TODO: should be positive, but could be negative for small lambda since the sampling approximation is poor
             elbo = loglik_elbo - complexity/args.sample_size
@@ -79,7 +101,11 @@ def train(args):
             loss = -elbo
             loss.backward()
             optimizer.step()
+
+
         if epoch % args.display_interval == 0:
+            print('lmbdas {}, ks {}'.format(lmbdas.max(), ks.max()))
+
             elbo, elbo_loglik, complexity, elbo_loglik_val = evaluate(resolution_network, args, R=1)
             print('epoch {}: loss {}, nSn {}, exact elbo {} = loglik {} - complexity {}, elbo_loglik_val {}'
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik, complexity,elbo_loglik_val))
@@ -99,12 +125,20 @@ def evaluate(resolution_network, args, R):
 
     resolution_network.eval()
 
+    lmbdas = resolution_network.lmbdas
+    ks = resolution_network.ks
+    hs = 2*ks*lmbdas -1
+
     with torch.no_grad():
 
-        xis = sample_q(args, R, train=False)
+        xis = sample_q(args, R,  resolution_network=resolution_network, train=False)
         thetas, log_jacobians = resolution_network(xis)
 
-        complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+        if args.var_mode == 'nf_gaussian':
+            complexity = qj_entropy(args, hs, ks, args.betas).sum() - varphi_logprob(args,
+                                                                                thetas).mean() - log_jacobians.mean()
+        elif args.var_mode == 'nf_gamma':
+            complexity = -(lmbdas - torch.log(2 * ks) + torch.lgamma(lmbdas) - lmbdas * torch.log(args.betas)).sum()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -172,24 +206,16 @@ def main():
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
+    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
+
     if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian':
 
-
-        # TODO: currently running nf_gamma with oracle lmbda value
-        args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.ks = args.k*torch.ones(args.w_dim, 1)
-        args.ks[0] = 1
-        args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        args.betas = 40*torch.ones(args.w_dim,1)
         args.betas[0] = args.sample_size
-        args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        args.lmbdas[0] = args.lmbda_star
-        args.hs = args.lmbdas*2*args.ks-1
 
         print(args)
 
-        args.qentropy = qj_entropy(args).sum()
-
-        net = train(args)
+        net = train(args, resolution_network)
         elbo, _, _, _ = evaluate(net, args, R=1000)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
@@ -198,7 +224,6 @@ def main():
 
     elif args.var_mode == 'mf_gaussian':
 
-        print(args)
         net = train_pyvarinf(args)
         elbo, _, _ = evaluate_pyvarinf(net, args, R=10)
 

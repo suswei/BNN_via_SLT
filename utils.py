@@ -3,12 +3,9 @@ import numpy as np
 
 # q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
-def qj_entropy(args):
+def qj_entropy(args, hs, ks, betas):
 
     if args.var_mode == 'nf_gamma':
-        hs = args.hs
-        ks = args.ks
-        betas = args.betas
         lmbda = (hs+1)/(2*ks)
         logz = qj_gengamma_lognorm(hs, ks, betas)
         return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
