@@ -80,9 +80,9 @@ def train(args):
             loss.backward()
             optimizer.step()
         if epoch % args.display_interval == 0:
-            elbo, elbo_loglik, complexity = evaluate(resolution_network, args, R=1)
-            print('epoch {}: loss {}, nSn {}, exact elbo {} = loglik {} - complexity {}'
-                  .format(epoch, loss, args.nSn, elbo, elbo_loglik, complexity))
+            elbo, elbo_loglik, complexity, elbo_loglik_val = evaluate(resolution_network, args, R=1)
+            print('epoch {}: loss {}, nSn {}, exact elbo {} = loglik {} - complexity {}, elbo_loglik_val {}'
+                  .format(epoch, loss, args.nSn, elbo, elbo_loglik, complexity,elbo_loglik_val))
 
         counter += 1
 
@@ -112,7 +112,11 @@ def evaluate(resolution_network, args, R):
 
         elbo = elbo_loglik.mean() - complexity
 
-    return elbo, elbo_loglik.mean(), complexity
+        elbo_loglik_val = 0.0
+        for batch_idx, (data, target) in enumerate(args.val_loader):
+            elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
+
+    return elbo, elbo_loglik.mean(), complexity, elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -174,9 +178,11 @@ def main():
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
         args.ks = args.k*torch.ones(args.w_dim, 1)
+        args.ks[0] = 1
         args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.betas[0] = args.sample_size
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        args.lmbdas[0] = args.lmbda_star
         args.hs = args.lmbdas*2*args.ks-1
 
         print(args)
@@ -184,7 +190,7 @@ def main():
         args.qentropy = qj_entropy(args).sum()
 
         net = train(args)
-        elbo, _, _ = evaluate(net, args, R=1000)
+        elbo, _, _, _ = evaluate(net, args, R=1000)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
