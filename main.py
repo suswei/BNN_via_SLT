@@ -8,6 +8,7 @@ from dataset_factory import *
 from gaussian_mf import *
 from normalizing_flows import *
 from utils import *
+from torch.distributions.normal import Normal
 
 
 # varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
@@ -46,23 +47,21 @@ def train(args):
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
 
-    counter = 1
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
 
-        inv_temp = min(1, 0.01 + counter / args.epochs)
+        inv_temp = min(1, 0.01 + epoch / args.epochs)
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args, R=1)
+            xis = sample_q(args, R=1, train=False)
 
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)
-
             # E_q 1/m \sum_i=1^m p(y_i |x_i , g(\xi))
             loglik_elbo = loglik(thetas, data, target, args).mean()
 
@@ -70,21 +69,34 @@ def train(args):
             # q(\xi_1,...,\xi_d) = q(\xi_1)*...*q(\xi_d)
             # E_q log q = \sum_j=1^d E_qj \log qj
             # E_q log q(xi)/varphi(g(xi))
-            complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+            # complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+            complexity = - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+
+            if args.var_mode == 'nf_gaussian':
+                complexity = q_entropy_sample(args, xis) - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+
+            # TODO: currently only for nf_gamma
+            if args.var_mode == 'nf_gamma':
+                theoretical_complexity = -(args.lmbdas - torch.log(2*args.ks) + torch.lgamma(args.lmbdas) - args.lmbdas*torch.log(args.betas)).sum()
             # if complexity < 0:
             #     print(complexity) #TODO: should be positive, but could be negative for small lambda since the sampling approximation is poor
             elbo = loglik_elbo - complexity/args.sample_size
             running_loss += -loglik_elbo * args.batch_size / args.sample_size + complexity/args.sample_size
 
-            loss = -elbo
+            if args.var_mode == 'nf_gamma':
+                # loss = -elbo + inv_temp*torch.max(complexity-theoretical_complexity,torch.Tensor([0.0]))
+                loss = -elbo
+            elif args.var_mode == 'nf_gaussian':
+                loss = -elbo
+
             loss.backward()
             optimizer.step()
         if epoch % args.display_interval == 0:
+            print(log_jacobians)
+
             elbo, elbo_loglik, complexity, elbo_loglik_val = evaluate(resolution_network, args, R=1)
             print('epoch {}: loss {}, nSn {}, exact elbo {} = loglik {} - complexity {}, elbo_loglik_val {}'
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik, complexity,elbo_loglik_val))
-
-        counter += 1
 
         scheduler.step(running_loss.item())
 
@@ -105,6 +117,8 @@ def evaluate(resolution_network, args, R):
         thetas, log_jacobians = resolution_network(xis)
 
         complexity = args.qentropy - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
+
+        # q_entropy_sample(args, xis)
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -167,7 +181,8 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
-    args.prior_var = 1/args.H
+    # args.prior_var = 1/args.H
+    # args.prior_var = 1
 
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
@@ -176,9 +191,8 @@ def main():
 
 
         # TODO: currently running nf_gamma with oracle lmbda value
-        args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
+        # args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
         args.ks = args.k*torch.ones(args.w_dim, 1)
-        args.ks[0] = 1
         args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
         args.betas[0] = args.sample_size
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
@@ -189,6 +203,8 @@ def main():
 
         args.qentropy = qj_entropy(args).sum()
 
+        print('theoretical complexity q_l,k,b {}'.format(-(args.lmbdas - torch.log(2*args.ks) + torch.lgamma(args.lmbdas) - args.lmbdas*torch.log(args.betas)).sum()
+))
         net = train(args)
         elbo, _, _, _ = evaluate(net, args, R=1000)
 
