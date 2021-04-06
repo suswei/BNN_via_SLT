@@ -24,20 +24,19 @@ def log_prior(args, thetas):
     #     return np.log(1/5)*torch.ones(args.w_dim,1)
 
 
-def sample_q(args, R, train=True):
+def sample_q(args, R, exact=True):
 
     if args.var_mode == 'nf_gamma':
-        if train:
+        if exact:
+            m = Gamma(args.lmbdas, args.betas)
+            vs = m.sample(torch.Size([R])).squeeze(dim=2)
+            xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
+        else:
             shape = args.lmbdas.repeat(1, R).T
             rate = args.betas.repeat(1, R).T
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             k = args.ks.repeat(1, R).T
             xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
-        else:
-            m = Gamma(args.lmbdas, args.betas)
-            vs = m.sample(torch.Size([R])).squeeze(dim=2)
-            xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
-
     elif args.var_mode == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
 
@@ -46,11 +45,11 @@ def sample_q(args, R, train=True):
 
 def train(args):
 
-    resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
-    # resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
+    # resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
+    resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
-    # scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
-    #     (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
+    scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
+        (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
 
     for epoch in range(1, args.epochs):
 
@@ -63,7 +62,7 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args, R=1, train=False)
+            xis = sample_q(args, R=1, exact=True)
 
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)
@@ -86,17 +85,19 @@ def train(args):
             loss = -elbo
             loss.backward()
             optimizer.step()
+
         if epoch % args.display_interval == 0:
             elbo_loglik, logprior, log_jacobians, elbo_loglik_val = evaluate(resolution_network, args, R=1)
-            elbo = elbo_loglik.mean() - (args.qentropy - logprior.mean() - log_jacobians.mean())
-            print('epoch {}: loss {}, nSn {}, loglik_val {}, elbo {} = loglik {} - qentropy {} + logprior {} + logjacob {}, '
-                  .format(epoch, loss, args.nSn, elbo_loglik_val.mean(), elbo, elbo_loglik.mean(), args.qentropy, logprior.mean(), log_jacobians.mean()))
+            complexity = args.qentropy - logprior.mean() - log_jacobians.mean()
+            elbo = elbo_loglik.mean() - complexity
+            print('epoch {}: loss {}, nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
+                  .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, args.qentropy, logprior.mean(), log_jacobians.mean()))
 
-        # scheduler.step(running_loss.item())
-        #
-        # if scheduler.has_convergence_been_reached():
-        #     print('INFO: Converence has been reached. Stopping iterations.')
-        #     break
+            scheduler.step(-elbo)
+
+            if scheduler.has_convergence_been_reached():
+                print('INFO: Converence has been reached. Stopping iterations.')
+                break
 
     return resolution_network
 
@@ -107,7 +108,7 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        xis = sample_q(args, R, train=False)
+        xis = sample_q(args, R, exact=True)
         thetas, log_jacobians = resolution_network(xis)
         logprior = log_prior(args, thetas)
         complexity = args.qentropy - logprior.mean() - log_jacobians.mean()
@@ -148,7 +149,7 @@ def main():
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
 
-    parser.add_argument('--epochs', type=int, default=5000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 200)')
 
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
@@ -175,7 +176,7 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
-    # args.prior_var = 1/args.H
+    args.prior_var = 1/args.H
     # args.prior_var = 1
 
     print(args.path)
@@ -186,11 +187,14 @@ def main():
 
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.ks = args.k*torch.ones(args.w_dim, 1)
-        args.betas = args.batch_size*torch.ones(args.w_dim, 1)
-        args.betas[0] = args.batch_size
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        args.lmbdas[0] = args.lmbda_star
+
+        args.ks = args.k*torch.ones(args.w_dim, 1)
+
+        # args.betas = (torch.exp(torch.lgamma(args.lmbdas))/(2*args.ks))**(1/args.lmbdas) # designed to make normalizing constant of q_j = 1
+        args.betas = torch.ones(args.w_dim, 1)
+        args.betas[0] = args.sample_size
+
         args.hs = args.lmbdas*2*args.ks-1
 
         print(args)
