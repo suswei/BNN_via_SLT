@@ -8,14 +8,20 @@ from dataset_factory import *
 from gaussian_mf import *
 from normalizing_flows import *
 from utils import *
+from torch.distributions.normal import Normal
 
 
-# varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
+# TODO: implement mixture prior
 # evaluate log varphi(theta), returns vector
-def varphi_logprob(args, thetas):
+def log_prior(args, thetas):
+
+    # if args.prior == 'gaussian':
+    # varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
     return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
            - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
            - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
+    # elif args.prior == 'uniform':
+    #     return np.log(1/5)*torch.ones(args.w_dim,1)
 
 
 def sample_q(args, R, resolution_network, train=True):
@@ -64,11 +70,11 @@ def train(args, resolution_network):
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
-
-        inv_temp = min(1, 0.01 + counter / args.epochs)
+        inv_temp = min(1, 0.01 + epoch / args.epochs)
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
+            pi = 2**(args.sample_size/args.batch_size-batch_idx)/(2**(args.sample_size/args.batch_size) - 1)
             resolution_network.train()
 
             lmbdas = resolution_network.lmbdas
@@ -83,26 +89,23 @@ def train(args, resolution_network):
             thetas, log_jacobians = resolution_network(xis)
 
             # E_q 1/m \sum_i=1^m p(y_i |x_i , g(\xi))
-            loglik_elbo = loglik(thetas, data, target, args).mean()
+            loglik_elbo_vec = loglik(thetas, data, target, args)
 
             # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi)))
-            # q(\xi_1,...,\xi_d) = q(\xi_1)*...*q(\xi_d)
-            # E_q log q = \sum_j=1^d E_qj \log qj
-            # E_q log q(xi)/varphi(g(xi))
-            if args.var_mode == 'nf_gaussian':
-                complexity = qj_entropy(args, hs, ks, args.betas).sum() - varphi_logprob(args, thetas).mean() - log_jacobians.mean()
-            elif args.var_mode == 'nf_gamma':
-                complexity = -(lmbdas - torch.log(2*ks) + torch.lgamma(lmbdas) - lmbdas*torch.log(args.betas)).sum()
-            # if complexity < 0:
-            #     print(complexity) #TODO: should be positive, but could be negative for small lambda since the sampling approximation is poor
-            elbo = loglik_elbo - complexity/args.sample_size
-            running_loss += -loglik_elbo * args.batch_size / args.sample_size + complexity/args.sample_size
+            # complexity = args.qentropy - log_prior(args, thetas).mean() - log_jacobians.mean()
+            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()
+
+            # if args.var_mode == 'nf_gaussian':
+            #     complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
+
+            # elbo = loglik_elbo_vec.mean() - complexity/args.sample_size
+            elbo = loglik_elbo_vec.sum() - pi*complexity # section 3.4 of https://arxiv.org/pdf/1505.05424.pdf
+
+            # running_loss += -loglik_elbo_vec.mean() * args.batch_size / args.sample_size + complexity/args.sample_size
 
             loss = -elbo
             loss.backward()
             optimizer.step()
-
-
         if epoch % args.display_interval == 0:
             print('lmbdas {}, ks {}'.format(lmbdas.max(), ks.max()))
 
@@ -112,11 +115,11 @@ def train(args, resolution_network):
 
         counter += 1
 
-        scheduler.step(running_loss.item())
-
-        if scheduler.has_convergence_been_reached():
-            print('INFO: Converence has been reached. Stopping iterations.')
-            break
+        # scheduler.step(running_loss.item())
+        #
+        # if scheduler.has_convergence_been_reached():
+        #     print('INFO: Converence has been reached. Stopping iterations.')
+        #     break
 
     return resolution_network
 
@@ -131,8 +134,10 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        xis = sample_q(args, R,  resolution_network=resolution_network, train=False)
+        xis = sample_q(args, R, train=False)
         thetas, log_jacobians = resolution_network(xis)
+        logprior = log_prior(args, thetas)
+        complexity = args.qentropy - logprior.mean() - log_jacobians.mean()
 
         if args.var_mode == 'nf_gaussian':
             complexity = qj_entropy(args, hs, ks, args.betas).sum() - varphi_logprob(args,
@@ -150,7 +155,7 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-    return elbo, elbo_loglik.mean(), complexity, elbo_loglik_val.mean()
+    return elbo_loglik.mean(), logprior.mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -224,6 +229,7 @@ def main():
 
     elif args.var_mode == 'mf_gaussian':
 
+        print(args)
         net = train_pyvarinf(args)
         elbo, _, _ = evaluate_pyvarinf(net, args, R=10)
 

@@ -125,6 +125,8 @@ def get_dataset_by_id(args):
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
         X_val = m.sample(torch.Size([args.sample_size]))
+        mean = torch.matmul(torch.matmul(X_val, args.a_params), args.b_params)
+        y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
         y_val = y_rv.sample()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 

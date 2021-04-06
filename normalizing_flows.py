@@ -33,6 +33,7 @@ class FCNN(nn.Module):
         #     x=layer(x)
 
 
+# TODO: jacobian quickly becomes constant for different xis when layer is large
 class RealNVP(nn.Module):
     """
     Non-volume preserving flow.
@@ -76,8 +77,6 @@ class RealNVP(nn.Module):
         log_det = torch.sum(-s1_transformed, dim=1) + \
                   torch.sum(-s2_transformed, dim=1)
         return x, log_det
-
-
 
 
 class R_NVP(nn.Module):

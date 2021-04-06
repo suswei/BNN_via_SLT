@@ -1,14 +1,25 @@
 import torch
 import numpy as np
+from torch.distributions.normal import Normal
+
+
+def q_entropy_sample(args, xis):
+    if args.var_mode == 'nf_gaussian':
+        q_rv = Normal(0, 1)
+        return q_rv.log_prob(xis).sum(dim=1).mean()
 
 # q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
-def qj_entropy(args, hs, ks, betas):
+def qj_entropy(args):
 
     if args.var_mode == 'nf_gamma':
-        lmbda = (hs+1)/(2*ks)
-        logz = qj_gengamma_lognorm(hs, ks, betas)
-        return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+        hs = args.hs
+        ks = args.ks
+        betas = args.betas
+        lmbdas = (hs+1)/(2*ks)
+        # logz = qj_gengamma_lognorm(hs, ks, betas)
+        # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+        return -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) - lmbdas + (lmbdas - 2*ks)*torch.digamma(lmbdas)
     elif args.var_mode == 'nf_gaussian':
 
         stds = 1 # TODO: should allow custom mean/std for nf_gaussian
