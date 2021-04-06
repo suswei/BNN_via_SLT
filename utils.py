@@ -16,9 +16,10 @@ def qj_entropy(args):
         hs = args.hs
         ks = args.ks
         betas = args.betas
-        lmbda = (hs+1)/(2*ks)
-        logz = qj_gengamma_lognorm(hs, ks, betas)
-        return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+        lmbdas = (hs+1)/(2*ks)
+        # logz = qj_gengamma_lognorm(hs, ks, betas)
+        # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+        return -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) - lmbdas + (lmbdas - 2*ks)*torch.digamma(lmbdas)
     elif args.var_mode == 'nf_gaussian':
 
         stds = 1 # TODO: should allow custom mean/std for nf_gaussian
