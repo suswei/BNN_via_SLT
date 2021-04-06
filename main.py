@@ -2,6 +2,7 @@ import os
 import argparse
 from torch.distributions.gamma import Gamma
 import numpy as np
+from scipy import stats
 
 import custom_lr_scheduler
 from dataset_factory import *
@@ -88,10 +89,10 @@ def train(args):
 
         if epoch % args.display_interval == 0:
             elbo_loglik, logprior, log_jacobians, elbo_loglik_val = evaluate(resolution_network, args, R=1)
-            complexity = args.qentropy - logprior.mean() - log_jacobians.mean()
+            complexity = qj_entropy(args).sum() - logprior.mean() - log_jacobians.mean()
             elbo = elbo_loglik.mean() - complexity
             print('epoch {}: loss {}, nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
-                  .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, args.qentropy, logprior.mean(), log_jacobians.mean()))
+                  .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, qj_entropy(args).sum(), logprior.mean(), log_jacobians.mean()))
 
             scheduler.step(-elbo)
 
@@ -111,7 +112,7 @@ def evaluate(resolution_network, args, R):
         xis = sample_q(args, R, exact=True)
         thetas, log_jacobians = resolution_network(xis)
         logprior = log_prior(args, thetas)
-        complexity = args.qentropy - logprior.mean() - log_jacobians.mean()
+        complexity = qj_entropy(args).sum() - logprior.mean() - log_jacobians.mean()
 
         # q_entropy_sample(args, xis)
 
@@ -177,7 +178,7 @@ def main():
 
     get_dataset_by_id(args)
     args.prior_var = 1/args.H
-    # args.prior_var = 1
+    # args.prior_var = 1e-2
 
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
@@ -187,27 +188,39 @@ def main():
 
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        args.lmbdas = torch.ones(args.w_dim, 1)
+        # args.lmbdas[0] = args.lmbda_star
 
         args.ks = args.k*torch.ones(args.w_dim, 1)
-
-        # args.betas = (torch.exp(torch.lgamma(args.lmbdas))/(2*args.ks))**(1/args.lmbdas) # designed to make normalizing constant of q_j = 1
-        args.betas = torch.ones(args.w_dim, 1)
-        args.betas[0] = args.sample_size
-
         args.hs = args.lmbdas*2*args.ks-1
 
+        # args.betas = torch.exp(2*args.ks* (-args.hs*torch.digamma(args.lmbdas)/(2*args.ks) + args.lmbdas + torch.lgamma(args.lmbdas) - torch.log(2*args.ks) - args.w_dim) ) # designed to make normalizing constant of q_j = 1
+        args.betas = torch.ones(args.w_dim, 1)
+
+
+        qj_entropy(args).sum()
         print(args)
 
-        args.qentropy = qj_entropy(args).sum()
 
         net = train(args)
-        elbo_loglik, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=1000)
-        elbo = elbo_loglik.mean() - (args.qentropy-logprior.mean()-log_jacobians.mean())
+        elbo_loglik, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
+        elbo = elbo_loglik.mean() - (qj_entropy(args).sum()-logprior.mean()-log_jacobians.mean())
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
         print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
+
+        # i = 0
+        # metric = []
+        # for n in args.ns:
+        #     args.betas[0] = n
+        #     args.train_loader = args.datasets[i]
+        #     elbo_loglik, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=10)
+        #     complexity = qj_entropy(args).sum() - logprior - log_jacobians
+        #     metric+= [elbo_loglik - complexity +args.nSns[i]]
+        #     i+=1
+        # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
+        # print('est lmbda {} R2 {}'.format(-slope, r_value))
 
     elif args.var_mode == 'mf_gaussian':
 

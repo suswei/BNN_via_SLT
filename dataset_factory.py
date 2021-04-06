@@ -77,20 +77,20 @@ def get_dataset_by_id(args):
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 
 
-        # # create smaller datasets
-        # ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
-        # args.datasets = []
-        # args.ns = ns
-        # args.nSns = []
-        # for n in ns:
-        #     X = m.sample(torch.Size([n]))
-        #     y_rv = Normal(0.0, 1)
-        #     y = y_rv.sample(torch.Size([n, 1]))
-        #     args.nSns += [- y_rv.log_prob(y).sum()]
-        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        # args.ns += [args.sample_size]
-        # args.nSns += [args.nSn]
-        # args.datasets += [args.train_loader]
+        # create smaller datasets
+        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
+        args.datasets = []
+        args.ns = ns
+        args.nSns = []
+        for n in ns:
+            X = m.sample(torch.Size([n]))
+            y_rv = Normal(0.0, 1)
+            y = y_rv.sample(torch.Size([n, 1]))
+            args.nSns += [- y_rv.log_prob(y).sum()]
+            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        args.ns += [args.sample_size]
+        args.nSns += [args.nSn]
+        args.datasets += [args.train_loader]
 
     # multivariate input x, Gaussian
     # multivariate output y (dim = args.H) is normal with variance 1
@@ -132,19 +132,20 @@ def get_dataset_by_id(args):
 
         # create smaller datasets
         # ns = get_ns(args.sample_size)
-        # args.datasets = []
-        # args.ns = ns
-        # args.nSns = []
-        # for n in ns:
-        #     X = m.sample(torch.Size([n]))
-        #     mean = torch.matmul(torch.matmul(X, args.a_params), args.b_params)
-        #     y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
-        #     y = y_rv.sample()
-        #     args.nSns += [- y_rv.log_prob(y).sum()]
-        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        # args.ns += [args.sample_size]
-        # args.nSns += [args.nSn]
-        # args.datasets += [args.train_loader]
+        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
+        args.datasets = []
+        args.ns = ns
+        args.nSns = []
+        for n in ns:
+            X = m.sample(torch.Size([n]))
+            mean = torch.matmul(torch.matmul(X, args.a_params), args.b_params)
+            y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
+            y = y_rv.sample()
+            args.nSns += [- y_rv.log_prob(y).sum()]
+            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        args.ns += [args.sample_size]
+        args.nSns += [args.nSn]
+        args.datasets += [args.train_loader]
 
     else:
         print('Not a valid dataset name. See options in dataset-factory')

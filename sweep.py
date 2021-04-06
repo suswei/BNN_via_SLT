@@ -56,6 +56,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--dataset %s "
+              "--epochs 5000 "
               "--sample_size %s "
               "--seed %s "
               "--H %s "
