@@ -47,10 +47,10 @@ class RealNVP(nn.Module):
         self.t2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
         self.s2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
 
-        blah = torch.randint(40, 50, (dim, 1), dtype=torch.float32) + torch.rand(dim, 1)
-        self.lmbdas = torch.nn.Parameter(blah, requires_grad=True)
-        blah = torch.randint(10, 20, (dim, 1),dtype=torch.float32) + torch.rand(dim,1)
-        self.ks = torch.nn.Parameter(blah, requires_grad=True)
+        lmbdas = torch.randint(1325, 1326, (dim, 1), dtype=torch.float32) + torch.rand(dim, 1)
+        self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=True)
+        ks = torch.randint(1, 2, (dim, 1),dtype=torch.float32) + torch.rand(dim,1)
+        self.ks = torch.nn.Parameter(ks, requires_grad=True)
 
     def forward(self, x):
         lower, upper = x[:,:self.dim // 2], x[:,self.dim // 2:]
