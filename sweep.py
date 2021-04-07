@@ -6,8 +6,8 @@ import numpy as np
 
 def set_sweep_config():
 
-    tanh_Hs = [10000, 12100, 14400]
-    rr_Hs = [100, 110, 120]
+    tanh_Hs = [6400]
+    rr_Hs = [80]
     ns = [int(round(np.exp(4)))*20, int(round(np.exp(5)))*20, int(round(np.exp(6)))*20,
           int(round(np.exp(7)))*20]
     ns = [5000]
@@ -57,6 +57,7 @@ def main(taskid):
     os.system("python3 main.py "
               "--dataset %s "
               "--epochs 5000 "
+              "--prior gmm "
               "--sample_size %s "
               "--seed %s "
               "--H %s "

@@ -3,6 +3,7 @@ import argparse
 from torch.distributions.gamma import Gamma
 import numpy as np
 from scipy import stats
+import torch.distributions as D
 
 import custom_lr_scheduler
 from dataset_factory import *
@@ -12,19 +13,27 @@ from utils import *
 from torch.distributions.normal import Normal
 
 
-# TODO: implement mixture prior
+# TODO: implement mixture prior, log uniform prior, horseshoe prior
 # evaluate log varphi(theta), returns vector
 def log_prior(args, thetas):
 
-    # if args.prior == 'gaussian':
+    if args.prior == 'gaussian':
     # varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
-    return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
-           - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
-           - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
-    # elif args.prior == 'uniform':
-    #     return np.log(1/5)*torch.ones(args.w_dim,1)
+        return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
+               - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
+               - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var) #TODO: consider matching mean to gengamma
+    elif args.prior == 'logunif':
+        a,b = 0.1,5
+        prob = (thetas*np.log(b/a))**(-1)
+        return torch.log(prob)
+    elif args.prior == 'gmm':
+        # mix = D.Categorical(torch.ones(2, ))
+        mix = D.Categorical(torch.Tensor([1/2, 1/2]))
+        comp = D.Independent(D.Normal(torch.zeros(2, args.w_dim), torch.cat((1e-7*torch.ones(1,args.w_dim),4*torch.ones(1,args.w_dim)),0)), 1)
+        gmm = D.MixtureSameFamily(mix, comp)
+        return gmm.log_prob(thetas)
 
-
+# TODO: implement student t
 def sample_q(args, R, exact=True):
 
     if args.var_mode == 'nf_gamma':
@@ -55,7 +64,6 @@ def train(args):
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
-        inv_temp = min(1, 0.01 + epoch / args.epochs)
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
@@ -73,7 +81,9 @@ def train(args):
 
             # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi)))
             # complexity = args.qentropy - log_prior(args, thetas).mean() - log_jacobians.mean()
-            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()
+            complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
+            # print('R=1 sampled q_entropy {}'.format(q_entropy_sample(args, xis)))
+            # qj_entropy(args).sum()
 
             # if args.var_mode == 'nf_gaussian':
             #     complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
@@ -81,7 +91,7 @@ def train(args):
             # elbo = loglik_elbo_vec.mean() - complexity/args.sample_size
             elbo = loglik_elbo_vec.sum() - pi*complexity # section 3.4 of https://arxiv.org/pdf/1505.05424.pdf
 
-            # running_loss += -loglik_elbo_vec.mean() * args.batch_size / args.sample_size + complexity/args.sample_size
+            running_loss += -elbo.item()
 
             loss = -elbo
             loss.backward()
@@ -94,11 +104,11 @@ def train(args):
             print('epoch {}: loss {}, nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, qj_entropy(args).sum(), logprior.mean(), log_jacobians.mean()))
 
-            scheduler.step(-elbo)
-
-            if scheduler.has_convergence_been_reached():
-                print('INFO: Converence has been reached. Stopping iterations.')
-                break
+        scheduler.step(running_loss)
+        #
+        # if scheduler.has_convergence_been_reached():
+        #     print('INFO: Converence has been reached. Stopping iterations.')
+        #     break
 
     return resolution_network
 
@@ -146,6 +156,8 @@ def main():
     parser.add_argument('--sample_size', type=int, default=5000,
                         help='sample size of synthetic dataset')
 
+    parser.add_argument('--prior', type=str)
+
     parser.add_argument('--prior_var', type=float, default=1e-3, metavar='N')
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
@@ -177,8 +189,6 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
-    args.prior_var = 1/args.H
-    # args.prior_var = 1e-2
 
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
@@ -189,16 +199,15 @@ def main():
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
         args.lmbdas = torch.ones(args.w_dim, 1)
-        # args.lmbdas[0] = args.lmbda_star
+        args.lmbdas[0] = args.lmbda_star
 
         args.ks = args.k*torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
 
         # args.betas = torch.exp(2*args.ks* (-args.hs*torch.digamma(args.lmbdas)/(2*args.ks) + args.lmbdas + torch.lgamma(args.lmbdas) - torch.log(2*args.ks) - args.w_dim) ) # designed to make normalizing constant of q_j = 1
         args.betas = torch.ones(args.w_dim, 1)
+        args.betas[0]=args.sample_size
 
-
-        qj_entropy(args).sum()
         print(args)
 
 
