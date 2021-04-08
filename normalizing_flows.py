@@ -49,6 +49,7 @@ class RealNVP(nn.Module):
 
     def forward(self, x):
         lower, upper = x[:,:self.dim // 2], x[:,self.dim // 2:]
+
         t1_transformed = self.t1(lower)
         s1_transformed = self.s1(lower)
         upper = t1_transformed + upper * torch.exp(s1_transformed)
@@ -108,7 +109,7 @@ class R_NVP(nn.Module):
         base_mu, base_cov = torch.zeros(d), torch.eye(d)
         self.base_dist = MultivariateNormal(base_mu, base_cov)
 
-    def forward(self, x, flip=True):
+    def forward(self, x, flip=False):
         x1, x2 = x[:, :self.k], x[:, self.k:]
 
         if flip:

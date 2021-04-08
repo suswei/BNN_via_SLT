@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from torch.distributions.normal import Normal
 
-
 def q_entropy_sample(args, xis):
     if args.var_mode == 'nf_gaussian':
         q_rv = Normal(0, 1)
@@ -57,4 +56,3 @@ def gamma_icdf(shape, rate, args):
         if ((shape+torch.sqrt(shape)*z)<0).sum() >0:
             print('warning xi generated negative')
         return (shape+torch.sqrt(shape)*z)/rate
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="nf_gaussian_vs_gamma"
+#SBATCH --job-name="rr"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-2:0:00
 
 # Batch arrays
-#SBATCH --array=0-3
+#SBATCH --array=0-20
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
