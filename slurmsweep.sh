@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="rr"
+#SBATCH --job-name="stacy"
 #SBATCH -p physical
 
 #SBATCH --mem=1G

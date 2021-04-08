@@ -204,16 +204,13 @@ def main():
 
         # TODO: currently running nf_gamma with oracle lmbda value
         # args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
 
-        args.ks = args.k*torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
 
-        if args.beta_mode == 'lmbda_star':
-            args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
-        else:
-            args.betas = torch.ones(args.w_dim, 1)
-        args.betas[0] = args.sample_size
+
+        args.betas = 0.5*torch.ones(args.w_dim, 1)
 
         print(args)
 

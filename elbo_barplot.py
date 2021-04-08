@@ -78,7 +78,7 @@ def main():
 
         H = args.Hs[i]
 
-        for method in ['nf_gamma','truth']:
+        for method in ['nf_gaussian','nf_gamma','truth']:
 
             for seed in [1,2,3,4,5]:
 

@@ -7,7 +7,6 @@ import numpy as np
 def set_sweep_config():
 
     tanh_Hs = [6400, 8100, 10000]
-
     rr_Hs = [80, 90, 100]
 
     ns = [5000]
@@ -54,7 +53,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = '{}_{}_n{}_H{}_seed{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior_var'])
+    path = 'stacy/{}_{}_n{}_H{}_seed{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior_var'])
 
     os.system("python3 main.py "
               "--dataset %s "
@@ -65,8 +64,6 @@ def main(taskid):
               "--seed %s "
               "--H %s "
               "--var_mode %s "
-              "--lmbda_star 1 "
-              "--k 0.5 "
               "--path %s"
               % (temp['dataset'], temp['prior_var'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], path))
 
