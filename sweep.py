@@ -6,12 +6,14 @@ import numpy as np
 
 def set_sweep_config():
 
-    tanh_Hs = [6400]
+    tanh_Hs = [6400, 8100, 10000]
+    tanh_ls = [10, 100, 500]
+
     rr_Hs = [80, 90, 100]
-    ns = [5000]
-    seeds = [1]
     rr_ls = [10, 100, 500]
-    beta_modes = ['lmbda_star']
+
+    ns = [5000]
+    seeds = [1,2,3,4,5]
     priorvars = [1, 1e-2, 1e-4]
 
     sweep_params = {'rr_Hs': rr_Hs, 'tanh_Hs': tanh_Hs, 'seeds': seeds}
@@ -20,15 +22,17 @@ def set_sweep_config():
 
     ####################################################################################################
 
-    # hyperparameter_config = {
-    #     'H': tanh_Hs,
-    #     'seed': seeds,
-    #     'dataset': ['tanh'],
-    #     'var_mode': var_modes,
-    #     'n': ns
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    hyperparameter_config = {
+        'H': tanh_Hs,
+        'seed': seeds,
+        'dataset': ['tanh'],
+        'var_mode': ['nf_gamma'],
+        'n': ns,
+        'prior_var': priorvars,
+        'lmbda_star': tanh_ls,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 
     ####################################################################################################
@@ -41,11 +45,25 @@ def set_sweep_config():
         'n': ns,
         'prior_var': priorvars,
         'lmbda_star': rr_ls,
-        'beta_mode': beta_modes,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
+    ####################################################################################################
+
+    hyperparameter_config = {
+        'H': tanh_Hs,
+        'seed': seeds,
+        'dataset': ['tanh'],
+        'var_mode': ['nf_gaussian'],
+        'n': ns,
+        'prior_var': priorvars,
+        'lmbda_star': [20], #NA
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    ####################################################################################################
 
     hyperparameter_config = {
         'H': rr_Hs,
@@ -54,8 +72,6 @@ def set_sweep_config():
         'var_mode': ['nf_gaussian'],
         'n': ns,
         'prior_var': priorvars,
-        'lmbda_star': [20], #NA
-        'beta_mode': ['ones'] #NA
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -72,7 +88,7 @@ def main(taskid):
     if temp['var_mode'] == 'nf_gaussian':
         path = '{}_{}_n{}_H{}_seed{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior_var'])
     else:
-        path = '{}_{}_n{}_H{}_seed{}_l{}_betamode{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'],temp['lmbda_star'],temp['beta_mode'], temp['prior_var'])
+        path = '{}_{}_n{}_H{}_seed{}_l{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'],temp['lmbda_star'], temp['prior_var'])
 
     os.system("python3 main.py "
               "--dataset %s "
@@ -83,10 +99,9 @@ def main(taskid):
               "--seed %s "
               "--H %s "
               "--var_mode %s "
-              "--beta_mode %s "
               "--lmbda_star %s "
               "--path %s"
-              % (temp['dataset'], temp['prior_var'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], temp['beta_mode'], temp['lmbda_star'], path))
+              % (temp['dataset'], temp['prior_var'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], temp['lmbda_star'], path))
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ def log_prior(args, thetas):
     # varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
         return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
                - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
-               - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var) #TODO: consider matching mean to gengamma
+               - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
     elif args.prior == 'logunif':
         a,b = 0.1,5
         prob = (thetas*np.log(b/a))**(-1)
@@ -80,21 +80,13 @@ def train(args):
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)
 
-            # E_q 1/m \sum_i=1^m p(y_i |x_i , g(\xi))
+            # E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             loglik_elbo_vec = loglik(thetas, data, target, args)
 
-            # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi)))
-            # complexity = args.qentropy - log_prior(args, thetas).mean() - log_jacobians.mean()
+            # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi))) |g'(\xi)|
             complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
-            # print('R=1 sampled q_entropy {}'.format(q_entropy_sample(args, xis)))
-            # qj_entropy(args).sum()
 
-            # if args.var_mode == 'nf_gaussian':
-            #     complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
-
-            # elbo = loglik_elbo_vec.mean() - complexity/args.sample_size
-            # section 3.4 of https://arxiv.org/pdf/1505.05424.pdf
-            elbo = loglik_elbo_vec.sum() - complexity
+            elbo = loglik_elbo_vec.sum() - complexity/args.sample_size*args.batch_size
             running_loss += -elbo.item()
 
             loss = -elbo
@@ -134,7 +126,6 @@ def evaluate(resolution_network, args, R):
         # # plt.plot(theta1,theta2,'.')
         # plt.show()
         logprior = log_prior(args, thetas)
-        # complexity = qj_entropy(args).sum() - logprior.mean() - log_jacobians.mean()
         ent = q_entropy_sample(args, xis)
         complexity = ent - logprior.mean() - log_jacobians.mean()
 
@@ -200,7 +191,7 @@ def main():
 
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
 
-    parser.add_argument('--beta_mode', type=str, choices=['lmbda_star','ones'])
+    parser.add_argument('--beta_mode', type=str, default='lmbda_star', choices=['lmbda_star','ones'])
 
     args = parser.parse_args()
 
@@ -213,13 +204,11 @@ def main():
 
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        # args.lmbdas = torch.ones(args.w_dim, 1)
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
 
         args.ks = args.k*torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
 
-        # args.betas = torch.exp(2*args.ks* (-args.hs*torch.digamma(args.lmbdas)/(2*args.ks) + args.lmbdas + torch.lgamma(args.lmbdas) - torch.log(2*args.ks) - args.w_dim) ) # designed to make normalizing constant of q_j = 1
         if args.beta_mode == 'lmbda_star':
             args.betas = args.lmbda_star*torch.ones(args.w_dim, 1)
         else:
@@ -227,7 +216,6 @@ def main():
         args.betas[0] = args.sample_size
 
         print(args)
-
 
         net = train(args)
         elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
