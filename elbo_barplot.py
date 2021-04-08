@@ -71,31 +71,35 @@ def main():
     #
     # tuned_lmbdas = get_best_lmbda(args)
 
+    lmbda_star = 10
+
     for i in range(len(args.Hs)):
 
         H = args.Hs[i]
 
         for method in ['nf_gaussian','nf_gamma','truth']:
 
-            for seed in [1]:
+            for seed in [1,2,3,4,5]:
 
-                Hs_list += ['{}'.format(H)]
-                if method == 'nf_gaussian':
-                    method_list += ['nfgauss']
-                elif method == 'nf_gamma':
-                    method_list += ['nfgamma']
-                else:
-                    method_list += [method]
-                seed_list += ['{}'.format(seed)]
+                for prior_var in [1, 1e-2, 1e-4]:
 
-                if method == 'truth':
+                    Hs_list += ['{}'.format(H)]
+                    if method == 'nf_gaussian':
+                        method_list += ['nfgauss']
+                    elif method == 'nf_gamma':
+                        method_list += ['nfgamma']
+                    else:
+                        method_list += [method]
+                    seed_list += ['{}'.format(seed)]
 
-                    path = 'nf_gaussian_{}_n5000_H{}_seed{}'.format(args.dataset, H, seed)
-                    ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
-                else:
-                    path = '{}_{}_n5000_H{}_seed{}'.format(method, args.dataset, H, seed)
-                    ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
-                                + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
+                    if method == 'truth':
+
+                        path = 'nf_gaussian_{}_n5000_H{}_seed{}_priorvar{}'.format(args.dataset, H, seed, prior_var)
+                        ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
+                    else:
+                        path = '{}_{}_n5000_H{}_seed{}_l{}_priorvar{}'.format(method, args.dataset, H,seed, lmbda_star, prior_var)
+                        ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
+                                    + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
 
     method_list = pd.Series(method_list, dtype="category")
     seed_list = pd.Series(seed_list, dtype="category")
