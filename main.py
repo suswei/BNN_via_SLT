@@ -203,7 +203,7 @@ def main():
     if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian':
 
         # TODO: currently running nf_gamma with oracle lmbda value
-        args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
+        # args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
         args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
 
         args.ks = args.k*torch.ones(args.w_dim, 1)

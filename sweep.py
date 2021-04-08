@@ -7,10 +7,8 @@ import numpy as np
 def set_sweep_config():
 
     tanh_Hs = [6400, 8100, 10000]
-    tanh_ls = [10, 100, 500]
 
     rr_Hs = [80, 90, 100]
-    rr_ls = [10, 100, 500]
 
     ns = [5000]
     seeds = [1,2,3,4,5]
@@ -26,10 +24,9 @@ def set_sweep_config():
         'H': tanh_Hs,
         'seed': seeds,
         'dataset': ['tanh'],
-        'var_mode': ['nf_gamma'],
+        'var_mode': ['nf_gamma','nf_gaussian'],
         'n': ns,
         'prior_var': priorvars,
-        'lmbda_star': tanh_ls,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -41,35 +38,7 @@ def set_sweep_config():
         'H': rr_Hs,
         'seed': seeds,
         'dataset': ['reducedrank'],
-        'var_mode': ['nf_gamma'],
-        'n': ns,
-        'prior_var': priorvars,
-        'lmbda_star': rr_ls,
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-    ####################################################################################################
-
-    hyperparameter_config = {
-        'H': tanh_Hs,
-        'seed': seeds,
-        'dataset': ['tanh'],
-        'var_mode': ['nf_gaussian'],
-        'n': ns,
-        'prior_var': priorvars,
-        'lmbda_star': [20], #NA
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-    ####################################################################################################
-
-    hyperparameter_config = {
-        'H': rr_Hs,
-        'seed': seeds,
-        'dataset': ['reducedrank'],
-        'var_mode': ['nf_gaussian'],
+        'var_mode': ['nf_gamma','nf_gaussian'],
         'n': ns,
         'prior_var': priorvars,
     }
@@ -85,10 +54,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    if temp['var_mode'] == 'nf_gaussian':
-        path = '{}_{}_n{}_H{}_seed{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior_var'])
-    else:
-        path = '{}_{}_n{}_H{}_seed{}_l{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'],temp['lmbda_star'], temp['prior_var'])
+    path = '{}_{}_n{}_H{}_seed{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior_var'])
 
     os.system("python3 main.py "
               "--dataset %s "
@@ -99,9 +65,10 @@ def main(taskid):
               "--seed %s "
               "--H %s "
               "--var_mode %s "
-              "--lmbda_star %s "
+              "--lmbda_star 1 "
+              "--k 0.5 "
               "--path %s"
-              % (temp['dataset'], temp['prior_var'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], temp['lmbda_star'], path))
+              % (temp['dataset'], temp['prior_var'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], path))
 
 
 if __name__ == "__main__":
