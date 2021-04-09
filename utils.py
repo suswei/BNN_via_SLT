@@ -3,16 +3,38 @@ import numpy as np
 from torch.distributions.normal import Normal
 
 def q_entropy_sample(args, xis):
+
     if args.var_mode == 'nf_gaussian':
+
         q_rv = Normal(0, 1)
         return q_rv.log_prob(xis).sum(dim=1).mean()
+
     elif args.var_mode == 'nf_gamma':
+
         R = xis.shape[0]
         hs = args.hs.repeat(1,R).T
         betas = args.betas.repeat(1,R).T
         ks = args.ks.repeat(1,R).T
-
         return (hs*torch.log(xis)-betas*(xis**(2*ks))).mean(dim=0).sum() - qj_gengamma_lognorm(args.hs, args.ks, args.betas).sum()
+
+    elif args.var_mode == 'nf_gammatrunc':
+
+        ent = 0.0
+        for dim in range(args.w_dim):
+            ent += uni_trunc_gamma_entropy(args.betas[dim], args.lmbdas[dim], 1, xis[:, dim]) #TODO: allow custom upper limit
+        return ent
+
+
+# calculate entropy of univariate truncated gamma given sample of xi
+# q(\xi) \propto \xi^{shape-1} exp(-rate \xi) 1(\xi \in [0,upper])
+def uni_trunc_gamma_entropy(rate, shape, upper, xis):
+
+    if torch.isinf(shape):
+        entropy = -torch.log(upper)
+    else:
+        entropy = torch.log(trunc_gamma_pdf(xis, rate, shape, upper)).mean()
+    return entropy
+
 
 # q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
@@ -56,3 +78,18 @@ def gamma_icdf(shape, rate, args):
         if ((shape+torch.sqrt(shape)*z)<0).sum() >0:
             print('warning xi generated negative')
         return (shape+torch.sqrt(shape)*z)/rate
+
+
+# inverse cdf of gamma truncated to [0,b]
+def trunc_gamma_icdf(u, upper, shape, rate):
+    return gamma_icdf(u*torch.igamma(shape, rate*upper), shape, rate)
+
+
+# density of gamma truncated to [0,b]
+# http://www.m-hikari.com/astp/astp2013/astp21-24-2013/zaninettiASTP21-24-2013.pdf
+def trunc_gamma_pdf(xi, rate, shape, upper):
+    scale = 1/rate
+    num = ((xi/scale)**(shape-1))*torch.exp(-xi/scale)
+    G=torch.exp(torch.lgamma(1+shape))
+    denom_k = scale*G*torch.igammac(1+shape,torch.Tensor([0.0]))- scale*G*torch.igammac(1+shape,upper/scale) + torch.exp(-upper/scale)*(scale**(-shape+1))*(upper**shape)
+    return num*shape/denom_k

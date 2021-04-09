@@ -51,6 +51,10 @@ def sample_q(args, R, exact=True):
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             k = args.ks.repeat(1, R).T
             xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
+    elif args.var_mode == 'nf_gammatrunc':
+        u = torch.FloatTensor(R,1).uniform_(0)
+        xis = trunc_gamma_icdf(u, 1, args.lmbdas, args.betas)
+
     elif args.var_mode == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
 
@@ -129,8 +133,6 @@ def evaluate(resolution_network, args, R):
         ent = q_entropy_sample(args, xis)
         complexity = ent - logprior.mean() - log_jacobians.mean()
 
-        # q_entropy_sample(args, xis)
-
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             elbo_loglik += loglik(thetas, data, target, args).sum(dim=1)
@@ -156,14 +158,14 @@ def main():
                         help='dataset name from dataset_factory.py (default: )',
                         choices=['reducedrank', 'tanh'])
 
-    parser.add_argument('--H', type=int, default=2)
+    parser.add_argument('--H', type=int, default=1)
 
     parser.add_argument('--sample_size', type=int, default=5000,
                         help='sample size of synthetic dataset')
 
     parser.add_argument('--prior', type=str)
 
-    parser.add_argument('--prior_var', type=float, default=1e-3, metavar='N')
+    parser.add_argument('--prior_var', type=float, default=1e-2, metavar='N')
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
 
@@ -185,7 +187,7 @@ def main():
 
     parser.add_argument('--path', type=str)
 
-    parser.add_argument('--var_mode', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','mf_gaussian'])
+    parser.add_argument('--var_mode', type=str, default='nf_gammatrunc', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
 
     parser.add_argument('--display_interval',type=int,default=500)
 
@@ -200,7 +202,7 @@ def main():
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
-    if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian':
+    if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian' or args.var_mode == 'nf_gammatrunc':
 
         # TODO: currently running nf_gamma with oracle lmbda value
         # args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
