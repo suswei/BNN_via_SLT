@@ -37,38 +37,6 @@ def log_prior(args, thetas):
         return args.w_dim*np.log(1/4) # assuming [-2,2]^d prior
 
 
-# TODO: implement student t
-def sample_q(args, R, exact=True):
-
-    if args.var_mode == 'nf_gamma':
-        if exact:
-            m = Gamma(args.lmbdas, args.betas)
-            vs = m.sample(torch.Size([R])).squeeze(dim=2)
-            xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
-        else:
-            shape = args.lmbdas.repeat(1, R).T
-            rate = args.betas.repeat(1, R).T
-            vs = gamma_icdf(shape=shape, rate=rate, args=args)
-            k = args.ks.repeat(1, R).T
-            xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
-
-    elif args.var_mode == 'nf_gammatrunc':
-
-        for dim in range(args.w_dim):
-            if dim == 0:
-                u = torch.FloatTensor(R, 1).uniform_(0)
-                xis = trunc_gamma_icdf(u, 1, args.lmbdas[dim], args.betas[dim])
-            else:
-                u = torch.FloatTensor(R, 1).uniform_(0)
-                temp = trunc_gamma_icdf(u, 1, args.lmbdas[dim], args.betas[dim])
-
-                xis = torch.cat((xis, temp), dim=1)
-
-    elif args.var_mode == 'nf_gaussian':
-        xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
-
-    return xis
-
 
 def train(args):
 
@@ -215,15 +183,14 @@ def main():
 
         # TODO: currently running nf_gamma with oracle lmbda value
         args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
+        args.lmbdas = torch.ones(args.w_dim, 1)
 
         args.ks = torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
 
 
-        args.betas = torch.ones(args.w_dim, 1)
-        args.betas[0] = np.sqrt(args.sample_size)
-        args.betas[1] = np.sqrt(args.sample_size)
+        args.betas = np.sqrt(args.sample_size)*torch.ones(args.w_dim, 1)
+
 
         print(args)
 
