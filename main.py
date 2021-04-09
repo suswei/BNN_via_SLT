@@ -24,7 +24,7 @@ def log_prior(args, thetas):
                - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
                - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
     elif args.prior == 'logunif':
-        a,b = 0.1,5
+        a,b = 0.1 ,5
         prob = (thetas*np.log(b/a))**(-1)
         return torch.log(prob)
     elif args.prior == 'gmm':
@@ -35,8 +35,6 @@ def log_prior(args, thetas):
         return gmm.log_prob(thetas)
     elif args.prior == 'unif':
         return args.w_dim*np.log(1/4) # assuming [-2,2]^d prior
-
-
 
 def train(args):
 
@@ -97,7 +95,9 @@ def evaluate(resolution_network, args, R):
 
         xis = sample_q(args, R, exact=True)
         thetas, log_jacobians = resolution_network(xis)
+
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
+        print('xis min {} max {}'.format(xis.min(), xis.max()))
         # assuming xis \in [0,1]^d
         # theta1 = xis[:,0]
         # theta2 = 1.62167 / ((np.sqrt(2) * xis[:,1]) ** (-1) - 0.405963)
@@ -140,13 +140,13 @@ def main():
     parser.add_argument('--sample_size', type=int, default=5000,
                         help='sample size of synthetic dataset')
 
-    parser.add_argument('--prior', type=str, default='unif')
+    parser.add_argument('--prior', type=str, default='gaussian')
 
-    parser.add_argument('--prior_var', type=float, default=1e-2, metavar='N')
+    parser.add_argument('--prior_var', type=float, default=1e-1, metavar='N')
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
 
-    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=3000, metavar='N',
                         help='number of epochs to train (default: 200)')
 
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
@@ -155,6 +155,8 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=16)
 
     parser.add_argument('--nf_layers', type=int, default=20)
+
+    parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
 
     parser.add_argument('--lmbda_star', type=float, default=40, metavar='N',
                         help='?')
@@ -166,12 +168,11 @@ def main():
 
     parser.add_argument('--var_mode', type=str, default='nf_gammatrunc', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
 
-    parser.add_argument('--display_interval',type=int,default=10)
-
-    parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
+    parser.add_argument('--display_interval',type=int, default=100)
 
     parser.add_argument('--beta_mode', type=str, default='lmbda_star', choices=['lmbda_star','ones'])
 
+    parser.add_argument('--xi_upper', type=float, default = 1)
     args = parser.parse_args()
 
     get_dataset_by_id(args)
@@ -182,14 +183,11 @@ def main():
     if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian' or args.var_mode == 'nf_gammatrunc':
 
         # TODO: currently running nf_gamma with oracle lmbda value
-        args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
+        lmbda_star = get_lmbda([args.H], args.dataset)[0]
         args.lmbdas = torch.ones(args.w_dim, 1)
-
         args.ks = torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
-
-
-        args.betas = np.sqrt(args.sample_size)*torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
 
 
         print(args)

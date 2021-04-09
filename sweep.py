@@ -11,7 +11,7 @@ def set_sweep_config():
 
     ns = [5000]
     seeds = [1,2,3,4,5]
-    priorvars = [1, 1e-2, 1e-4]
+    priors = ['unif','gaussian']
 
     sweep_params = {'rr_Hs': rr_Hs, 'tanh_Hs': tanh_Hs, 'seeds': seeds}
     hyperparameter_experiments = []
@@ -23,9 +23,10 @@ def set_sweep_config():
         'H': tanh_Hs,
         'seed': seeds,
         'dataset': ['tanh'],
-        'var_mode': ['nf_gamma','nf_gaussian'],
+        'var_mode': ['nf_gammatrunc','nf_gaussian'],
         'n': ns,
-        'prior_var': priorvars,
+        'xi_upper': [4],
+        'prior': priors,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -37,9 +38,10 @@ def set_sweep_config():
         'H': rr_Hs,
         'seed': seeds,
         'dataset': ['reducedrank'],
-        'var_mode': ['nf_gamma','nf_gaussian'],
+        'var_mode': ['nf_gammatrunc','nf_gaussian'],
         'n': ns,
-        'prior_var': priorvars,
+        'xi_upper': [4],
+        'prior': priors,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -53,19 +55,21 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'stacy/{}_{}_n{}_H{}_seed{}_priorvar{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior_var'])
+    path = '{}_{}_n{}_H{}_seed{}_prior{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'], temp['prior'])
 
     os.system("python3 main.py "
               "--dataset %s "
               "--epochs 5000 "
-              "--prior gaussian "
-              "--prior_var %s "
+              "--prior %s "
               "--sample_size %s "
               "--seed %s "
               "--H %s "
               "--var_mode %s "
+              "--xi_upper %s "
               "--path %s"
-              % (temp['dataset'], temp['prior_var'], temp['n'], temp['seed'], temp['H'], temp['var_mode'], path))
+              % (temp['dataset'], temp['prior'],
+                 temp['n'], temp['seed'], temp['H'],
+                 temp['var_mode'], temp['xi_upper'], path))
 
 
 if __name__ == "__main__":

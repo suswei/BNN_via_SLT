@@ -23,7 +23,7 @@ def sample_q(args, R, exact=True):
         m = Gamma(args.lmbdas, args.betas)
         vs = m.sample(torch.Size([R])).squeeze(dim=2)
         xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
-        # TODO: need to check is in [0,1]
+        # TODO: need to check is in [0,args.xi_upper]
 
     elif args.var_mode == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
@@ -83,7 +83,7 @@ def qj_gengamma_lognorm(h, k, beta, args):
     if args.var_mode == 'nf_gamma':
         return G - torch.log(2*k) - lmbda*torch.log(beta)
     elif args.var_mode == 'nf_gammatrunc':
-        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.exp(G)-torch.igammac(lmbda,beta))
+        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.exp(G)-torch.igammac(lmbda,beta*(args.xi_upper**(2*k))))
 
 # generate gamma(shape,rate)
 def gamma_icdf(shape, rate, args):

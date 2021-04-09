@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="stacy"
+#SBATCH --job-name="trunc gamma"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-2:0:00
 
 # Batch arrays
-#SBATCH --array=0-179
+#SBATCH --array=0-119
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
