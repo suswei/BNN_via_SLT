@@ -2,7 +2,14 @@ import torch
 import numpy as np
 from torch.distributions.normal import Normal
 
+
 def q_entropy_sample(args, xis):
+    """
+
+    :param args:
+    :param xis: R by w_dim
+    :return: estimate of E_q log q
+    """
 
     if args.var_mode == 'nf_gaussian':
 
@@ -27,7 +34,7 @@ def q_entropy_sample(args, xis):
 
 # calculate entropy of univariate truncated gamma given sample of xi
 # q(\xi) \propto \xi^{shape-1} exp(-rate \xi) 1(\xi \in [0,upper])
-def uni_trunc_gamma_entropy(rate, shape, upper, xis):
+def uni_trunc_gamma_entropy(rate, shape, upper, xis): # TODO: Need truncated generalized gamma!!
 
     if torch.isinf(shape):
         entropy = -torch.log(upper)
@@ -61,24 +68,30 @@ def qj_gengamma_lognorm(h, k, beta):
     return G - torch.log(2*k) - lmbda*torch.log(beta)
 
 
-# generate gamma(shape,rate)
-def gamma_icdf(shape, rate, args):
-
-    R = rate.shape[0]
-    # TODO: add warning if not all entries in shape are the same
-    if shape[0,0] < 36.0: #u is unif 0,1
-        # inverse cdf of gamma with shape and rate
-        # using approximation in Knowles
-        u = torch.FloatTensor(R, args.w_dim).uniform_(0)
+# # generate gamma(shape,rate)
+# def gamma_icdf(shape, rate, args):
+#
+#     R = rate.shape[0]
+#     # TODO: add warning if not all entries in shape are the same
+#     if shape[0,0] < 36.0: #u is unif 0,1
+#         # inverse cdf of gamma with shape and rate
+#         # using approximation in Knowles
+#         u = torch.FloatTensor(R, args.w_dim).uniform_(0)
+#         g = torch.exp(torch.lgamma(shape))
+#         num = (u*shape*g)**(1/shape)
+#         return num/rate
+#     else: # here u is N(0,1)
+#         z = torch.FloatTensor(R, args.w_dim).normal_(mean=0,std=1)
+#         if ((shape+torch.sqrt(shape)*z)<0).sum() >0:
+#             print('warning xi generated negative')
+#         return (shape+torch.sqrt(shape)*z)/rate
+def gamma_icdf(u, shape, rate):
+    if shape<=1:
         g = torch.exp(torch.lgamma(shape))
         num = (u*shape*g)**(1/shape)
         return num/rate
-    else: # here u is N(0,1)
-        z = torch.FloatTensor(R, args.w_dim).normal_(mean=0,std=1)
-        if ((shape+torch.sqrt(shape)*z)<0).sum() >0:
-            print('warning xi generated negative')
-        return (shape+torch.sqrt(shape)*z)/rate
-
+    else:
+        return (shape+torch.sqrt(shape)*u)/rate
 
 # inverse cdf of gamma truncated to [0,b]
 def trunc_gamma_icdf(u, upper, shape, rate):
@@ -87,9 +100,17 @@ def trunc_gamma_icdf(u, upper, shape, rate):
 
 # density of gamma truncated to [0,b]
 # http://www.m-hikari.com/astp/astp2013/astp21-24-2013/zaninettiASTP21-24-2013.pdf
-def trunc_gamma_pdf(xi, rate, shape, upper):
+def trunc_gamma_pdf(xis, rate, shape, upper):
+    """
+
+    :param xi_j's: R by 1
+    :param rate: univariate
+    :param shape: univariate
+    :param upper: univariate
+    :return: q_j(xi_j1),...,q(xij_jR)
+    """
     scale = 1/rate
-    num = ((xi/scale)**(shape-1))*torch.exp(-xi/scale)
+    num = ((xis/scale)**(shape-1))*torch.exp(-xis/scale)
     G=torch.exp(torch.lgamma(1+shape))
     denom_k = scale*G*torch.igammac(1+shape,torch.Tensor([0.0]))- scale*G*torch.igammac(1+shape,upper/scale) + torch.exp(-upper/scale)*(scale**(-shape+1))*(upper**shape)
     return num*shape/denom_k

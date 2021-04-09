@@ -51,9 +51,18 @@ def sample_q(args, R, exact=True):
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             k = args.ks.repeat(1, R).T
             xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
+
     elif args.var_mode == 'nf_gammatrunc':
-        u = torch.FloatTensor(R,1).uniform_(0)
-        xis = trunc_gamma_icdf(u, 1, args.lmbdas, args.betas)
+
+        for dim in range(args.w_dim):
+            if dim == 0:
+                u = torch.FloatTensor(R, 1).uniform_(0)
+                xis = trunc_gamma_icdf(u, 1, args.lmbdas[dim], args.betas[dim])
+            else:
+                u = torch.FloatTensor(R, 1).uniform_(0)
+                temp = trunc_gamma_icdf(u, 1, args.lmbdas[dim], args.betas[dim])
+
+                xis = torch.cat((xis, temp), dim=1)
 
     elif args.var_mode == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
@@ -163,7 +172,7 @@ def main():
     parser.add_argument('--sample_size', type=int, default=5000,
                         help='sample size of synthetic dataset')
 
-    parser.add_argument('--prior', type=str)
+    parser.add_argument('--prior', type=str, default='unif')
 
     parser.add_argument('--prior_var', type=float, default=1e-2, metavar='N')
 
@@ -189,7 +198,7 @@ def main():
 
     parser.add_argument('--var_mode', type=str, default='nf_gammatrunc', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
 
-    parser.add_argument('--display_interval',type=int,default=500)
+    parser.add_argument('--display_interval',type=int,default=10)
 
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
 
@@ -205,14 +214,16 @@ def main():
     if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian' or args.var_mode == 'nf_gammatrunc':
 
         # TODO: currently running nf_gamma with oracle lmbda value
-        # args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
+        args.lmbda_star = get_lmbda([args.H], args.dataset)[0]
+        args.lmbdas = args.lmbda_star*torch.ones(args.w_dim, 1)
 
         args.ks = torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
 
 
-        args.betas = 0.5*torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
+        args.betas[0] = np.sqrt(args.sample_size)
+        args.betas[1] = np.sqrt(args.sample_size)
 
         print(args)
 
