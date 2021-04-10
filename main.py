@@ -21,6 +21,7 @@ def train(args):
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
 
+    elbo_hist = []
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
@@ -35,6 +36,8 @@ def train(args):
 
             # log_jacobians.mean() = E_q log |g'(xi)|
             thetas, log_jacobians = resolution_network(xis)
+            args.theta_lower = thetas.min().detach()
+            args.theta_upper = thetas.max().detach()
 
             # E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             loglik_elbo_vec = loglik(thetas, data, target, args)
@@ -51,10 +54,12 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(resolution_network, args, R=10)
+            elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
+                = evaluate(resolution_network, args, R=100)
             elbo = elbo_loglik.mean() - complexity
             print('epoch {}: loss {}, nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
+            elbo_hist.append(elbo)
 
         scheduler.step(running_loss)
         #
@@ -62,7 +67,7 @@ def train(args):
         #     print('INFO: Converence has been reached. Stopping iterations.')
         #     break
 
-    return resolution_network
+    return resolution_network, elbo_hist
 
 
 def evaluate(resolution_network, args, R):
@@ -85,6 +90,8 @@ def evaluate(resolution_network, args, R):
         # # plt.plot(theta1,theta2,'.')
         # plt.show()
 
+        args.theta_lower = thetas.min()
+        args.theta_upper = thetas.max()
         logprior = log_prior(args, thetas)
 
         args.xi_upper = xis.max()
@@ -152,7 +159,7 @@ def main():
 
     parser.add_argument('--display_interval',type=int, default=100)
 
-    parser.add_argument('--beta_mode', type=str, default='lmbda_star', choices=['lmbda_star','ones'])
+    parser.add_argument('--varparams_mode', type = str, default='abs_gauss')
 
     args = parser.parse_args()
 
@@ -163,18 +170,31 @@ def main():
 
     if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian' or args.var_mode == 'nf_gammatrunc':
 
-        # TODO: currently running nf_gamma with oracle lmbda value
-        lmbda_star = get_lmbda([args.H], args.dataset)[0]
-        args.lmbdas = torch.ones(args.w_dim, 1)
-        args.ks = torch.ones(args.w_dim, 1)
-        args.hs = args.lmbdas*2*args.ks-1
-        args.betas = torch.ones(args.w_dim, 1)
-        args.betas[0] = args.sample_size
-
-
+        if args.varparams_mode == 'abs_gauss':
+            args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
+            args.ks = torch.ones(args.w_dim, 1)
+            args.hs = args.lmbdas*2*args.ks-1
+            args.betas = 0.5*torch.ones(args.w_dim, 1)
+        elif args.varparams_mode == 'exp':
+            args.lmbdas = torch.ones(args.w_dim, 1)
+            args.ks = 0.5*torch.ones(args.w_dim, 1)
+            args.hs = args.lmbdas*2*args.ks-1
+            args.betas = torch.ones(args.w_dim, 1)
+        if args.varparams_mode == 'icml':
+            lmbda_star = get_lmbda([args.H], args.dataset)[0]
+            args.lmbdas = lmbda_star*torch.ones(args.w_dim, 1)
+            args.ks = torch.ones(args.w_dim, 1)
+            args.hs = args.lmbdas*2*args.ks-1
+            args.betas = lmbda_star*torch.ones(args.w_dim, 1)
+            args.betas[0]=args.sample_size
+        if args.varparams_mode == 'allones':
+            args.lmbdas = torch.ones(args.w_dim, 1)
+            args.ks = torch.ones(args.w_dim, 1)
+            args.hs = args.lmbdas*2*args.ks-1
+            args.betas = torch.ones(args.w_dim, 1)
         print(args)
 
-        net = train(args)
+        net, elbo_hist = train(args)
         elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
         elbo = elbo_loglik.mean() - complexity
 
@@ -208,7 +228,8 @@ def main():
 
     results_dict = {'elbo': elbo,
                     'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(
-                        np.log(args.sample_size))}
+                        np.log(args.sample_size)),
+                    'elbo_hist': elbo_hist}
 
     if args.path is not None:
         if not os.path.exists(args.path):

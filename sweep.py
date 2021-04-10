@@ -6,26 +6,31 @@ import numpy as np
 
 def set_sweep_config():
 
-    tanh_Hs = [64, 81, 100]
-    rr_Hs = [80, 90, 100]
-
-    ns = [5000]
-    seeds = [1, 2, 3, 4, 5]
-    priors = ['gaussian']
-
-    sweep_params = {'rr_Hs': rr_Hs, 'tanh_Hs': tanh_Hs, 'seeds': seeds}
     hyperparameter_experiments = []
-
 
     ####################################################################################################
 
     hyperparameter_config = {
-        'H': tanh_Hs,
-        'seed': seeds,
         'dataset': ['tanh'],
-        'var_mode': ['nf_gammatrunc','nf_gaussian'],
-        'n': ns,
-        'prior': priors,
+        'n': [5000],
+        'var_mode': ['nf_gammatrunc'],
+        'varparams_mode': ['abs_gauss','icml'],
+        'H': [64, 81, 100],
+        'seed': [1, 2, 3, 4, 5],
+        'prior': ['unif','gaussian'],
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+
+    hyperparameter_config = {
+        'dataset': ['tanh'],
+        'n': [5000],
+        'var_mode': ['nf_gaussian'],
+        'varparams_mode': ['abs_gauss'],  # NA
+        'H': [64, 81, 100],
+        'seed': [1, 2, 3, 4, 5],
+        'prior': ['unif', 'gaussian'],
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -45,30 +50,31 @@ def set_sweep_config():
     # keys, values = zip(*hyperparameter_config.items())
     # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    return sweep_params, hyperparameter_experiments
+    return hyperparameter_experiments
 
 
 def main(taskid):
 
-    _, hyperparameter_experiments = set_sweep_config()
+    hyperparameter_experiments = set_sweep_config()
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = '{}_{}_n{}_H{}_seed{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'])
+    path = '{}_{}_n{}_H{}_seed{}_prior{}_varparams{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'],temp['prior'], temp['varparams_mode'])
 
     os.system("python3 main.py "
               "--dataset %s "
-              "--epochs 5000 "
+              "--epochs 2000 "
               "--prior %s "
-              "--prior_var 1e-2 "
+              "--prior_var 1e-1 "
               "--sample_size %s "
               "--seed %s "
               "--H %s "
               "--var_mode %s "
+              "--varparams_mode %s "
               "--path %s"
               % (temp['dataset'], temp['prior'],
                  temp['n'], temp['seed'], temp['H'],
-                 temp['var_mode'], path))
+                 temp['var_mode'], temp['varparams_mode'], path))
 
 
 if __name__ == "__main__":

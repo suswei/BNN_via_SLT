@@ -25,7 +25,8 @@ def log_prior(args, thetas):
         gmm = D.MixtureSameFamily(mix, comp)
         return gmm.log_prob(thetas)
     elif args.prior == 'unif':
-        return args.w_dim*np.log(1/4) # assuming [-2,2]^d prior
+        return args.w_dim*np.log(1/(args.theta_upper-args.theta_lower)) # assuming [-2,2]^d prior
+
 
 def sample_q(args, R, exact=True):
 
@@ -54,7 +55,6 @@ def sample_q(args, R, exact=True):
     return xis
 
 
-
 def q_entropy_sample(args, xis):
     """
 
@@ -75,7 +75,6 @@ def q_entropy_sample(args, xis):
         betas = args.betas.repeat(1,R).T
         ks = args.ks.repeat(1,R).T
         return (hs*torch.log(xis)-betas*(xis**(2*ks))).mean(dim=0).sum() - qj_gengamma_lognorm(args.hs, args.ks, args.betas, args).sum()
-
 
 
 # q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
@@ -107,6 +106,7 @@ def qj_gengamma_lognorm(h, k, beta, args):
         return G - torch.log(2*k) - lmbda*torch.log(beta)
     elif args.var_mode == 'nf_gammatrunc':
         return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.exp(G)-torch.igammac(lmbda,beta*(args.xi_upper**(2*k))))
+
 
 # generate gamma(shape,rate)
 def gamma_icdf(shape, rate, args):
