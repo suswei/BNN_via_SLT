@@ -71,13 +71,11 @@ def main():
     #
     # tuned_lmbdas = get_best_lmbda(args)
 
-    prior_var = 1
-
     for i in range(len(args.Hs)):
 
         H = args.Hs[i]
 
-        for method in ['nf_gaussian','nf_gamma','truth']:
+        for method in ['nf_gaussian','nf_gammatrunc','truth']:
 
             for seed in [1,2,3,4,5]:
 
@@ -93,14 +91,14 @@ def main():
 
                 if method == 'truth':
 
-                    path = 'stacy/{}_{}_n5000_H{}_seed{}_priorvar{}'.format('nf_gamma', args.dataset, H,seed, prior_var)
+                    path = '{}_{}_n5000_H{}_seed{}'.format('nf_gammatrunc', args.dataset, H,seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
-                elif method == 'nf_gamma':
-                    path = 'stacy/{}_{}_n5000_H{}_seed{}_priorvar{}'.format(method, args.dataset, H,seed, prior_var)
+                elif method == 'nf_gammatrunc':
+                    path = '{}_{}_n5000_H{}_seed{}'.format(method, args.dataset, H,seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
                 elif method == 'nf_gaussian':
-                    path = 'stacy/{}_{}_n5000_H{}_seed{}_priorvar{}'.format(method, args.dataset, H, seed, prior_var)
+                    path = '{}_{}_n5000_H{}_seed{}'.format(method, args.dataset, H, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
 
@@ -115,7 +113,6 @@ def main():
     g = sns.barplot(x="$H$", y="ELBO $+ nS_n$",
                     hue="method",
                     data=summary_pd)
-    plt.title('prior var {}'.format(prior_var))
     hatches = ['/', '/', '/',
                '+', '+', '+',
                'x', 'x', 'x']

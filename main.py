@@ -3,7 +3,6 @@ import argparse
 from torch.distributions.gamma import Gamma
 import numpy as np
 from scipy import stats
-import torch.distributions as D
 
 import custom_lr_scheduler
 from dataset_factory import *
@@ -13,28 +12,6 @@ from utils import *
 from torch.distributions.normal import Normal
 from matplotlib import pyplot as plt
 
-
-# TODO: implement mixture prior, log uniform prior, horseshoe prior
-# evaluate log varphi(theta), returns vector
-def log_prior(args, thetas):
-
-    if args.prior == 'gaussian':
-    # varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
-        return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
-               - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
-               - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
-    elif args.prior == 'logunif':
-        a,b = 0.1 ,5
-        prob = (thetas*np.log(b/a))**(-1)
-        return torch.log(prob)
-    elif args.prior == 'gmm':
-        # mix = D.Categorical(torch.ones(2, ))
-        mix = D.Categorical(torch.Tensor([0.5, 0.5]))
-        comp = D.Independent(D.Normal(torch.zeros(2, args.w_dim), torch.cat((1e-2*torch.ones(1,args.w_dim),torch.ones(1,args.w_dim)),0)), 1)
-        gmm = D.MixtureSameFamily(mix, comp)
-        return gmm.log_prob(thetas)
-    elif args.prior == 'unif':
-        return args.w_dim*np.log(1/4) # assuming [-2,2]^d prior
 
 def train(args):
 
@@ -63,7 +40,8 @@ def train(args):
             loglik_elbo_vec = loglik(thetas, data, target, args)
 
             # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi))) |g'(\xi)|
-            complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
+            # complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
+            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean() # q_entropy doesn't affect optimization since we do not optimize over q's var params
 
             elbo = loglik_elbo_vec.sum() - complexity/args.sample_size*args.batch_size
             running_loss += -elbo.item()
@@ -73,7 +51,7 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(resolution_network, args, R=1)
+            elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(resolution_network, args, R=10)
             elbo = elbo_loglik.mean() - complexity
             print('epoch {}: loss {}, nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
@@ -106,8 +84,12 @@ def evaluate(resolution_network, args, R):
         # plt.plot(thetas[:, 1], thetas[:, 2],'r.')
         # # plt.plot(theta1,theta2,'.')
         # plt.show()
+
         logprior = log_prior(args, thetas)
+
+        args.xi_upper = xis.max()
         ent = q_entropy_sample(args, xis)
+
         complexity = ent - logprior.mean() - log_jacobians.mean()
 
         elbo_loglik = 0.0
@@ -172,7 +154,6 @@ def main():
 
     parser.add_argument('--beta_mode', type=str, default='lmbda_star', choices=['lmbda_star','ones'])
 
-    parser.add_argument('--xi_upper', type=float, default = 1)
     args = parser.parse_args()
 
     get_dataset_by_id(args)
@@ -188,6 +169,7 @@ def main():
         args.ks = torch.ones(args.w_dim, 1)
         args.hs = args.lmbdas*2*args.ks-1
         args.betas = torch.ones(args.w_dim, 1)
+        args.betas[0] = args.sample_size
 
 
         print(args)
