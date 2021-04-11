@@ -135,7 +135,7 @@ def main():
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
 
-    parser.add_argument('--epochs', type=int, default=3000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=2000, metavar='N',
                         help='number of epochs to train (default: 200)')
 
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
@@ -157,9 +157,9 @@ def main():
 
     parser.add_argument('--method', type=str, default='nf_gammatrunc', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
 
-    parser.add_argument('--display_interval',type=int, default=100)
+    parser.add_argument('--display_interval',type=int, default=10)
 
-    parser.add_argument('--varparams_mode', type = str, default='abs_gauss')
+    parser.add_argument('--varparams_mode', type=str, default='abs_gauss')
 
     args = parser.parse_args()
 
@@ -173,25 +173,23 @@ def main():
         if args.varparams_mode == 'abs_gauss':
             args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)
-            args.hs = args.lmbdas*2*args.ks-1
             args.betas = 0.5*torch.ones(args.w_dim, 1)
         elif args.varparams_mode == 'exp':
             args.lmbdas = torch.ones(args.w_dim, 1)
             args.ks = 0.5*torch.ones(args.w_dim, 1)
-            args.hs = args.lmbdas*2*args.ks-1
             args.betas = torch.ones(args.w_dim, 1)
-        if args.varparams_mode == 'icml':
+        elif args.varparams_mode == 'icml':
             lmbda_star = get_lmbda([args.H], args.dataset)[0]
             args.lmbdas = lmbda_star*torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)
-            args.hs = args.lmbdas*2*args.ks-1
             args.betas = lmbda_star*torch.ones(args.w_dim, 1)
             args.betas[0]=args.sample_size
-        if args.varparams_mode == 'allones':
+        elif args.varparams_mode == 'allones':
             args.lmbdas = torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)
-            args.hs = args.lmbdas*2*args.ks-1
             args.betas = torch.ones(args.w_dim, 1)
+        args.hs = args.lmbdas * 2 * args.ks - 1
+
         print(args)
 
         net, elbo_hist = train(args)
