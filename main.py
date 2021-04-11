@@ -155,7 +155,7 @@ def main():
 
     parser.add_argument('--path', type=str)
 
-    parser.add_argument('--var_mode', type=str, default='nf_gammatrunc', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
+    parser.add_argument('--method', type=str, default='nf_gammatrunc', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
 
     parser.add_argument('--display_interval',type=int, default=100)
 
@@ -168,7 +168,7 @@ def main():
     print(args.path)
     print('true rlct {}'.format(args.trueRLCT))
 
-    if args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gaussian' or args.var_mode == 'nf_gammatrunc':
+    if args.method == 'nf_gamma' or args.method == 'nf_gaussian' or args.method == 'nf_gammatrunc':
 
         if args.varparams_mode == 'abs_gauss':
             args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
@@ -214,7 +214,7 @@ def main():
         # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
         # print('est lmbda {} R2 {}'.format(-slope, r_value))
 
-    elif args.var_mode == 'mf_gaussian':
+    elif args.method == 'mf_gaussian':
 
         # TODO: might be out of date, especially w.r.t. prior
         print(args)

@@ -13,24 +13,11 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['tanh'],
         'n': [5000],
-        'var_mode': ['nf_gammatrunc'],
-        'varparams_mode': ['abs_gauss','icml'],
+        'method': ['nf_gammatrunc','nf_gamma'],
+        'varparams_mode': ['allones','exp','abs_gauss'],
         'H': [64, 81, 100],
         'seed': [1, 2, 3, 4, 5],
-        'prior': ['unif','gaussian'],
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-
-    hyperparameter_config = {
-        'dataset': ['tanh'],
-        'n': [5000],
-        'var_mode': ['nf_gaussian'],
-        'varparams_mode': ['abs_gauss'],  # NA
-        'H': [64, 81, 100],
-        'seed': [1, 2, 3, 4, 5],
-        'prior': ['unif', 'gaussian'],
+        'prior': ['gaussian'],
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -42,7 +29,7 @@ def set_sweep_config():
     #     'H': rr_Hs,
     #     'seed': seeds,
     #     'dataset': ['reducedrank'],
-    #     'var_mode': ['nf_gammatrunc','nf_gaussian'],
+    #     'method': ['nf_gammatrunc','nf_gaussian'],
     #     'n': ns,
     #     'xi_upper': [4],
     #     'prior': priors,
@@ -59,7 +46,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = '{}_{}_n{}_H{}_seed{}_prior{}_varparams{}'.format(temp['var_mode'], temp['dataset'], temp['n'], temp['H'],temp['seed'],temp['prior'], temp['varparams_mode'])
+    path = '{}_{}_n{}_H{}_seed{}_prior{}_varparams{}'.format(temp['method'], temp['dataset'], temp['n'], temp['H'],temp['seed'],temp['prior'], temp['varparams_mode'])
 
     os.system("python3 main.py "
               "--dataset %s "
@@ -69,12 +56,12 @@ def main(taskid):
               "--sample_size %s "
               "--seed %s "
               "--H %s "
-              "--var_mode %s "
+              "--method %s "
               "--varparams_mode %s "
               "--path %s"
               % (temp['dataset'], temp['prior'],
                  temp['n'], temp['seed'], temp['H'],
-                 temp['var_mode'], temp['varparams_mode'], path))
+                 temp['method'], temp['varparams_mode'], path))
 
 
 if __name__ == "__main__":

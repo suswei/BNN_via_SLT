@@ -30,7 +30,7 @@ def log_prior(args, thetas):
 
 def sample_q(args, R, exact=True):
 
-    if args.var_mode == 'nf_gamma':
+    if args.method == 'nf_gamma':
         if exact:
             m = Gamma(args.lmbdas, args.betas)
             vs = m.sample(torch.Size([R])).squeeze(dim=2)
@@ -42,14 +42,14 @@ def sample_q(args, R, exact=True):
             k = args.ks.repeat(1, R).T
             xis = vs ** (1 / (2 * k)) # xis R by args.w_dim
 
-    elif args.var_mode == 'nf_gammatrunc':
+    elif args.method == 'nf_gammatrunc':
 
         m = Gamma(args.lmbdas, args.betas)
         vs = m.sample(torch.Size([R])).squeeze(dim=2)
         xis = vs ** (1 / (2 * args.ks.repeat(1, R).T))
         # TODO: need to check is in [0,args.xi_upper]
 
-    elif args.var_mode == 'nf_gaussian':
+    elif args.method == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
 
     return xis
@@ -63,12 +63,12 @@ def q_entropy_sample(args, xis):
     :return: estimate of E_q log q
     """
 
-    if args.var_mode == 'nf_gaussian':
+    if args.method == 'nf_gaussian':
 
         q_rv = Normal(0, 1)
         return q_rv.log_prob(xis).sum(dim=1).mean()
 
-    elif args.var_mode == 'nf_gamma' or args.var_mode == 'nf_gammatrunc':
+    elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
 
         R = xis.shape[0]
         hs = args.hs.repeat(1,R).T
@@ -81,7 +81,7 @@ def q_entropy_sample(args, xis):
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
 def qj_entropy(args):
 
-    if args.var_mode == 'nf_gamma':
+    if args.method == 'nf_gamma':
         hs = args.hs
         ks = args.ks
         betas = args.betas
@@ -90,7 +90,7 @@ def qj_entropy(args):
         # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
         return -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
-    elif args.var_mode == 'nf_gaussian':
+    elif args.method == 'nf_gaussian':
 
         stds = 1 # TODO: should allow custom mean/std for nf_gaussian
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
@@ -102,9 +102,9 @@ def qj_gengamma_lognorm(h, k, beta, args):
     lmbda = (h + 1) / (2 * k)
     G = torch.lgamma(lmbda)
 
-    if args.var_mode == 'nf_gamma':
+    if args.method == 'nf_gamma':
         return G - torch.log(2*k) - lmbda*torch.log(beta)
-    elif args.var_mode == 'nf_gammatrunc':
+    elif args.method == 'nf_gammatrunc':
         return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.exp(G)-torch.igammac(lmbda,beta*(args.xi_upper**(2*k))))
 
 

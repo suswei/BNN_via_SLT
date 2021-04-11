@@ -71,13 +71,16 @@ def main():
     #
     # tuned_lmbdas = get_best_lmbda(args)
 
+    prior = 'gaussian'
+    varparams = 'abs_gauss'
+
     for i in range(len(args.Hs)):
 
         H = args.Hs[i]
 
         for seed in [1, 2, 3, 4, 5]:
 
-            for method in ['nf_gammatrunc', 'truth']:
+            for method in ['nf_gammatrunc', 'nf_gaussian','truth']:
 
                 Hs_list += ['{}'.format(H)]
                 if method == 'nf_gaussian':
@@ -90,24 +93,24 @@ def main():
 
                 if method == 'truth':
 
-                    path = '{}_{}_n5000_H{}_seed{}'.format('nf_gammatrunc', args.dataset, H,seed)
+                    path = '{}_{}_n5000_H{}_seed{}_prior{}_varparams{}'.format('nf_gammatrunc', args.dataset, H, seed, prior, varparams)
                     ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
                 elif method == 'nf_gammatrunc':
-                    path = '{}_{}_n5000_H{}_seed{}'.format(method, args.dataset, H,seed)
+                    path = '{}_{}_n5000_H{}_seed{}_prior{}_varparams{}'.format(method, args.dataset, H, seed, prior, varparams)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
                     elbo_hist_nf_gammatrunc = torch.load('{}/results.pt'.format(path))['elbo_hist']
 
                 elif method == 'nf_gaussian':
-                    path = '{}_{}_n5000_H{}_seed{}'.format(method, args.dataset, H, seed)
+                    path = '{}_{}_n5000_H{}_seed{}_prior{}_varparamsabs_gauss'.format(method, args.dataset, H, seed, prior)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
                     elbo_hist_nf_gaussian = torch.load('{}/results.pt'.format(path))['elbo_hist']
 
-            plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
-            plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
-            plt.show()
-            plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
+            # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
+            # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
+            # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
+            # plt.show()
 
     method_list = pd.Series(method_list, dtype="category")
     seed_list = pd.Series(seed_list, dtype="category")
@@ -129,7 +132,7 @@ def main():
     for patch in leg.get_patches():
         patch.set_height(12)
         patch.set_y(-6)
-
+    plt.title('prior{} varparams{}'.format(prior,varparams))
     if args.savefig:
         plt.savefig('{}_{}.pgf'.format(args.transformed_path, args.dataset), bbox_inches='tight')
     else:
