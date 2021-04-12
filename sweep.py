@@ -11,45 +11,25 @@ def set_sweep_config():
 
     hyperparameter_config = {
         'dataset': ['tanh'],
-        'method': ['nf_gammatrunc','nf_gaussian'],
-        'H': [6400],
-        'seed': [1],
-        'nf_layer': [20],
+        'method': ['nf_gammatrunc', 'nf_gaussian'],
+        'H': [900, 1600, 6400],
+        'sample_size': [5000, 10000, 20000]
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    hyperparameter_config = {
-        'dataset': ['tanh'],
-        'method': ['nf_gaussian'],
-        'H': [64, 100, 6400, 10000],
-        'seed': [1, 2, 3, 4, 5],
-        'nf_layer': [50]
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     ####################################################################################################
 
     hyperparameter_config = {
         'dataset': ['reducedrank'],
         'method': ['nf_gammatrunc'],
-        'H': [8, 10, 80, 100],
-        'seed': [1, 2, 3, 4, 5],
-        'nf_layer': [20]
+        'H': [30, 40, 80],
+        'sample_size': [5000, 10000, 20000]
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    hyperparameter_config = {
-        'dataset': ['reducedrank'],
-        'method': ['nf_gaussian'],
-        'H': [8, 10, 80, 100],
-        'seed': [1, 2, 3, 4, 5],
-        'nf_layer': [20]
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     return hyperparameter_experiments
 
@@ -60,17 +40,16 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = '{}_{}_n10k_H{}_seed{}'.format(temp['method'], temp['dataset'], temp['H'], temp['seed'])
+    path = 'varyn/{}_{}_n{}_H{}'.format(temp['method'], temp['dataset'], temp['sample_size'],temp['H'])
 
     os.system("python3 main.py "
               "--dataset %s "
-              "--sample_size 20000 "
-              "--seed %s "
+              "--sample_size %s "
               "--H %s "
               "--method %s "
               "--path %s"
               % (temp['dataset'],
-                 temp['seed'],
+                 temp['sample_size'],
                  temp['H'],
                  temp['method'],
                  path))
