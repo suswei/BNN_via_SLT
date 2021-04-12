@@ -23,6 +23,8 @@ def train(args):
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
+            M = args.sample_size/args.batch_size # number of minibatches
+            pi = (2**(M-batch_idx))/(2**M-1)
             resolution_network.train()
             optimizer.zero_grad()
 
@@ -36,7 +38,8 @@ def train(args):
 
             complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
 
-            elbo = loglik_elbo_vec.sum() - complexity/args.sample_size*args.batch_size
+            # elbo = loglik_elbo_vec.sum() - complexity*(args.batch_size/args.sample_size)
+            elbo = loglik_elbo_vec.sum() - complexity*pi
 
             running_loss += -elbo.item()
 
@@ -46,7 +49,7 @@ def train(args):
 
         if epoch % args.display_interval == 0:
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=1)
+                = evaluate(resolution_network, args, R=100)
             print('epoch {}: loss {}, nSn {}, elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
@@ -167,7 +170,9 @@ def main():
             args.ks = torch.ones(args.w_dim, 1)
             args.betas = 0.5*torch.ones(args.w_dim, 1)
         elif args.varparams_mode == 'abs_gauss_n':
+            lmbda_star = get_lmbda([args.H], args.dataset)[0]
             args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
+            args.lmbdas[0]=lmbda_star
             args.ks = torch.ones(args.w_dim, 1)
             args.betas = 0.5*torch.ones(args.w_dim, 1)
             args.betas[0] = args.sample_size

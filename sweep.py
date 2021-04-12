@@ -11,10 +11,10 @@ def set_sweep_config():
 
     hyperparameter_config = {
         'dataset': ['tanh'],
-        'method': ['nf_gammatrunc'],
+        'method': ['nf_gammatrunc','nf_gaussian'],
         'H': [6400],
-        'seed': [1, 2, 3, 4, 5],
-        'nf_layer': [20]
+        'seed': [1],
+        'nf_layer': [20],
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -60,21 +60,19 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = '{}_{}_H{}_seed{}'.format(temp['method'], temp['dataset'], temp['H'], temp['seed'])
+    path = '{}_{}_n10k_H{}_seed{}'.format(temp['method'], temp['dataset'], temp['H'], temp['seed'])
 
     os.system("python3 main.py "
-              "--epochs 5000 "
               "--dataset %s "
+              "--sample_size 20000 "
               "--seed %s "
               "--H %s "
               "--method %s "
-              "--nf_layer %s "
               "--path %s"
               % (temp['dataset'],
                  temp['seed'],
                  temp['H'],
                  temp['method'],
-                 temp['nf_layer'],
                  path))
 
 

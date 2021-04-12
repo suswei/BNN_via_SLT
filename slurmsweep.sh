@@ -10,7 +10,7 @@
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-4
+#SBATCH --array=0-1
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
