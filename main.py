@@ -1,21 +1,16 @@
 import os
 import argparse
-from torch.distributions.gamma import Gamma
-import numpy as np
-from scipy import stats
-
-import custom_lr_scheduler
 from dataset_factory import *
+import custom_lr_scheduler
 from gaussian_mf import *
 from normalizing_flows import *
 from utils import *
-from torch.distributions.normal import Normal
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
+# from scipy import stats
 
 
 def train(args):
 
-    # resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
     resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -28,25 +23,21 @@ def train(args):
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
-            pi = 2**(args.sample_size/args.batch_size-batch_idx)/(2**(args.sample_size/args.batch_size) - 1)
             resolution_network.train()
             optimizer.zero_grad()
 
             xis = sample_q(args, R=1, exact=True)
 
-            # log_jacobians.mean() = E_q log |g'(xi)|
-            thetas, log_jacobians = resolution_network(xis)
+            thetas, log_jacobians = resolution_network(xis)  # log_jacobians.mean() sample estimate of E_q log |g'(xi)|
             args.theta_lower = thetas.min().detach()
             args.theta_upper = thetas.max().detach()
 
-            # E_q \sum_i=1^m p(y_i |x_i , g(\xi))
-            loglik_elbo_vec = loglik(thetas, data, target, args)
+            loglik_elbo_vec = loglik(thetas, data, target, args)  # E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
-            # KL(q(\xi) || \varphi(g(\xi)) = E_q \log q - E_q log \varphi(g(\xi))) |g'(\xi)|
-            # complexity = q_entropy_sample(args, xis) - log_prior(args, thetas).mean() - log_jacobians.mean()
-            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean() # q_entropy doesn't affect optimization since we do not optimize over q's var params
+            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
 
             elbo = loglik_elbo_vec.sum() - complexity/args.sample_size*args.batch_size
+
             running_loss += -elbo.item()
 
             loss = -elbo
@@ -54,18 +45,18 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
+            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=100)
-            elbo = elbo_loglik.mean() - complexity
-            print('epoch {}: loss {}, nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
+            print('epoch {}: loss {}, nSn {}, elbo {} '
+                  '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
         scheduler.step(running_loss)
-        #
-        # if scheduler.has_convergence_been_reached():
-        #     print('INFO: Converence has been reached. Stopping iterations.')
-        #     break
+
+        if scheduler.has_convergence_been_reached():
+            print('INFO: Converence has been reached. Stopping iterations.')
+            break
 
     return resolution_network, elbo_hist
 
@@ -81,13 +72,14 @@ def evaluate(resolution_network, args, R):
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
         print('xis min {} max {}'.format(xis.min(), xis.max()))
+
         # assuming xis \in [0,1]^d
         # theta1 = xis[:,0]
         # theta2 = 1.62167 / ((np.sqrt(2) * xis[:,1]) ** (-1) - 0.405963)
         #
         # plt.plot(xis[:, 1], xis[:, 2],'.')
         # plt.plot(thetas[:, 1], thetas[:, 2],'r.')
-        # # plt.plot(theta1,theta2,'.')
+        # plt.plot(theta1,theta2,'.')
         # plt.show()
 
         args.theta_lower = thetas.min()
@@ -109,7 +101,7 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-    return elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+    return elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -174,6 +166,11 @@ def main():
             args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)
             args.betas = 0.5*torch.ones(args.w_dim, 1)
+        elif args.varparams_mode == 'abs_gauss_n':
+            args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
+            args.ks = torch.ones(args.w_dim, 1)
+            args.betas = 0.5*torch.ones(args.w_dim, 1)
+            args.betas[0] = args.sample_size
         elif args.varparams_mode == 'exp':
             args.lmbdas = torch.ones(args.w_dim, 1)
             args.ks = 0.5*torch.ones(args.w_dim, 1)
@@ -193,8 +190,7 @@ def main():
         print(args)
 
         net, elbo_hist = train(args)
-        elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
-        elbo = elbo_loglik.mean() - complexity
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
@@ -205,8 +201,7 @@ def main():
         # for n in args.ns:
         #     args.betas[0] = n
         #     args.train_loader = args.datasets[i]
-        #     elbo_loglik, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=10)
-        #     complexity = qj_entropy(args).sum() - logprior - log_jacobians
+        #     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=10)
         #     metric+= [elbo_loglik - complexity +args.nSns[i]]
         #     i+=1
         # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)

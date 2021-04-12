@@ -41,7 +41,7 @@ def main():
 
     parser.add_argument('--transformed_path', type=str, help='where the desingularized mean field results are located')
 
-    parser.add_argument('--dataset', type=str, choices=['reducedrank','tanh'])
+    parser.add_argument('--dataset', type=str, choices=['reducedrank', 'tanh'])
 
     parser.add_argument('--Hs', nargs="+", type=int) # currently hardcoded for len(Hs)=3
 
@@ -85,11 +85,11 @@ def main():
 
                 if method == 'truth':
 
-                    path = '{}_{}_n5000_H{}_seed{}'.format('nf_gammatrunc', args.dataset, H, seed)
+                    path = '{}_{}_H{}_seed{}'.format('nf_gammatrunc', args.dataset, H, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
 
                 else:
-                    path = '{}_{}_n5000_H{}_seed{}'.format(method, args.dataset, H, seed)
+                    path = '{}_{}_H{}_seed{}'.format(method, args.dataset, H, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
 

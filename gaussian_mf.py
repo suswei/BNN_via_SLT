@@ -1,4 +1,4 @@
-from main import *
+import torch
 import pyvarinf
 from torch.distributions.normal import Normal
 
