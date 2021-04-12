@@ -46,7 +46,7 @@ def train(args):
 
         if epoch % args.display_interval == 0:
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=100)
+                = evaluate(resolution_network, args, R=1)
             print('epoch {}: loss {}, nSn {}, elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
@@ -177,10 +177,11 @@ def main():
             args.betas = torch.ones(args.w_dim, 1)
         elif args.varparams_mode == 'icml':
             lmbda_star = get_lmbda([args.H], args.dataset)[0]
+            # lmbda_star = 1000
             args.lmbdas = lmbda_star*torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)
             args.betas = lmbda_star*torch.ones(args.w_dim, 1)
-            args.betas[0]=args.sample_size
+            args.betas[0] = args.sample_size
         elif args.varparams_mode == 'allones':
             args.lmbdas = torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)

@@ -77,7 +77,8 @@ def main():
 
         for seed in [1, 2, 3, 4, 5]:
 
-            for method in ['nf_gammatrunc', 'nf_gaussian', 'truth']:
+            for method in ['nf_gammatrunc', 'truth']:
+
 
                 Hs_list += [H]
                 method_list += [method]
@@ -130,3 +131,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

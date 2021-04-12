@@ -96,7 +96,7 @@ def qj_entropy(args):
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
 
 
-# normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}): Z_j = \frac{\Gamma(\lambda_j')}{2k_j' \beta_j^{\lambda_j'}}
+# normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
 def qj_gengamma_lognorm(h, k, beta, args):
 
     lmbda = (h + 1) / (2 * k)
@@ -105,7 +105,7 @@ def qj_gengamma_lognorm(h, k, beta, args):
     if args.method == 'nf_gamma':
         return G - torch.log(2*k) - lmbda*torch.log(beta)
     elif args.method == 'nf_gammatrunc':
-        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.exp(G)-torch.igammac(lmbda,beta*(args.xi_upper**(2*k))))
+        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.igamma(lmbda, beta*(args.xi_upper**(2*k))))
 
 
 # generate gamma(shape,rate)
