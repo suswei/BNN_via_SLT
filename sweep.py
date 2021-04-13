@@ -13,7 +13,7 @@ def set_sweep_config():
         'dataset': ['tanh'],
         # 'method': ['nf_gammatrunc','nf_gamma'],
         # 'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
-        'method': ['nf_gaussian'],
+        'method': ['nf_gamma'],
         'H': [64, 100, 900, 1600],
         'sample_size': [5000],
         'prior_var': [1e-1, 1e-2],
@@ -28,7 +28,7 @@ def set_sweep_config():
         'dataset': ['reducedrank'],
         # 'method': ['nf_gammatrunc', 'nf_gamma'],
         # 'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
-        'method': ['nf_gaussian'],
+        'method': ['nf_gamma'],
         'H': [8, 10, 30, 40],
         'sample_size': [5000],
         'prior_var': [1e-1, 1e-2],
@@ -49,10 +49,11 @@ def main(taskid):
     # path = 'nfgamma_comp/{}_{}_n{}_H{}_prior{}_seed{}_varparams{}'\
     #     .format(temp['method'], temp['dataset'], temp['sample_size'],temp['H'],temp['prior_var'],temp['seed'],temp['varparams_mode'])
 
-    path = 'nfgauss_comp/{}_{}_n{}_H{}_prior{}_seed{}' \
+    path = 'nfgamma_iaf/{}_{}_n{}_H{}_prior{}_seed{}' \
         .format(temp['method'], temp['dataset'], temp['sample_size'], temp['H'], temp['prior_var'], temp['seed'])
 
     os.system("python3 main.py "
+              "--nf iaf "
               "--dataset %s "
               "--seed %s "
               "--sample_size %s "

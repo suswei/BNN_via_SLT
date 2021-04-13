@@ -1,10 +1,134 @@
 import torch
 import torch.nn
-import torch.nn as nn
 import numpy as np
 from torch.distributions.multivariate_normal import MultivariateNormal
 
 import itertools
+
+
+import torch.nn.functional as F
+import math
+
+import torch as t
+import torch.nn as nn
+from torch.nn.init import xavier_normal
+from torch.nn.parameter import Parameter
+
+
+class AutoregressiveLinear(nn.Module):
+    def __init__(self, in_size, out_size, bias=True, ):
+        super(AutoregressiveLinear, self).__init__()
+
+        self.in_size = in_size
+        self.out_size = out_size
+
+        self.weight = Parameter(t.Tensor(self.in_size, self.out_size))
+
+        if bias:
+            self.bias = Parameter(t.Tensor(self.out_size))
+        else:
+            self.register_parameter('bias', None)
+
+        self.reset_parameters()
+
+    def reset_parameters(self, ):
+        stdv = 1. / math.sqrt(self.out_size)
+
+        self.weight = xavier_normal(self.weight)
+
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, input):
+        if input.dim() == 2 and self.bias is not None:
+            return t.addmm(self.bias, input, self.weight.tril(-1))
+
+        output = input @ self.weight.tril(-1)
+        if self.bias is not None:
+            output += self.bias
+        return output
+
+
+class Highway(nn.Module):
+    def __init__(self, size, num_layers, f):
+        super(Highway, self).__init__()
+
+        self.num_layers = num_layers
+
+        self.nonlinear = nn.ModuleList([nn.utils.weight_norm(nn.Linear(size, size)) for _ in range(num_layers)])
+        self.linear = nn.ModuleList([nn.utils.weight_norm(nn.Linear(size, size)) for _ in range(num_layers)])
+        self.gate = nn.ModuleList([nn.utils.weight_norm(nn.Linear(size, size)) for _ in range(num_layers)])
+
+        self.f = f
+
+    def forward(self, x):
+        """
+            :param x: tensor with shape of [batch_size, size]
+            :return: tensor with shape of [batch_size, size]
+            applies σ(x) ⨀ f(G(x)) + (1 - σ(x)) ⨀ Q(x) transformation | G and Q is affine transformation,
+            f is non-linear transformation, σ(x) is affine transformation with sigmoid non-linearition
+            and ⨀ is element-wise multiplication
+            """
+
+        for layer in range(self.num_layers):
+            gate = F.sigmoid(self.gate[layer](x))
+
+            nonlinear = self.f(self.nonlinear[layer](x))
+            linear = self.linear[layer](x)
+
+            x = gate * nonlinear + (1 - gate) * linear
+
+        return x
+
+
+class IAF(nn.Module):
+    def __init__(self, latent_size, h_size=None):
+        super(IAF, self).__init__()
+
+        self.z_size = latent_size
+        self.h_size = h_size
+
+        self.h = Highway(self.h_size, 3, nn.ELU())
+
+        self.m = nn.Sequential(
+            AutoregressiveLinear(self.z_size + self.h_size, self.z_size),
+            # AutoregressiveLinear(self.z_size, self.z_size),
+            nn.ELU(),
+            AutoregressiveLinear(self.z_size, self.z_size),
+            nn.ELU(),
+            AutoregressiveLinear(self.z_size, self.z_size)
+        )
+
+        self.s = nn.Sequential(
+            AutoregressiveLinear(self.z_size + self.h_size, self.z_size),
+            # AutoregressiveLinear(self.z_size, self.z_size),
+            nn.ELU(),
+            AutoregressiveLinear(self.z_size, self.z_size),
+            nn.ELU(),
+            AutoregressiveLinear(self.z_size, self.z_size)
+        )
+
+    def forward(self, z, h=None):
+        """
+        :param z: An float tensor with shape of [batch_size, z_size]
+        :param h: An float tensor with shape of [batch_size, h_size]
+        :return: An float tensor with shape of [batch_size, z_size] and log det value of the IAF mapping Jacobian
+        """
+
+        if h is None:
+            h = torch.zeros(z.shape[0],self.h_size)
+        h = self.h(h)
+
+        input = t.cat([z, h], 1)
+        # input = z
+        m = self.m(input)
+        s = self.s(input)
+
+        z = s.exp() * z + m
+
+        log_det = s.sum(1)
+
+        return z, log_det
 
 
 class FCNN(nn.Module):
