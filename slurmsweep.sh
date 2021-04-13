@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="compnfgamma"
+#SBATCH --job-name="compnfgauss"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-619
+#SBATCH --array=0-39
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
