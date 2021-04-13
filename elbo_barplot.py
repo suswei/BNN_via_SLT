@@ -66,6 +66,8 @@ def main():
     seed_list = []
     ev_list = []
 
+    prior_var = 1e-1
+    n= 5000
     # if args.lmbda_grid is None:
     #     args.lmbda_grid = get_lmbda(args.Hs, args.dataset)
     #
@@ -77,38 +79,42 @@ def main():
 
         for seed in [1, 2, 3, 4, 5]:
 
-            for method in ['nf_gammatrunc', 'truth']:
+            for method in ['nf_gammatrunc', 'nf_gaussian','truth']:
 
 
                 Hs_list += [H]
                 method_list += [method]
-                seed_list += ['{}'.format(seed)]
+                # seed_list += ['{}'.format(seed)]
 
                 if method == 'truth':
 
-                    path = '{}_{}_H{}_seed{}'.format('nf_gammatrunc', args.dataset, H, seed)
+                    path = 'nfgaussian_comp/{}_{}_n{}_H{}_prior{}_seed{}'.format('nf_gammatrunc', args.dataset,n, H, prior_var, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
 
                 else:
-                    path = '{}_{}_H{}_seed{}'.format(method, args.dataset, H, seed)
+                    path = 'nfgaussian_comp/{}_{}_n{}_H{}_prior{}_seed{}'.format(method, args.dataset, n, H, prior_var, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
 
                 # elbo_hist_nf_gammatrunc = torch.load('{}/results.pt'.format(path))['elbo_hist']
                 # elbo_hist_nf_gaussian = torch.load('{}/results.pt'.format(path))['elbo_hist']
 
-            # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
-            # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
-            # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
-            # plt.show()
+                # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
+                # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
+                # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
+                # plt.show()
 
     method_list = pd.Series(method_list, dtype='category')
-    seed_list = pd.Series(seed_list, dtype="category")
+    # seed_list = pd.Series(seed_list, dtype="category")
+
+    # summary_pd = pd.DataFrame({'$H$': Hs_list,
+    #                            'ELBO $+ nS_n$': ev_list,
+    #                            'method': method_list,
+    #                            'seed': seed_list})
 
     summary_pd = pd.DataFrame({'$H$': Hs_list,
                                'ELBO $+ nS_n$': ev_list,
-                               'method': method_list,
-                               'seed': seed_list})
+                               'method': method_list})
     sns.set_style("ticks")
     g = sns.barplot(x="$H$", y="ELBO $+ nS_n$",
                     hue="method",
@@ -122,6 +128,8 @@ def main():
     for patch in leg.get_patches():
         patch.set_height(12)
         patch.set_y(-6)
+
+    plt.title('gaussian prior var {}, n {}'.format(prior_var, n))
 
     if args.savefig:
         plt.savefig('{}_{}.pgf'.format(args.transformed_path, args.dataset), bbox_inches='tight')
