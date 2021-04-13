@@ -23,8 +23,9 @@ def train(args):
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
-            M = args.sample_size/args.batch_size # number of minibatches
-            pi = (2**(M-batch_idx))/(2**M-1)
+            if args.blundell_weighting:
+                M = args.sample_size/args.batch_size # number of minibatches
+                pi = (2**(M-batch_idx))/(2**M-1) # follows blundell, is bad for nf_gammatrunc
             resolution_network.train()
             optimizer.zero_grad()
 
@@ -38,8 +39,10 @@ def train(args):
 
             complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
 
-            # elbo = loglik_elbo_vec.sum() - complexity*(args.batch_size/args.sample_size)
-            elbo = loglik_elbo_vec.sum() - complexity*pi
+            if args.blundell_weighting:
+                elbo = loglik_elbo_vec.sum() - complexity*pi
+            else:
+                elbo = loglik_elbo_vec.sum() - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
 
@@ -155,6 +158,8 @@ def main():
     parser.add_argument('--display_interval',type=int, default=10)
 
     parser.add_argument('--varparams_mode', type=str, default='abs_gauss')
+
+    parser.add_argument('--blundell_weighting',store_action=True)
 
     args = parser.parse_args()
 

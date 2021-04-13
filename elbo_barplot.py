@@ -66,8 +66,8 @@ def main():
     seed_list = []
     ev_list = []
 
-    prior_var = 1e-1
-    n= 5000
+    prior_var = 1e-4
+    n = 5000
     # if args.lmbda_grid is None:
     #     args.lmbda_grid = get_lmbda(args.Hs, args.dataset)
     #
@@ -79,7 +79,7 @@ def main():
 
         for seed in [1, 2, 3, 4, 5]:
 
-            for method in ['nf_gammatrunc', 'nf_gaussian','truth']:
+            for method in ['nf_gammatrunc','nf_gaussian','truth']:
 
 
                 Hs_list += [H]
@@ -88,11 +88,11 @@ def main():
 
                 if method == 'truth':
 
-                    path = 'nfgaussian_comp/{}_{}_n{}_H{}_prior{}_seed{}'.format('nf_gammatrunc', args.dataset,n, H, prior_var, seed)
+                    path = '{}/{}_{}_n{}_H{}_prior{}_seed{}'.format(args.path, 'nf_gammatrunc', args.dataset,n, H, prior_var, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
 
                 else:
-                    path = 'nfgaussian_comp/{}_{}_n{}_H{}_prior{}_seed{}'.format(method, args.dataset, n, H, prior_var, seed)
+                    path = '{}/{}_{}_n{}_H{}_prior{}_seed{}'.format(args.path,method, args.dataset, n, H, prior_var, seed)
                     ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
                                 + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
 
@@ -132,7 +132,7 @@ def main():
     plt.title('gaussian prior var {}, n {}'.format(prior_var, n))
 
     if args.savefig:
-        plt.savefig('{}_{}.pgf'.format(args.transformed_path, args.dataset), bbox_inches='tight')
+        plt.savefig('{}_{}.pgf'.format(args.path, args.dataset), bbox_inches='tight')
     else:
         plt.show()
 
