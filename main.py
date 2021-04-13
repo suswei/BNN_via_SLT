@@ -159,7 +159,7 @@ def main():
 
     parser.add_argument('--varparams_mode', type=str, default='abs_gauss')
 
-    parser.add_argument('--blundell_weighting',store_action=True)
+    parser.add_argument('--blundell_weighting', action='store_true')
 
     args = parser.parse_args()
 

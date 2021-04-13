@@ -11,10 +11,11 @@ def set_sweep_config():
 
     hyperparameter_config = {
         'dataset': ['tanh'],
-        'method': ['nf_gammatrunc', 'nf_gaussian'],
-        'H': [64, 100, 900, 1600, 6400, 10000],
-        'sample_size': [5000, 10000, 20000],
-        'prior_var': [1e-1, 1e-4],
+        'method': ['nf_gammatrunc','nf_gamma'],
+        'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
+        'H': [64, 100, 900, 1600],
+        'sample_size': [5000],
+        'prior_var': [1e-1, 1e-2],
         'seed': [1,2,3,4,5]
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -25,10 +26,11 @@ def set_sweep_config():
 
     hyperparameter_config = {
         'dataset': ['reducedrank'],
-        'method': ['nf_gammatrunc','nf_gaussian'],
-        'H': [8, 10, 30, 40, 80, 100],
-        'sample_size': [5000, 10000, 20000],
-        'prior_var': [1e-1, 1e-4],
+        'method': ['nf_gammatrunc', 'nf_gamma'],
+        'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
+        'H': [8, 10, 30, 40],
+        'sample_size': [5000,],
+        'prior_var': [1e-1, 1e-2],
         'seed': [1, 2, 3, 4, 5]
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -44,8 +46,8 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'nfgaussian_comp/{}_{}_n{}_H{}_prior{}_seed{}'\
-        .format(temp['method'], temp['dataset'], temp['sample_size'],temp['H'],temp['prior_var'],temp['seed'])
+    path = 'nfgamma_comp/{}_{}_n{}_H{}_prior{}_seed{}_varparams{}'\
+        .format(temp['method'], temp['dataset'], temp['sample_size'],temp['H'],temp['prior_var'],temp['seed'],temp['varparams_mode'])
 
     os.system("python3 main.py "
               "--dataset %s "
@@ -54,15 +56,16 @@ def main(taskid):
               "--H %s "
               "--method %s "
               "--prior_var %s "
-              "--epochs 5000 "
-              "--path %s"
+              "--epochs 2000 "
+              "--path %s "
+              "--varparams_mode %s"
               % (temp['dataset'],
                  temp['seed'],
                  temp['sample_size'],
                  temp['H'],
                  temp['method'],
-                 temp['prior_var'],
-                 path))
+                 temp['prior_var'], path,
+                 temp['varparams_mode']))
 
 
 if __name__ == "__main__":

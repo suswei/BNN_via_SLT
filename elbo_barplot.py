@@ -39,7 +39,7 @@ def main():
     # Training settings
     parser = argparse.ArgumentParser(description='?')
 
-    parser.add_argument('--transformed_path', type=str, help='where the desingularized mean field results are located')
+    parser.add_argument('--path', type=str, help='where the desingularized mean field results are located')
 
     parser.add_argument('--dataset', type=str, choices=['reducedrank', 'tanh'])
 
@@ -51,90 +51,96 @@ def main():
 
     args = parser.parse_args()
 
-    if args.savefig:
-        matplotlib.use("pgf")
-        matplotlib.rcParams.update({
-            "pgf.texsystem": "xelatex",
-            'font.family': 'serif',
-            'text.usetex': True,
-            'pgf.rcfonts': False,
-        })
-        plt.rcParams["figure.figsize"] = (6.75/2, 3)
+    # if args.savefig:
+    #     matplotlib.use("pgf")
+    #     matplotlib.rcParams.update({
+    #         "pgf.texsystem": "xelatex",
+    #         'font.family': 'serif',
+    #         'text.usetex': True,
+    #         'pgf.rcfonts': False,
+    #     })
+    #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
+    sns.set_style("ticks")
 
-    Hs_list =[]
-    method_list =[]
-    seed_list = []
-    ev_list = []
 
-    prior_var = 1e-4
-    n = 5000
+
+
     # if args.lmbda_grid is None:
     #     args.lmbda_grid = get_lmbda(args.Hs, args.dataset)
     #
     # tuned_lmbdas = get_best_lmbda(args)
 
-    for i in range(len(args.Hs)):
+    for n in [5000, 10000, 20000]:
+        for prior_var in [1e-1, 1e-4]:
 
-        H = args.Hs[i]
+            Hs_list = []
+            method_list = []
+            seed_list = []
+            ev_list = []
 
-        for seed in [1, 2, 3, 4, 5]:
+            for i in range(len(args.Hs)):
 
-            for method in ['nf_gammatrunc','nf_gaussian','truth']:
+                H = args.Hs[i]
 
+                for seed in [1, 2, 3, 4, 5]:
 
-                Hs_list += [H]
-                method_list += [method]
-                # seed_list += ['{}'.format(seed)]
+                    for method in ['nf_gammatrunc','nf_gaussian','truth']:
 
-                if method == 'truth':
+                        Hs_list += [H]
+                        if method == 'nf_gammatrunc':
+                            method_list += ['{}_absgauss'.format(method)]
+                        else:
+                            method_list += [method]
+                        seed_list += ['{}'.format(seed)]
 
-                    path = '{}/{}_{}_n{}_H{}_prior{}_seed{}'.format(args.path, 'nf_gammatrunc', args.dataset,n, H, prior_var, seed)
-                    ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
+                        if method == 'truth':
 
-                else:
-                    path = '{}/{}_{}_n{}_H{}_prior{}_seed{}'.format(args.path,method, args.dataset, n, H, prior_var, seed)
-                    ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
-                                + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
+                            path = '{}/{}_{}_n{}_H{}_prior{}_seed{}'.format(args.path, 'nf_gammatrunc', args.dataset,n, H, prior_var, seed)
+                            ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
 
-                # elbo_hist_nf_gammatrunc = torch.load('{}/results.pt'.format(path))['elbo_hist']
-                # elbo_hist_nf_gaussian = torch.load('{}/results.pt'.format(path))['elbo_hist']
+                        else:
+                            path = '{}/{}_{}_n{}_H{}_prior{}_seed{}'.format(args.path,method, args.dataset, n, H, prior_var, seed)
+                            ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
+                                        + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
 
-                # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
-                # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
-                # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
-                # plt.show()
+                        # elbo_hist_nf_gammatrunc = torch.load('{}/results.pt'.format(path))['elbo_hist']
+                        # elbo_hist_nf_gaussian = torch.load('{}/results.pt'.format(path))['elbo_hist']
 
-    method_list = pd.Series(method_list, dtype='category')
-    # seed_list = pd.Series(seed_list, dtype="category")
+                        # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
+                        # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
+                        # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
+                        # plt.show()
 
-    # summary_pd = pd.DataFrame({'$H$': Hs_list,
-    #                            'ELBO $+ nS_n$': ev_list,
-    #                            'method': method_list,
-    #                            'seed': seed_list})
+            method_list = pd.Series(method_list, dtype='category')
+            seed_list = pd.Series(seed_list, dtype="category")
 
-    summary_pd = pd.DataFrame({'$H$': Hs_list,
-                               'ELBO $+ nS_n$': ev_list,
-                               'method': method_list})
-    sns.set_style("ticks")
-    g = sns.barplot(x="$H$", y="ELBO $+ nS_n$",
-                    hue="method",
-                    data=summary_pd)
-    hatches = ['/', '/', '/',
-               '+', '+', '+',
-               'x', 'x', 'x']
-    for hatch, patch in zip(hatches, g.patches):
-        patch.set_hatch(hatch)
-    leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
-    for patch in leg.get_patches():
-        patch.set_height(12)
-        patch.set_y(-6)
+            summary_pd = pd.DataFrame({'H': Hs_list,
+                                       'ELBOplusnSn': ev_list,
+                                       'method': method_list,
+                                       'seed': seed_list})
 
-    plt.title('gaussian prior var {}, n {}'.format(prior_var, n))
+            g = sns.barplot(x="H", y="ELBOplusnSn",
+                            hue="method",
+                            data=summary_pd)
+            hatches = ['/', '/', '/',
+                       '+', '+', '+',
+                       'x', 'x', 'x']
+            for hatch, patch in zip(hatches, g.patches):
+                patch.set_hatch(hatch)
+            leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
+            for patch in leg.get_patches():
+                patch.set_height(12)
+                patch.set_y(-6)
 
-    if args.savefig:
-        plt.savefig('{}_{}.pgf'.format(args.path, args.dataset), bbox_inches='tight')
-    else:
-        plt.show()
+            plt.title('gaussian prior var {}, n {}'.format(prior_var, n))
+
+            if args.savefig:
+                # plt.savefig('{}/{}_n{}_prior{}.pgf'.format(args.path, args.dataset, n, prior_var), bbox_inches='tight')
+                plt.savefig('{}/smallH_{}_n{}_prior{}.png'.format(args.path, args.dataset, n, prior_var), bbox_inches='tight')
+
+            else:
+                plt.show()
+            plt.close()
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="varyn"
+#SBATCH --job-name="compnfgamma"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-35
+#SBATCH --array=0-619
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
