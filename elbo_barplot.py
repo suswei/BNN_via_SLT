@@ -82,7 +82,7 @@ def main():
 
                 for seed in [1, 2, 3, 4, 5]:
 
-                    for method in ['nf_gammatrunc','nf_gamma','truth']:
+                    for method in ['nf_gammatrunc','nf_gamma','nf_gaussian','truth']:
 
                         if method == 'truth':
 
@@ -90,6 +90,17 @@ def main():
                                                                                         args.dataset, n, H, prior_var,
                                                                                         seed, varparams)
                             ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
+                            method_list += [method]
+                            seed_list += ['{}'.format(seed)]
+                            Hs_list += [H]
+
+                        elif method == 'nf_gaussian':
+                            path = 'nfgauss_comp/{}_{}_n{}_H{}_prior{}_seed{}'.format(
+                                                                            method,
+                                                                            args.dataset, n, H, prior_var,
+                                                                            seed)
+                            ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
+                                        + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
                             method_list += [method]
                             seed_list += ['{}'.format(seed)]
                             Hs_list += [H]
@@ -138,7 +149,7 @@ def main():
 
             if args.savefig:
                 # plt.savefig('{}/{}_n{}_prior{}.pgf'.format(args.path, args.dataset, n, prior_var), bbox_inches='tight')
-                plt.savefig('{}/{}_n{}_prior{}.png'.format(args.path, args.dataset, n, prior_var), bbox_inches='tight')
+                plt.savefig('{}_H{}_n{}_prior{}.png'.format(args.dataset, args.Hs[0], n, prior_var), bbox_inches='tight')
 
             else:
                 plt.show()
