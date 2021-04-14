@@ -25,7 +25,7 @@ def log_prior(args, thetas):
         gmm = D.MixtureSameFamily(mix, comp)
         return gmm.log_prob(thetas)
     elif args.prior == 'unif':
-        return args.w_dim*np.log(1/(args.theta_upper-args.theta_lower)) # assuming [-2,2]^d prior
+        return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
 
 
 def sample_q(args, R, exact=True):

@@ -13,7 +13,10 @@ def train(args):
 
     if args.nf == 'iaf':
         resolution_network = IAF(latent_size=args.w_dim,h_size=args.w_dim)
-    # resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
+    elif args.nf == 'rnvp':
+        resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
+    elif args.nf == 'vanilla_rnvp':
+        resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
         (optimizer, 'min', verbose=True, factor=0.9, patience=100, eps=1e-6)
@@ -25,26 +28,26 @@ def train(args):
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
-            if args.blundell_weighting:
-                M = args.sample_size/args.batch_size # number of minibatches
-                pi = (2**(M-batch_idx))/(2**M-1) # follows blundell, is bad for nf_gammatrunc
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args, R=1, exact=True)
+            xis = sample_q(args, R=10, exact=True)  # [R, args.w_dim]
 
-            thetas, log_jacobians = resolution_network(xis)  # log_jacobians.mean() sample estimate of E_q log |g'(xi)|
-            args.theta_lower = thetas.min().detach()
-            args.theta_upper = thetas.max().detach()
+            thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
+            args.theta_lower = torch.min(thetas, dim=0).values.detach() #need to do by dim, see gengamma_uniform branch
+            args.theta_upper = torch.max(thetas, dim=0).values.detach()
+
+            # transformed_prior = torch.exp(log_prior(args,thetas)+log_jacobians) # check this is positive
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
             complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
-
             if args.blundell_weighting:
-                elbo = loglik_elbo_vec.sum() - complexity*pi
+                M = args.sample_size/args.batch_size # number of minibatches
+                pi = (2**(M-batch_idx))/(2**M-1) # follows blundell, is bad for nf_gammatrunc
+                elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity*pi
             else:
-                elbo = loglik_elbo_vec.sum() - complexity * (args.batch_size / args.sample_size)
+                elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
 
@@ -75,8 +78,11 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        xis = sample_q(args, R, exact=True)
-        thetas, log_jacobians = resolution_network(xis)
+        xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
+        thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
+
+        # transformed_prior = torch.exp(log_prior(args, thetas) + log_jacobians)  # check this is positive
+        # print('transformed prior at xi {}'.format(transformed_prior))
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
         print('xis min {} max {}'.format(xis.min(), xis.max()))
@@ -90,9 +96,9 @@ def evaluate(resolution_network, args, R):
         # plt.plot(theta1,theta2,'.')
         # plt.show()
 
-        args.theta_lower = thetas.min()
-        args.theta_upper = thetas.max()
-        logprior = log_prior(args, thetas)
+        args.theta_lower = torch.min(thetas, dim=0).values.detach()  # need to do by dim, see gengamma_uniform branch
+        args.theta_upper = torch.max(thetas, dim=0).values.detach()
+        logprior = log_prior(args, thetas)  # [R]
 
         args.xi_upper = xis.max()
         ent = q_entropy_sample(args, xis)
@@ -122,7 +128,7 @@ def main():
 
     parser.add_argument('--dataset', type=str, default='tanh',
                         help='dataset name from dataset_factory.py (default: )',
-                        choices=['reducedrank', 'tanh'])
+                        choices=['reducedrank', 'tanh','tanh_general'])
 
     parser.add_argument('--H', type=int, default=1)
 
@@ -141,7 +147,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
                         help='input batch size for training (default: 100)')
 
-    parser.add_argument('--nf',type=str,default='iaf')
+    parser.add_argument('--nf',type=str,default='rnvp',choices=['iaf','rnvp','vanilla_rnvp'])
     parser.add_argument('--nf_hidden', type=int, default=16)
 
     parser.add_argument('--nf_layers', type=int, default=20)
@@ -156,7 +162,7 @@ def main():
 
     parser.add_argument('--path', type=str)
 
-    parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gaussian','mf_gaussian'])
+    parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
 
     parser.add_argument('--display_interval',type=int, default=10)
 
@@ -190,7 +196,6 @@ def main():
             args.betas = torch.ones(args.w_dim, 1)
         elif args.varparams_mode == 'icml':
             lmbda_star = get_lmbda([args.H], args.dataset)[0]
-            # lmbda_star = 1000
             args.lmbdas = lmbda_star*torch.ones(args.w_dim, 1)
             args.ks = torch.ones(args.w_dim, 1)
             args.betas = lmbda_star*torch.ones(args.w_dim, 1)

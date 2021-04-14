@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="gammaiaf"
+#SBATCH --job-name="tanhunif"
 #SBATCH -p physical
 
 #SBATCH --mem=1G

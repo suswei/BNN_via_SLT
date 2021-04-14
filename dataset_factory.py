@@ -92,6 +92,57 @@ def get_dataset_by_id(args):
         args.nSns += [args.nSn]
         args.datasets += [args.train_loader]
 
+
+    elif args.dataset == 'tanh_general':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
+
+        # model
+        args.model = tanh_network(H=args.H)
+        args.w_dim = 3 * args.H
+        max_integer = int(math.sqrt(args.H))
+        args.trueRLCT = args.H/2
+        if max_integer ** 2 == args.H:
+            args.truem = 2
+        else:
+            args.truem = 1
+
+        # generate X
+        m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
+        X = m.sample(torch.Size([args.sample_size]))
+        # generate y
+        mean = 0.0
+        y_rv = Normal(mean, 1)
+        y = y_rv.sample(torch.Size([args.sample_size, 1]))
+
+        # properties of data
+        args.nSn = -y_rv.log_prob(y).sum()
+        args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
+
+
+        # generate X
+        X_val = m.sample(torch.Size([args.sample_size]))
+        # generate y
+        mean = 0.0
+        y_rv = Normal(mean, 1)
+        y_val = y_rv.sample(torch.Size([args.sample_size, 1]))
+        args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
+
+
+        # create smaller datasets
+        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
+        args.datasets = []
+        args.ns = ns
+        args.nSns = []
+        for n in ns:
+            X = m.sample(torch.Size([n]))
+            y_rv = Normal(0.0, 1)
+            y = y_rv.sample(torch.Size([n, 1]))
+            args.nSns += [- y_rv.log_prob(y).sum()]
+            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        args.ns += [args.sample_size]
+        args.nSns += [args.nSn]
+        args.datasets += [args.train_loader]
+
+
     # multivariate input x, Gaussian
     # multivariate output y (dim = args.H) is normal with variance 1
     # and mean BAx
@@ -209,6 +260,20 @@ def loglik(theta, data, target, args):
         for r in range(R):
             # 1 by B
             means[r,] = torch.matmul(theta_a[r,].unsqueeze(dim=1).T, torch.tanh(theta_b[r,].unsqueeze(dim=1) * data.T))
+        y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1))
+        logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
+
+    elif args.dataset == 'tanh_general':
+        R = theta.shape[0]
+        B = data.shape[0]
+
+        theta_a = theta[:, 0:args.H]  # R by H
+        theta_b = theta[:, args.H:2*args.H]  # R by H
+        theta_c = theta[:,2*args.H:]
+        means = torch.empty(R, B)
+        for r in range(R):
+            # 1 by B
+            means[r,] = torch.matmul(theta_a[r,].unsqueeze(dim=1).T, torch.tanh(theta_b[r,].unsqueeze(dim=1) * data.T+theta_c[r,].unsqueeze(dim=1)))
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1))
         logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
 

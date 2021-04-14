@@ -13,11 +13,10 @@ def set_sweep_config():
         'dataset': ['tanh'],
         # 'method': ['nf_gammatrunc','nf_gamma'],
         # 'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
-        'method': ['nf_gamma'],
-        'H': [64, 100, 900, 1600],
+        'method': ['nf_gamma','nf_gaussian'],
+        'H': [64, 900, 1600, 6400],
         'sample_size': [5000],
-        'prior_var': [1e-1, 1e-2],
-        'seed': [1,2,3,4,5]
+        'seed': [1, 2, 3, 4, 5]
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -49,18 +48,18 @@ def main(taskid):
     # path = 'nfgamma_comp/{}_{}_n{}_H{}_prior{}_seed{}_varparams{}'\
     #     .format(temp['method'], temp['dataset'], temp['sample_size'],temp['H'],temp['prior_var'],temp['seed'],temp['varparams_mode'])
 
-    path = 'nfgamma_iaf/{}_{}_n{}_H{}_prior{}_seed{}' \
-        .format(temp['method'], temp['dataset'], temp['sample_size'], temp['H'], temp['prior_var'], temp['seed'])
+    path = 'tanh_unif/{}_{}_n{}_H{}_seed{}' \
+        .format(temp['method'], temp['dataset'], temp['sample_size'], temp['H'], temp['seed'])
 
     os.system("python3 main.py "
-              "--nf iaf "
               "--dataset %s "
               "--seed %s "
               "--sample_size %s "
               "--H %s "
               "--method %s "
-              "--prior_var %s "
+              "--prior unif "
               "--epochs 2000 "
+              "--display_interval 100 "
               "--path %s "
               # "--varparams_mode %s"
               % (temp['dataset'],
@@ -68,7 +67,6 @@ def main(taskid):
                  temp['sample_size'],
                  temp['H'],
                  temp['method'],
-                 temp['prior_var'],
                  path
                  # temp['varparams_mode']
                  ))
