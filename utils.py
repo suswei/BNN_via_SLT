@@ -8,23 +8,35 @@ import torch.distributions as D
 # TODO: implement mixture prior, log uniform prior, horseshoe prior
 # evaluate log varphi(theta), returns vector
 def log_prior(args, thetas):
+    """
+
+    :param args:
+    :param thetas: [R, args.w_dim]
+    :return: returns log varphi(theta_1), ..., log varphi(theta_R)
+    """
 
     if args.prior == 'gaussian':
-    # varphi multivariate (dim=args.w_dim) Gaussian mean zero, covariance = diag(args.prior_var)
+
         return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
                - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
                - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
+
     elif args.prior == 'logunif':
-        a,b = 0.1 ,5
+
+        a,b = 0.1,5
         prob = (thetas*np.log(b/a))**(-1)
         return torch.log(prob)
+
     elif args.prior == 'gmm':
+
         # mix = D.Categorical(torch.ones(2, ))
         mix = D.Categorical(torch.Tensor([0.5, 0.5]))
         comp = D.Independent(D.Normal(torch.zeros(2, args.w_dim), torch.cat((1e-2*torch.ones(1,args.w_dim),torch.ones(1,args.w_dim)),0)), 1)
         gmm = D.MixtureSameFamily(mix, comp)
         return gmm.log_prob(thetas)
+
     elif args.prior == 'unif':
+
         return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
 
 
@@ -60,7 +72,7 @@ def q_entropy_sample(args, xis):
 
     :param args:
     :param xis: R by w_dim
-    :return: estimate of E_q log q
+    :return: estimate of (scalar) E_q log q: 1/R \sum_{i=1}^R log q(xi_i)
     """
 
     if args.method == 'nf_gaussian':
@@ -105,7 +117,8 @@ def qj_gengamma_lognorm(h, k, beta, args):
     if args.method == 'nf_gamma':
         return G - torch.log(2*k) - lmbda*torch.log(beta)
     elif args.method == 'nf_gammatrunc':
-        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.igamma(lmbda, beta*(args.xi_upper**(2*k))))
+        temp = beta * (args.xi_upper.unsqueeze(dim=1) ** (2 * k))
+        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.igamma(lmbda, temp))
 
 
 # generate gamma(shape,rate)

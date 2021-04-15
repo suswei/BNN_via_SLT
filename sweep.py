@@ -7,16 +7,20 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
+    methods = ['nf_gamma', 'nf_gammatrunc']
+    seeds = [1, 2, 3, 4, 5]
+
+    tanh_Hs = [64, 900, 1600, 6400]
+    rr_Hs = [8, 10, 30, 40]
+
     ####################################################################################################
 
     hyperparameter_config = {
         'dataset': ['tanh'],
-        # 'method': ['nf_gammatrunc','nf_gamma'],
-        # 'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
-        'method': ['nf_gamma','nf_gaussian'],
-        'H': [64, 900, 1600, 6400],
-        'sample_size': [5000],
-        'seed': [1, 2, 3, 4, 5]
+        'method': methods,
+        'H': tanh_Hs,
+        'prior_var': [1e-2, 1e-4],
+        'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -25,13 +29,10 @@ def set_sweep_config():
 
     hyperparameter_config = {
         'dataset': ['reducedrank'],
-        # 'method': ['nf_gammatrunc', 'nf_gamma'],
-        # 'varparams_mode': ['allones', 'icml', 'abs_gauss_n','exp'],
-        'method': ['nf_gamma'],
-        'H': [8, 10, 30, 40],
-        'sample_size': [5000],
-        'prior_var': [1e-1, 1e-2],
-        'seed': [1, 2, 3, 4, 5]
+        'method': methods,
+        'H': rr_Hs,
+        'prior_var': [1, 1e-1, 1e-2, 1e-4],
+        'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -45,11 +46,8 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    # path = 'nfgamma_comp/{}_{}_n{}_H{}_prior{}_seed{}_varparams{}'\
-    #     .format(temp['method'], temp['dataset'], temp['sample_size'],temp['H'],temp['prior_var'],temp['seed'],temp['varparams_mode'])
-
-    path = 'tanh_unif/{}_{}_n{}_H{}_seed{}' \
-        .format(temp['method'], temp['dataset'], temp['sample_size'], temp['H'], temp['seed'])
+    path = 'gaussprior/{}_{}_n5000_H{}_seed{}_prior{}' \
+        .format(temp['method'], temp['dataset'], temp['H'], temp['seed'], temp['prior_var'])
 
     os.system("python3 main.py "
               "--dataset %s "
@@ -57,18 +55,16 @@ def main(taskid):
               "--sample_size %s "
               "--H %s "
               "--method %s "
-              "--prior unif "
-              "--epochs 2000 "
-              "--display_interval 100 "
+              "--prior %s "
+              "--prior gaussian "
               "--path %s "
-              # "--varparams_mode %s"
               % (temp['dataset'],
                  temp['seed'],
                  temp['sample_size'],
                  temp['H'],
                  temp['method'],
+                 temp['prior_var'],
                  path
-                 # temp['varparams_mode']
                  ))
 
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="tanhunif"
+#SBATCH --job-name="nfgammamodes"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-23:0:00
+#SBATCH --time=3-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-39
+#SBATCH --array=0-1599
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
