@@ -116,24 +116,20 @@ def main():
     parser.add_argument('--dataset', type=str, default='tanh',
                         help='dataset name from dataset_factory.py (default: )',
                         choices=['reducedrank', 'tanh','tanh_general'])
-
     parser.add_argument('--H', type=int, default=1)
 
     parser.add_argument('--sample_size', type=int, default=5000,
                         help='sample size of synthetic dataset')
 
     parser.add_argument('--prior', type=str, default='gaussian')
-
     parser.add_argument('--prior_var', type=float, default=1e-1, metavar='N')
 
-
-    parser.add_argument('--epochs', type=int, default=2000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=500, metavar='N',
                         help='number of epochs to train (default: 200)')
     parser.add_argument('--batch_size', type=int, default=500, metavar='N',
                         help='input batch size for training (default: 100)')
     parser.add_argument('--blundell_weighting', action='store_true')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
-
 
     parser.add_argument('--nf',type=str,default='rnvp',choices=['iaf','rnvp','vanilla_rnvp'])
     parser.add_argument('--nf_hidden', type=int, default=16)
@@ -142,18 +138,13 @@ def main():
 
     parser.add_argument('--lmbda_star', type=float, default=40, metavar='N',
                         help='?')
-
     parser.add_argument('--k', type=float, default=1, metavar='N',
                         help='?')
 
-
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
-
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')
 
-    parser.add_argument('--display_interval',type=int, default=10)
-
-
+    parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
 
     args = parser.parse_args()

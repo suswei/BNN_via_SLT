@@ -42,7 +42,7 @@ def main():
 
             H = args.Hs[i]
 
-            for seed in [1, 2, 3, 4, 5]:
+            for seed in [1]:
 
                 for method in ['nf_gamma','nf_gammatrunc','truth']:
 

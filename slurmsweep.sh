@@ -10,7 +10,7 @@
 #SBATCH --time=3-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-239
+#SBATCH --array=0-269
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -33,4 +33,4 @@ fi
 
 # The job command(s):
 source activate singularmf
-MKL_THREADING_LAYER=GNU python3 compare_nfgamma.py ${SLURM_ARRAY_TASK_ID}
+MKL_THREADING_LAYER=GNU python3 sweep.py ${SLURM_ARRAY_TASK_ID}
