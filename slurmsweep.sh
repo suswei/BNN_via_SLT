@@ -33,4 +33,4 @@ fi
 
 # The job command(s):
 source activate singularmf
-MKL_THREADING_LAYER=GNU python3 sweep.py ${SLURM_ARRAY_TASK_ID}
+MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}

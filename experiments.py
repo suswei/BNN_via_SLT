@@ -50,7 +50,7 @@ def set_sweep_config():
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
         'prior': ['unif'],
-        'prior_var': ['na'],
+        'prior_var': [0],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -63,7 +63,7 @@ def set_sweep_config():
         'nf_gamma_mode': modes,
         'H': rr_Hs,
         'prior': ['unif'],
-        'prior_var': ['na'],
+        'prior_var': [0],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -104,7 +104,7 @@ def set_sweep_config():
         'nf_gamma_mode': ['na'],
         'H': tanh_Hs,
         'prior': ['unif'],
-        'prior_var': ['na'],
+        'prior_var': [0],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -117,7 +117,7 @@ def set_sweep_config():
         'nf_gamma_mode': ['na'],
         'H': rr_Hs,
         'prior': ['unif'],
-        'prior_var': ['na'],
+        'prior_var': [0],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())

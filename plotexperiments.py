@@ -11,8 +11,6 @@ def main():
 
     parser.add_argument('--dataset_of_interest', type=str, choices=['reducedrank', 'tanh'])
 
-    parser.add_argument('--prior_of_interest')
-
     parser.add_argument('--savefig', action='store_true')
 
     args = parser.parse_args()
@@ -32,7 +30,7 @@ def main():
     seed_list = []
     ev_list = []
 
-    prior_of_interest = args.prior_of_interest
+    prior_of_interest = 1e-1
     dataset_of_interest = args.dataset_of_interest
 
     for taskid in range(269):
@@ -52,7 +50,7 @@ def main():
                     Hs_list += [sim_args['H']]
             else:
 
-                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     method_list += [sim_args['method']]
