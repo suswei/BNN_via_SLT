@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="nfgammamodes"
+#SBATCH --job-name="compare_nfgamma"
 #SBATCH -p physical
 
-#SBATCH --mem=1G
+#SBATCH --mem=10G
 
 # The maximum running time of the job in days-hours:mins:sec
 #SBATCH --time=3-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-1599
+#SBATCH --array=0-239
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -33,4 +33,4 @@ fi
 
 # The job command(s):
 source activate singularmf
-MKL_THREADING_LAYER=GNU python3 sweep.py ${SLURM_ARRAY_TASK_ID}
+MKL_THREADING_LAYER=GNU python3 compare_nfgamma.py ${SLURM_ARRAY_TASK_ID}

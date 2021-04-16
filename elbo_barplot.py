@@ -69,91 +69,91 @@ def main():
 
     # for n in [5000]:
 
-        # for prior_var in [1e-1, 1e-2]:
+    for prior_var in [1, 1e-1, 1e-2, 1e-4]:
 
-    Hs_list = []
-    method_list = []
-    seed_list = []
-    ev_list = []
+        Hs_list = []
+        method_list = []
+        seed_list = []
+        ev_list = []
 
-    for i in range(len(args.Hs)):
+        for i in range(len(args.Hs)):
 
-        H = args.Hs[i]
+            H = args.Hs[i]
 
-        for seed in [1, 2, 3, 4, 5]:
+            for seed in [1, 2, 3, 4, 5]:
 
-            for method in ['nf_gamma','nf_gaussian','truth']:
+                for method in ['nf_gamma','nf_gaussian','truth']:
 
-                if method == 'truth':
+                    if method == 'truth':
 
-                    path = '{}/{}_{}_n5000_H{}_seed{}'.format(args.path, 'nf_gamma',
-                                                                                args.dataset, H,
-                                                                                seed)
-                    ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
-                    method_list += [method]
-                    seed_list += ['{}'.format(seed)]
-                    Hs_list += [H]
+                        path = '{}/{}_{}_n5000_H{}_seed{}_prior{}'.format(args.path, 'nf_gamma',
+                                                                                    args.dataset, H,
+                                                                                    seed, prior_var)
+                        ev_list += [torch.load('{}/results.pt'.format(path))['asy_log_pDn']]
+                        method_list += [method]
+                        seed_list += ['{}'.format(seed)]
+                        Hs_list += [H]
 
-                else:
-                    path = '{}/{}_{}_n5000_H{}_seed{}'.format(args.path,
-                                                                    method,
-                                                                    args.dataset, H,
-                                                                    seed)
-                    ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
-                                + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
-                    method_list += [method]
-                    seed_list += ['{}'.format(seed)]
-                    Hs_list += [H]
+                    else:
+                        path = '{}/{}_{}_n5000_H{}_seed{}_prior{}'.format(args.path,
+                                                                        method,
+                                                                        args.dataset, H,
+                                                                        seed, prior_var)
+                        ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
+                                    + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
+                        method_list += [method]
+                        seed_list += ['{}'.format(seed)]
+                        Hs_list += [H]
 
-                # else:
-                #     for varparams in ['allones', 'icml', 'abs_gauss_n','exp']:
-                #
-                #         Hs_list += [H]
-                #         method_list += ['{}_{}'.format(method,varparams)]
-                #         seed_list += ['{}'.format(seed)]
-                #
-                #         path = '{}/{}_{}_n{}_H{}_prior{}_seed{}_varparams{}'.format(args.path,method, args.dataset, n, H, prior_var, seed, varparams)
-                #         ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
-                #                     + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
-                #
-                #         # elbo_hist_nf_gammatrunc = torch.load('{}/results.pt'.format(path))['elbo_hist']
-                #         # elbo_hist_nf_gaussian = torch.load('{}/results.pt'.format(path))['elbo_hist']
-                #
-                #         # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
-                #         # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
-                #         # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
-                #         # plt.show()
+                    # else:
+                    #     for varparams in ['allones', 'icml', 'abs_gauss_n','exp']:
+                    #
+                    #         Hs_list += [H]
+                    #         method_list += ['{}_{}'.format(method,varparams)]
+                    #         seed_list += ['{}'.format(seed)]
+                    #
+                    #         path = '{}/{}_{}_n{}_H{}_prior{}_seed{}_varparams{}'.format(args.path,method, args.dataset, n, H, prior_var, seed, varparams)
+                    #         ev_list += [torch.load('{}/results.pt'.format(path))['elbo'].detach().numpy()
+                    #                     + torch.load('{}/args.pt'.format(path))['nSn'].numpy()]
+                    #
+                    #         # elbo_hist_nf_gammatrunc = torch.load('{}/results.pt'.format(path))['elbo_hist']
+                    #         # elbo_hist_nf_gaussian = torch.load('{}/results.pt'.format(path))['elbo_hist']
+                    #
+                    #         # plt.plot(elbo_hist_nf_gaussian,'r',label='gaussian')
+                    #         # plt.plot(elbo_hist_nf_gammatrunc,label='gammatrunc')
+                    #         # plt.title('dataset {} H {} seed {}'.format(args.dataset, H, seed))
+                    #         # plt.show()
 
-    method_list = pd.Series(method_list, dtype='category')
-    seed_list = pd.Series(seed_list, dtype="category")
+        method_list = pd.Series(method_list, dtype='category')
+        seed_list = pd.Series(seed_list, dtype="category")
 
-    summary_pd = pd.DataFrame({'H': Hs_list,
-                               'ELBOplusnSn': ev_list,
-                               'method': method_list,
-                               'seed': seed_list})
+        summary_pd = pd.DataFrame({'H': Hs_list,
+                                   'ELBOplusnSn': ev_list,
+                                   'method': method_list,
+                                   'seed': seed_list})
 
-    g = sns.barplot(x="H", y="ELBOplusnSn",
-                    hue="method",
-                    data=summary_pd)
-    hatches = ['/', '/', '/',
-               '+', '+', '+',
-               'x', 'x', 'x']
-    for hatch, patch in zip(hatches, g.patches):
-        patch.set_hatch(hatch)
-    leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
-    for patch in leg.get_patches():
-        patch.set_height(12)
-        patch.set_y(-6)
+        g = sns.barplot(x="H", y="ELBOplusnSn",
+                        hue="method",
+                        data=summary_pd)
+        hatches = ['/', '/', '/',
+                   '+', '+', '+',
+                   'x', 'x', 'x']
+        for hatch, patch in zip(hatches, g.patches):
+            patch.set_hatch(hatch)
+        leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
+        for patch in leg.get_patches():
+            patch.set_height(12)
+            patch.set_y(-6)
 
 
-    if args.savefig:
-        # plt.savefig('{}/{}_n{}_prior{}.pgf'.format(args.path, args.dataset, n, prior_var), bbox_inches='tight')
-        plt.savefig('{}/{}_H{}.png'.format(args.path, args.dataset, args.Hs[0]), bbox_inches='tight')
+        if args.savefig:
+            # plt.savefig('{}/{}_n{}_prior{}.pgf'.format(args.path, args.dataset, n, prior_var), bbox_inches='tight')
+            plt.savefig('{}/{}_H{}_prior{}.png'.format(args.path, args.dataset, args.Hs[0], prior_var), bbox_inches='tight')
 
-    else:
-        plt.show()
+        else:
+            plt.show()
 
-plt.close()
+        plt.close()
 
 
 if __name__ == "__main__":

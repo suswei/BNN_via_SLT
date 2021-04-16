@@ -7,11 +7,11 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    methods = ['nf_gamma', 'nf_gammatrunc']
+    methods = ['nf_gamma', 'nf_gaussian']
     seeds = [1, 2, 3, 4, 5]
 
-    tanh_Hs = [64, 900, 1600, 6400]
-    rr_Hs = [8, 10, 30, 40]
+    tanh_Hs = [64, 1600, 6400]
+    rr_Hs = [8, 30, 40]
 
     ####################################################################################################
 

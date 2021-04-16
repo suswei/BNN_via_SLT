@@ -8,10 +8,12 @@ def set_sweep_config():
     hyperparameter_experiments = []
     methods = ['nf_gamma', 'nf_gammatrunc']
     modes = ['allones', 'icml', 'exp', 'abs_gauss']
-    seeds = [1, 2, 3, 4, 5]
 
-    tanh_Hs = [64, 900, 1600, 6400]
-    rr_Hs = [8, 10, 30, 40]
+    seeds = [1]
+    prior_vars = [1, 1e-1, 1e-2, 1e-4]
+
+    tanh_Hs = [64, 1600, 6400]
+    rr_Hs = [8, 30, 40]
     ############################################ TANH GAUSSIAN PRIOR ########################################################
 
     hyperparameter_config = {
@@ -19,7 +21,7 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
-        'prior_var': [1, 1e-1, 1e-2, 1e-4],
+        'prior_var': prior_vars,
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -32,7 +34,7 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': rr_Hs,
-        'prior_var': [1, 1e-1, 1e-2, 1e-4],
+        'prior_var': prior_vars,
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -73,10 +75,10 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    if taskid < 1280:
+    if taskid < 192:
 
-        path = 'gaussprior_nfgammamodes/{}_{}_n5000_H{}_seed{}_prior{}_varparams{}' \
-            .format(temp['method'], temp['dataset'], temp['H'], temp['seed'],temp['prior_var'],temp['nf_gamma_mode'])
+        path = 'comparenfgamma_gaussprior/{}_{}_n5000_H{}_seed{}_prior{}_varparams{}' \
+            .format(temp['method'], temp['dataset'], temp['H'], temp['seed'], temp['prior_var'], temp['nf_gamma_mode'])
 
         os.system("python3 main.py "
                   "--dataset %s "
@@ -97,7 +99,7 @@ def main(taskid):
 
     else:
 
-        path = 'unifprior_nfgammamodes/{}_{}_n5000_H{}_seed{}_prior{}_varparams{}' \
+        path = 'comparenfgamma_unifprior/{}_{}_n5000_H{}_seed{}_prior{}_varparams{}' \
             .format(temp['method'], temp['dataset'], temp['H'], temp['seed'], temp['prior'], temp['nf_gamma_mode'])
 
         os.system("python3 main.py "
