@@ -2,11 +2,8 @@ import os
 import argparse
 from dataset_factory import *
 import custom_lr_scheduler
-from gaussian_mf import *
 from normalizing_flows import *
 from utils import *
-# from matplotlib import pyplot as plt
-# from scipy import stats
 
 
 def train(args):
@@ -122,24 +119,17 @@ def main():
                         help='sample size of synthetic dataset')
 
     parser.add_argument('--prior', type=str, default='gaussian')
-    parser.add_argument('--prior_var', type=float, default=1e-1, metavar='N')
+    parser.add_argument('--prior_var')
 
-    parser.add_argument('--epochs', type=int, default=500, metavar='N',
-                        help='number of epochs to train (default: 200)')
-    parser.add_argument('--batch_size', type=int, default=500, metavar='N',
-                        help='input batch size for training (default: 100)')
+    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--blundell_weighting', action='store_true')
-    parser.add_argument('--lr', type=float, default=1e-3, metavar='N')
+    parser.add_argument('--lr', type=float, default=1e-3)
 
-    parser.add_argument('--nf',type=str,default='rnvp',choices=['iaf','rnvp','vanilla_rnvp'])
+    parser.add_argument('--nf', type=str,default='rnvp', choices=['iaf','rnvp','vanilla_rnvp'])
     parser.add_argument('--nf_hidden', type=int, default=16)
     parser.add_argument('--nf_layers', type=int, default=20)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
-
-    parser.add_argument('--lmbda_star', type=float, default=40, metavar='N',
-                        help='?')
-    parser.add_argument('--k', type=float, default=1, metavar='N',
-                        help='?')
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')
@@ -192,7 +182,7 @@ def main():
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
-    print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
+    # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
         # i = 0
         # metric = []

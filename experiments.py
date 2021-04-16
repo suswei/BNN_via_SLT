@@ -22,6 +22,7 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
+        'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds
     }
@@ -34,6 +35,7 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': rr_Hs,
+        'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds
     }
@@ -48,6 +50,7 @@ def set_sweep_config():
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
         'prior': ['unif'],
+        'prior_var': ['na'],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -60,6 +63,7 @@ def set_sweep_config():
         'nf_gamma_mode': modes,
         'H': rr_Hs,
         'prior': ['unif'],
+        'prior_var': ['na'],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -70,7 +74,9 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['tanh'],
         'method': ['nf_gaussian'],
+        'nf_gamma_mode': ['na'],
         'H': tanh_Hs,
+        'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds
     }
@@ -81,7 +87,9 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['reducedrank'],
         'method': ['nf_gaussian'],
+        'nf_gamma_mode': ['na'],
         'H': rr_Hs,
+        'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds
     }
@@ -93,8 +101,10 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['tanh'],
         'method': ['nf_gaussian'],
+        'nf_gamma_mode': ['na'],
         'H': tanh_Hs,
         'prior': ['unif'],
+        'prior_var': ['na'],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -104,8 +114,10 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['reducedrank'],
         'method': ['nf_gaussian'],
+        'nf_gamma_mode': ['na'],
         'H': rr_Hs,
         'prior': ['unif'],
+        'prior_var': ['na'],
         'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -120,85 +132,25 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    if taskid < 192:
+    path = 'taskid{}/'.format(taskid)
 
-        path = 'taskid{}/{}_{}_H{}_seed{}_prior{}_varparams{}' \
-            .format(taskid, temp['method'], temp['dataset'], temp['H'], temp['seed'], temp['prior_var'], temp['nf_gamma_mode'])
-
-        os.system("python3 main.py "
-                  "--dataset %s "
-                  "--method %s "
-                  "--nf_gamma_mode %s "
-                  "--H %s "
-                  "--prior gaussian "
-                  "--prior_var %s "
-                  "--seed %s "
-                  "--path %s "
-                  % (temp['dataset'],
-                     temp['method'],
-                     temp['nf_gamma_mode'],
-                     temp['H'],
-                     temp['prior_var'],
-                     temp['seed'],
-                     path))
-
-    elif taskid < 240:
-
-        path = 'taskid{}/{}_{}_H{}_seed{}_varparams{}' \
-            .format(taskid, temp['method'], temp['dataset'], temp['H'], temp['seed'], temp['nf_gamma_mode'])
-
-        os.system("python3 main.py "
-                  "--dataset %s "
-                  "--method %s "
-                  "--nf_gamma_mode %s "
-                  "--H %s "
-                  "--prior unif "
-                  "--seed %s "
-                  "--path %s "
-                  % (temp['dataset'],
-                     temp['method'],
-                     temp['nf_gamma_mode'],
-                     temp['H'],
-                     temp['seed'],
-                     path))
-
-    elif taskid < 264:
-        path = 'taskid{}/{}_{}_H{}_seed{}_prior{}' \
-            .format(taskid, temp['method'], temp['dataset'], temp['H'], temp['seed'], temp['prior_var'])
-
-        os.system("python3 main.py "
-                  "--dataset %s "
-                  "--seed %s "
-                  "--H %s "
-                  "--method %s "
-                  "--prior %s "
-                  "--prior gaussian "
-                  "--path %s "
-                  % (temp['dataset'],
-                     temp['seed'],
-                     temp['H'],
-                     temp['method'],
-                     temp['prior_var'],
-                     path
-                     ))
-    else:
-
-        path = 'taskid{}/{}_{}_H{}_seed{}' \
-            .format(taskid, temp['method'], temp['dataset'], temp['H'], temp['seed'])
-
-        os.system("python3 main.py "
-                  "--dataset %s "
-                  "--seed %s "
-                  "--H %s "
-                  "--method %s "
-                  "--prior unif "
-                  "--path %s "
-                  % (temp['dataset'],
-                     temp['seed'],
-                     temp['H'],
-                     temp['method'],
-                     path
-                     ))
+    os.system("python3 main.py "
+              "--dataset %s "
+              "--method %s "
+              "--nf_gamma_mode %s "
+              "--H %s "
+              "--prior %s "
+              "--prior_var %s "
+              "--seed %s "
+              "--path %s "
+              % (temp['dataset'],
+                 temp['method'],
+                 temp['nf_gamma_mode'],
+                 temp['H'],
+                 temp['prior'],
+                 temp['prior_var'],
+                 temp['seed'],
+                 path))
 
 
 if __name__ == "__main__":
