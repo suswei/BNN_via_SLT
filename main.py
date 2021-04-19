@@ -133,6 +133,8 @@ def main():
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')
+    parser.add_argument('--lmbda_star', action='store_true')
+    parser.add_argument('--beta_star', action='store_true')
 
     parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -170,8 +172,10 @@ def main():
             args.ks = torch.ones(args.w_dim, 1)
             args.betas = torch.ones(args.w_dim, 1)
 
-        args.lmbdas[0] = args.trueRLCT
-        args.betas[0] = args.sample_size
+        if args.lmbda_star:
+            args.lmbdas[0] = args.trueRLCT
+        if args.beta_star:
+            args.betas[0] = args.sample_size
 
         args.hs = args.lmbdas * 2 * args.ks - 1
 

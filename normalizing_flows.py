@@ -220,6 +220,7 @@ class R_NVP(nn.Module):
         print(self.sig_net)
         self.mu_net = nn.Sequential(*blocks2)
         print(self.mu_net)
+
         # self.sig_net = nn.Sequential(
         #     nn.Linear(k, hidden),
         #     nn.LeakyReLU(),
@@ -230,10 +231,7 @@ class R_NVP(nn.Module):
         #     nn.LeakyReLU(),
         #     nn.Linear(hidden, d - k))
 
-        base_mu, base_cov = torch.zeros(d), torch.eye(d)
-        self.base_dist = MultivariateNormal(base_mu, base_cov)
-
-    def forward(self, x, flip=False):
+    def forward(self, x, flip=True):
         x1, x2 = x[:, :self.k], x[:, self.k:]
 
         if flip:
@@ -254,7 +252,7 @@ class R_NVP(nn.Module):
         # return z_hat, log_pz, log_jacob
         return z_hat, log_jacob
 
-    def inverse(self, Z, flip=False):
+    def inverse(self, Z, flip=True):
         z1, z2 = Z[:, :self.k], Z[:, self.k:]
 
         if flip:
