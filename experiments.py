@@ -133,9 +133,13 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    torch.save(hyperparameter_experiments,'smallrnvp/hyp.pt')
+    path = 'smallrnvp'
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-    path = 'smallrnvp/taskid{}/'.format(taskid)
+    torch.save(hyperparameter_experiments,'{}/hyp.pt'.format(path))
+
+    path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
               "--lmbda_star --beta_star "
