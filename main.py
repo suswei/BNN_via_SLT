@@ -29,7 +29,11 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(args, R=10, exact=True)  # [R, args.w_dim]
+            if args.prior == 'unif':
+                R = 10
+            else:
+                R = 1
+            xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
             args.theta_lower = torch.min(thetas, dim=0).values.detach() #need to do by dim, see gengamma_uniform branch
@@ -53,8 +57,12 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
+            if args.prior == 'unif':
+                R = 100
+            else:
+                R = 1
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=100)
+                = evaluate(resolution_network, args, R)
             print('epoch {}: loss {}, nSn {}, elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))

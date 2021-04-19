@@ -133,16 +133,15 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    torch.save(hyperparameter_experiments,'hyp.pt')
+    torch.save(hyperparameter_experiments,'smallrnvp/hyp.pt')
 
-    path = 'taskid{}/'.format(taskid)
+    path = 'smallrnvp/taskid{}/'.format(taskid)
 
     os.system("python3 main.py "
               "--lmbda_star --beta_star "
               "--dataset %s "
               "--method %s "
-              "--nf vanilla_rnvp "
-              "--nf_hidden 16 --nf_layers 20 "
+              "--nf_layers 1 --nf_af tanh "
               "--nf_gamma_mode %s "
               "--H %s "
               "--prior %s "

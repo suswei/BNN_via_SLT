@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="vanrnvp"
+#SBATCH --job-name="smallrnvp"
 #SBATCH -p physical
 
 #SBATCH --mem=10G

@@ -26,7 +26,7 @@ def main():
     #     })
     #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
 
-    hyperparameter_experiments = torch.load('lmbda_beta_star/hyp.pt')
+    hyperparameter_experiments = torch.load('lmbda_beta_star_rnvp/hyp.pt')
     tasks = hyperparameter_experiments.__len__()
 
     Hs_list = []
@@ -34,12 +34,12 @@ def main():
     seed_list = []
     ev_list = []
 
-    prior_of_interest = 1
+    prior_of_interest = 1e-4
     dataset_of_interest = 'tanh'
 
     for taskid in range(tasks):
 
-        path = 'lmbda_beta_star/taskid{}/'.format(taskid)
+        path = 'lmbda_beta_star_rnvp/taskid{}/'.format(taskid)
         try:
             results = torch.load('{}/results.pt'.format(path))
             sim_args = torch.load('{}/args.pt'.format(path))
@@ -76,7 +76,7 @@ def main():
 
         for taskid in range(tasks):
 
-            path = 'lmbda_beta_star/taskid{}/'.format(taskid)
+            path = 'lmbda_beta_star_rnvp/taskid{}/'.format(taskid)
             results = torch.load('{}/results.pt'.format(path))
             sim_args = torch.load('{}/args.pt'.format(path))
 
