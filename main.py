@@ -190,11 +190,12 @@ def main():
 
         args.hs = args.lmbdas * 2 * args.ks - 1
 
-
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
+    elbo_val = elbo_loglik_val.mean() - complexity
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+    print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
@@ -221,7 +222,7 @@ def main():
     #         -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))))
     #     print('true lmbda {}'.format(args.trueRLCT))
 
-    results_dict = {'elbo': elbo,
+    results_dict = {'elbo': elbo, 'elbo_val': elbo_val,
                     'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(
                         np.log(args.sample_size)),
                     'elbo_hist': elbo_hist}

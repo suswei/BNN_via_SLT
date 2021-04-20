@@ -145,7 +145,7 @@ def main(taskid):
               "--lmbda_star --beta_star --exact_EqLogq --epochs 3000 "
               "--nf_layers 1 --nf_af tanh "
               "--dataset %s "
-              "--method nf_gaussian "
+              "--method %s "
               "--nf_gamma_mode %s "
               "--H %s "
               "--prior %s "
@@ -153,7 +153,7 @@ def main(taskid):
               "--seed %s "
               "--path %s "
               % (temp['dataset'],
-                 # temp['method'],
+                 temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],
                  temp['prior'],

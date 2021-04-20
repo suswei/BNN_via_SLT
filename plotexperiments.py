@@ -28,7 +28,7 @@ def main():
 
     prior_of_interest = 1e-4
     dataset_of_interest = 'tanh'
-    path_prefix = 'smallrnvp'
+    path_prefix = 'lmbda_beta_star_rnvp'
 
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(path_prefix))
     tasks = hyperparameter_experiments.__len__()
@@ -48,7 +48,7 @@ def main():
 
             if prior_of_interest == 'unif':
 
-                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['H']==64:
+                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     if sim_args['method'] == 'nf_gaussian':
@@ -60,7 +60,7 @@ def main():
 
             else:
 
-                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['H']==64:
+                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     if sim_args['method'] == 'nf_gaussian':
@@ -113,9 +113,9 @@ def main():
         patch.set_y(-6)
 
     if prior_of_interest == 'unif':
-        title = '{}/{}_unifprior_H64.png'.format(path_prefix, dataset_of_interest)
+        title = '{}/{}_unifprior.png'.format(path_prefix, dataset_of_interest)
     else:
-        title = '{}/{}_priorvar{}_H64.png'.format(path_prefix, dataset_of_interest, prior_of_interest)
+        title = '{}/{}_priorvar{}.png'.format(path_prefix, dataset_of_interest, prior_of_interest)
     plt.title(title)
 
     if args.savefig:

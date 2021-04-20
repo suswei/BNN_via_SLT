@@ -75,7 +75,7 @@ def get_dataset_by_id(args):
         y_rv = Normal(mean, 1)
         y_val = y_rv.sample(torch.Size([args.sample_size, 1]))
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
-
+        args.nSn_val = -y_rv.log_prob(y_val).sum()
 
         # create smaller datasets
         ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
@@ -125,7 +125,7 @@ def get_dataset_by_id(args):
         y_rv = Normal(mean, 1)
         y_val = y_rv.sample(torch.Size([args.sample_size, 1]))
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
-
+        args.nSn_val = -y_rv.log_prob(y_val).sum()
 
         # create smaller datasets
         ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
