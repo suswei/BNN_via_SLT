@@ -26,7 +26,11 @@ def main():
     #     })
     #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
 
-    hyperparameter_experiments = torch.load('lmbda_beta_star_rnvp/hyp.pt')
+    prior_of_interest = 1e-4
+    dataset_of_interest = 'tanh'
+    path_prefix = 'smallrnvp'
+
+    hyperparameter_experiments = torch.load('{}/hyp.pt'.format(path_prefix))
     tasks = hyperparameter_experiments.__len__()
 
     Hs_list = []
@@ -34,19 +38,17 @@ def main():
     seed_list = []
     ev_list = []
 
-    prior_of_interest = 1e-4
-    dataset_of_interest = 'tanh'
 
     for taskid in range(tasks):
 
-        path = 'lmbda_beta_star_rnvp/taskid{}/'.format(taskid)
+        path = '{}/taskid{}/'.format(path_prefix, taskid)
         try:
             results = torch.load('{}/results.pt'.format(path))
             sim_args = torch.load('{}/args.pt'.format(path))
 
             if prior_of_interest == 'unif':
 
-                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['H']==64:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     if sim_args['method'] == 'nf_gaussian':
@@ -58,7 +60,7 @@ def main():
 
             else:
 
-                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['H']==64:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     if sim_args['method'] == 'nf_gaussian':
@@ -76,7 +78,7 @@ def main():
 
         for taskid in range(tasks):
 
-            path = 'lmbda_beta_star_rnvp/taskid{}/'.format(taskid)
+            path = '{}/taskid{}/'.format(path_prefix, taskid)
             results = torch.load('{}/results.pt'.format(path))
             sim_args = torch.load('{}/args.pt'.format(path))
 
@@ -111,9 +113,9 @@ def main():
         patch.set_y(-6)
 
     if prior_of_interest == 'unif':
-        title = '{}_unifprior.png'.format(dataset_of_interest)
+        title = '{}/{}_unifprior_H64.png'.format(path_prefix, dataset_of_interest)
     else:
-        title = '{}_priorvar{}.png'.format(dataset_of_interest, prior_of_interest)
+        title = '{}/{}_priorvar{}_H64.png'.format(path_prefix, dataset_of_interest, prior_of_interest)
     plt.title(title)
 
     if args.savefig:

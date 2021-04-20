@@ -7,14 +7,14 @@ import torch
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    methods = ['nf_gamma', 'nf_gammatrunc']
+    methods = ['nf_gamma']
     modes = ['allones', 'icml', 'exp', 'abs_gauss']
 
     seeds = [1]
     prior_vars = [1, 1e-1, 1e-2, 1e-4]
 
-    tanh_Hs = [64, 900, 1600]
-    rr_Hs = [8, 30, 40]
+    tanh_Hs = [4, 16, 36]
+    rr_Hs = [2, 4, 6]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
 
@@ -133,7 +133,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'smallrnvp'
+    path = 'smallH'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -142,10 +142,10 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--lmbda_star --beta_star "
-              "--dataset %s "
-              "--method %s "
+              "--lmbda_star --beta_star --exact_EqLogq --epochs 3000 "
               "--nf_layers 1 --nf_af tanh "
+              "--dataset %s "
+              "--method nf_gaussian "
               "--nf_gamma_mode %s "
               "--H %s "
               "--prior %s "
@@ -153,7 +153,7 @@ def main(taskid):
               "--seed %s "
               "--path %s "
               % (temp['dataset'],
-                 temp['method'],
+                 # temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],
                  temp['prior'],

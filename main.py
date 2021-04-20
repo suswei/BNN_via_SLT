@@ -93,7 +93,10 @@ def evaluate(resolution_network, args, R):
         args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
         args.xi_upper = torch.max(xis, dim=0).values.detach()
-        ent = q_entropy_sample(args, xis)
+        if args.exact_EqLogq:
+            ent = qj_entropy(args).sum()
+        else:
+            ent = q_entropy_sample(args, xis)
 
         complexity = ent - log_prior(args, thetas).mean() - log_jacobians.mean()
 
@@ -143,6 +146,7 @@ def main():
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')
     parser.add_argument('--lmbda_star', action='store_true')
     parser.add_argument('--beta_star', action='store_true')
+    parser.add_argument('--exact_EqLogq', action='store_true')
 
     parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -151,8 +155,7 @@ def main():
 
     get_dataset_by_id(args)
 
-    print(args.path)
-    print('true rlct {}'.format(args.trueRLCT))
+    print(args)
 
     if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
 
@@ -187,7 +190,6 @@ def main():
 
         args.hs = args.lmbdas * 2 * args.ks - 1
 
-    print(args)
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)

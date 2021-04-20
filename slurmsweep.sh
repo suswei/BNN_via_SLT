@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="smallrnvp"
+#SBATCH --job-name="smallH"
 #SBATCH -p physical
 
-#SBATCH --mem=10G
+#SBATCH --mem=1G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=3-23:0:00
+#SBATCH --time=0-3:0:00
 
 # Batch arrays
-#SBATCH --array=0-269
+#SBATCH --array=0-149
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
