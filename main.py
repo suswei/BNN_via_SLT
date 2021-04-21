@@ -36,7 +36,7 @@ def train(args):
             xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
-            args.theta_lower = torch.min(thetas, dim=0).values.detach() #need to do by dim, see gengamma_uniform branch
+            args.theta_lower = torch.min(thetas, dim=0).values.detach()
             args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
@@ -58,7 +58,7 @@ def train(args):
 
         if epoch % args.display_interval == 0:
             if args.prior == 'unif':
-                R = 100
+                R = 10
             else:
                 R = 1
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
@@ -93,7 +93,7 @@ def evaluate(resolution_network, args, R):
         args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
         args.xi_upper = torch.max(xis, dim=0).values.detach()
-        if args.exact_EqLogq:
+        if args.exact_EqLogq and args.method != 'nf_gammatrunc':
             ent = qj_entropy(args).sum()
         else:
             ent = q_entropy_sample(args, xis)
@@ -109,6 +109,10 @@ def evaluate(resolution_network, args, R):
         elbo_loglik_val = 0.0
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
+
+        ktheta = (elbo_loglik + args.nSn)/args.sample_size
+        monomial = torch.prod(xis**(2*args.ks.T), dim=1)
+        print('resolution map quality {}'.format(((ktheta-monomial)**2).sum()))
 
     return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas) .mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
@@ -157,7 +161,7 @@ def main():
 
     print(args)
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_gaussian':
 
         if args.nf_gamma_mode == 'abs_gauss':
 
@@ -199,7 +203,9 @@ def main():
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
-        # i = 0
+
+
+    # i = 0
         # metric = []
         # for n in args.ns:
         #     args.betas[0] = n

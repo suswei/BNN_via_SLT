@@ -19,7 +19,7 @@ def log_prior(args, thetas):
 
         return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
                - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
-               - torch.diag(torch.matmul(thetas,thetas.T))/(2*args.prior_var)
+               - torch.diag(torch.matmul(thetas - torch.ones(thetas.shape[0],thetas.shape[1]), thetas.T- torch.ones(thetas.shape[1],thetas.shape[0])))/(2*args.prior_var)
 
     elif args.prior == 'logunif':
 

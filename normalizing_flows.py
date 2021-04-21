@@ -135,7 +135,7 @@ class FCNN(nn.Module):
     """
     Simple fully connected neural network.
     """
-    def __init__(self, in_dim, out_dim, hidden_dim, layers, af):
+    def __init__(self, in_dim, out_dim, hidden_dim, layers, af, positive_output=False):
         super().__init__()
 
         self.sizes = np.concatenate(
@@ -148,6 +148,9 @@ class FCNN(nn.Module):
                       for in_f, out_f in zip(self.sizes, self.sizes[1:])]
         blocks = list(itertools.chain(*blocks))
         del blocks[-1]  # remove the last activation, don't need it in output layer
+
+        if positive_output:
+            blocks += [nn.Softplus()]
 
         self.network = nn.Sequential(*blocks)
 
@@ -171,7 +174,15 @@ class RealNVP(nn.Module):
         self.t2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
         self.s2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
 
+        self.pre = base_network(dim-1, 1, dim-1, 2, af, positive_output=True)
+
     def forward(self, x):
+
+        K0 = self.pre(x[:, 1:])
+        w1 = x[:, 1].unsqueeze(dim=1)/ K0
+        x = torch.cat([w1, x[:, 1:]], dim=1)
+        log_det = -torch.log(K0).squeeze(dim=1)
+
         lower, upper = x[:,:self.dim // 2], x[:,self.dim // 2:]
 
         t1_transformed = self.t1(lower)
@@ -181,7 +192,7 @@ class RealNVP(nn.Module):
         s2_transformed = self.s2(upper)
         lower = t2_transformed + lower * torch.exp(s2_transformed)
         z = torch.cat([lower, upper], dim=1)
-        log_det = torch.sum(s1_transformed, dim=1) + \
+        log_det += torch.sum(s1_transformed, dim=1) + \
                   torch.sum(s2_transformed, dim=1)
         return z, log_det
 
