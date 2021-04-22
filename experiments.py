@@ -8,13 +8,13 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['allones', 'icml', 'exp', 'abs_gauss']
+    modes = ['icml']
 
     seeds = [1]
     prior_vars = [1, 1e-1, 1e-2, 1e-4]
 
-    tanh_Hs = [4, 16, 36]
-    rr_Hs = [2, 4, 6]
+    tanh_Hs = [4, 16, 64]
+    rr_Hs = [2, 4, 8]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
 
@@ -142,7 +142,7 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--lmbda_star --beta_star --exact_EqLogq --epochs 3000 "
+              "--lmbda_star --beta_star --exact_EqLogq --epochs 2000 "
               "--nf_layers 1 --nf_af tanh "
               "--dataset %s "
               "--method %s "

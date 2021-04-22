@@ -60,7 +60,7 @@ def train(args):
             if args.prior == 'unif':
                 R = 100
             else:
-                R = 1
+                R = 100
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R)
             print('epoch {}: loss {}, nSn {}, elbo {} '
@@ -110,6 +110,10 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
+        ktheta = (elbo_loglik + args.nSn)/args.sample_size
+        monomial = torch.prod(xis**(2*args.ks.T), dim=1)
+        print('resolution map quality {}'.format(((ktheta-monomial)**2).sum()))
+
     return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas) .mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
@@ -157,7 +161,7 @@ def main():
 
     print(args)
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_gaussian':
 
         if args.nf_gamma_mode == 'abs_gauss':
 
@@ -195,6 +199,7 @@ def main():
     elbo_val = elbo_loglik_val.mean() - complexity
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+    print('elbo_loglik_val {}'.format(elbo_loglik))
     print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
@@ -222,7 +227,7 @@ def main():
     #         -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))))
     #     print('true lmbda {}'.format(args.trueRLCT))
 
-    results_dict = {'elbo': elbo, 'elbo_val': elbo_val,
+    results_dict = {'elbo': elbo, 'elbo_val': elbo_val, 'elbo_loglik_val': elbo_loglik_val,
                     'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(
                         np.log(args.sample_size)),
                     'elbo_hist': elbo_hist}
