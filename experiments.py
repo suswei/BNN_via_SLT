@@ -11,10 +11,10 @@ def set_sweep_config():
     modes = ['icml']
 
     seeds = [1]
-    prior_vars = [1, 1e-1, 1e-2, 1e-4]
+    prior_vars = [1e-2, 1e-4]
 
-    tanh_Hs = [4, 16, 64]
-    rr_Hs = [2, 4, 8]
+    tanh_Hs = [1600, 6400]
+    rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
 
@@ -75,7 +75,7 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['tanh'],
         'method': ['nf_gaussian'],
-        'nf_gamma_mode': ['na'],
+        'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
         'prior': ['gaussian'],
         'prior_var': prior_vars,
@@ -88,7 +88,7 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['reducedrank'],
         'method': ['nf_gaussian'],
-        'nf_gamma_mode': ['na'],
+        'nf_gamma_mode': ['icml'],
         'H': rr_Hs,
         'prior': ['gaussian'],
         'prior_var': prior_vars,
@@ -102,7 +102,7 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['tanh'],
         'method': ['nf_gaussian'],
-        'nf_gamma_mode': ['na'],
+        'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
         'prior': ['unif'],
         'prior_var': [0],
@@ -115,7 +115,7 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['reducedrank'],
         'method': ['nf_gaussian'],
-        'nf_gamma_mode': ['na'],
+        'nf_gamma_mode': ['icml'],
         'H': rr_Hs,
         'prior': ['unif'],
         'prior_var': [0],

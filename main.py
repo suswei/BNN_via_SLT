@@ -114,7 +114,7 @@ def evaluate(resolution_network, args, R):
         monomial = torch.prod(xis**(2*args.ks.T), dim=1)
         print('resolution map quality {}'.format(((ktheta-monomial)**2).sum()))
 
-    return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas) .mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+    return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -199,7 +199,7 @@ def main():
     elbo_val = elbo_loglik_val.mean() - complexity
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    print('elbo_loglik_val {}'.format(elbo_loglik))
+    print('elbo_loglik_val {}'.format(elbo_loglik_val))
     print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
@@ -227,9 +227,10 @@ def main():
     #         -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))))
     #     print('true lmbda {}'.format(args.trueRLCT))
 
-    results_dict = {'elbo': elbo, 'elbo_val': elbo_val, 'elbo_loglik_val': elbo_loglik_val,
-                    'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(
-                        np.log(args.sample_size)),
+    results_dict = {'elbo': elbo,
+                    'elbo_val': elbo_val,
+                    'elbo_loglik_val': elbo_loglik_val,
+                    'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
                     'elbo_hist': elbo_hist}
 
     if args.path is not None:

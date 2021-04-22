@@ -180,6 +180,7 @@ def get_dataset_by_id(args):
         y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
         y_val = y_rv.sample()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
+        args.nSn_val = -y_rv.log_prob(y_val).sum()
 
         # create smaller datasets
         # ns = get_ns(args.sample_size)
