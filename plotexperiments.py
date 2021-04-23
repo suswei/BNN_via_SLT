@@ -28,7 +28,8 @@ def main():
 
     prior_of_interest = 'unif'
     dataset_of_interest = 'tanh'
-    path_prefix = 'loglikval'
+    zeromean = 'True'
+    path_prefix = 'highHrnvp'
 
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(path_prefix))
     tasks = hyperparameter_experiments.__len__()
@@ -47,7 +48,7 @@ def main():
 
             if prior_of_interest == 'unif':
 
-                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['zeromean']==zeromean:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     # ev_list += [results['elbo_loglik_val'].detach().numpy()]
@@ -61,7 +62,7 @@ def main():
 
             else:
 
-                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['zeromean']==zeromean:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     # ev_list += [results['elbo_loglik_val'].detach().numpy()]
@@ -81,16 +82,20 @@ def main():
 
         for taskid in range(tasks):
 
-            path = '{}/taskid{}/'.format(path_prefix, taskid)
-            results = torch.load('{}/results.pt'.format(path))
-            sim_args = torch.load('{}/args.pt'.format(path))
+            try:
+                path = '{}/taskid{}/'.format(path_prefix, taskid)
+                results = torch.load('{}/results.pt'.format(path))
+                sim_args = torch.load('{}/args.pt'.format(path))
 
-            if sim_args['H'] == H:
-                ev_list += [results['asy_log_pDn']]
-                method_list += ['truth']
-                seed_list += [sim_args['seed']]
-                Hs_list += [H]
-                break
+                if sim_args['H'] == H:
+                    ev_list += [results['asy_log_pDn']]
+                    method_list += ['truth']
+                    seed_list += [sim_args['seed']]
+                    Hs_list += [H]
+                    break
+
+            except:
+                print('missing taskid {}'.format(taskid))
 
     method_list = pd.Series(method_list, dtype='category')
     seed_list = pd.Series(seed_list, dtype="category")

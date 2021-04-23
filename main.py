@@ -29,11 +29,10 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            if args.prior == 'unif':
-                R = 10
-            else:
-                R = 1
-            xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
+            if args.prior=='unif':
+                args.trainR = 10
+
+            xis = sample_q(args, args.trainR, exact=True)  # [R, args.w_dim]
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
             args.theta_lower = torch.min(thetas, dim=0).values.detach() #need to do by dim, see gengamma_uniform branch
@@ -57,12 +56,9 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            if args.prior == 'unif':
-                R = 100
-            else:
-                R = 100
+
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R)
+                = evaluate(resolution_network, args, R=10)
             print('epoch {}: loss {}, nSn {}, elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
                   .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
@@ -128,6 +124,7 @@ def main():
     parser.add_argument('--dataset', type=str, default='tanh',
                         help='dataset name from dataset_factory.py (default: )',
                         choices=['reducedrank', 'tanh','tanh_general'])
+    parser.add_argument('--zeromean', type=str, default='True')
     parser.add_argument('--H', type=int, default=1)
 
     parser.add_argument('--sample_size', type=int, default=5000,
@@ -140,6 +137,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--blundell_weighting', action='store_true')
     parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--trainR', type=int, default=10)
 
     parser.add_argument('--nf', type=str,default='rnvp', choices=['iaf','rnvp','vanilla_rnvp'])
     parser.add_argument('--nf_hidden', type=int, default=16)

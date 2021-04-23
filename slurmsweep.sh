@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="bigtanh"
+#SBATCH --job-name="highHnvp"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-3:0:00
+#SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-89
+#SBATCH --array=0-119
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

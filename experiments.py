@@ -8,12 +8,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['icml']
+    modes = ['icml', 'allones']
 
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1e-2, 1e-4]
+    prior_vars = [1e-2]
 
-    tanh_Hs = [1600, 6400, 12800]
+    tanh_Hs = [1600, 6400]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -25,7 +25,8 @@ def set_sweep_config():
         'H': tanh_Hs,
         'prior': ['gaussian'],
         'prior_var': prior_vars,
-        'seed': seeds
+        'seed': seeds,
+        'zeromean': ['True','False']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -52,7 +53,8 @@ def set_sweep_config():
         'H': tanh_Hs,
         'prior': ['unif'],
         'prior_var': [0],
-        'seed': seeds
+        'seed': seeds,
+        'zeromean': ['True', 'False']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -79,7 +81,8 @@ def set_sweep_config():
         'H': tanh_Hs,
         'prior': ['gaussian'],
         'prior_var': prior_vars,
-        'seed': seeds
+        'seed': seeds,
+        'zeromean': ['True', 'False']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -106,7 +109,8 @@ def set_sweep_config():
         'H': tanh_Hs,
         'prior': ['unif'],
         'prior_var': [0],
-        'seed': seeds
+        'seed': seeds,
+        'zeromean': ['True', 'False']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -133,7 +137,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'smallH'
+    path = 'highHnvp'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -142,9 +146,9 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--lmbda_star --beta_star --exact_EqLogq --epochs 2000 "
-              "--nf_layers 1 --nf_af tanh "
-              "--dataset %s "
+              "--lmbda_star --beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
+              "--nf_layers 20 --nf_af tanh "
+              "--dataset %s --zeromean %s "
               "--method %s "
               "--nf_gamma_mode %s "
               "--H %s "
@@ -152,7 +156,7 @@ def main(taskid):
               "--prior_var %s "
               "--seed %s "
               "--path %s "
-              % (temp['dataset'],
+              % (temp['dataset'], temp['zeromean'],
                  temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],
