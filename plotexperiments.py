@@ -26,9 +26,10 @@ def main():
     #     })
     #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
 
-    prior_of_interest = 1e-4
+    prior_of_interest = 'unif'
     dataset_of_interest = 'tanh'
-    path_prefix = 'lmbda_beta_star_rnvp'
+    zeromean = 'True'
+    path_prefix = 'highHrnvp'
 
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(path_prefix))
     tasks = hyperparameter_experiments.__len__()
@@ -37,7 +38,6 @@ def main():
     method_list = []
     seed_list = []
     ev_list = []
-
 
     for taskid in range(tasks):
 
@@ -48,21 +48,25 @@ def main():
 
             if prior_of_interest == 'unif':
 
-                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['zeromean']==zeromean:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+                    # ev_list += [results['elbo_loglik_val'].detach().numpy()]
+
                     if sim_args['method'] == 'nf_gaussian':
                         method_list += [sim_args['method']]
                     else:
-                        method_list += ['{}_{}'.format(sim_args['method'],sim_args['nf_gamma_mode'])]
+                        method_list += ['{}_{}'.format(sim_args['method'], sim_args['nf_gamma_mode'])]
                     seed_list += [sim_args['seed']]
                     Hs_list += [sim_args['H']]
 
             else:
 
-                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
+                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest and sim_args['zeromean']==zeromean:
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+                    # ev_list += [results['elbo_loglik_val'].detach().numpy()]
+
                     if sim_args['method'] == 'nf_gaussian':
                         method_list += [sim_args['method']]
                     else:
@@ -70,7 +74,7 @@ def main():
                     seed_list += [sim_args['seed']]
                     Hs_list += [sim_args['H']]
         except:
-            break
+            print('missing taskid {}'.format(taskid))
 
     unique_Hs = list(set(Hs_list))
 
@@ -78,16 +82,20 @@ def main():
 
         for taskid in range(tasks):
 
-            path = '{}/taskid{}/'.format(path_prefix, taskid)
-            results = torch.load('{}/results.pt'.format(path))
-            sim_args = torch.load('{}/args.pt'.format(path))
+            try:
+                path = '{}/taskid{}/'.format(path_prefix, taskid)
+                results = torch.load('{}/results.pt'.format(path))
+                sim_args = torch.load('{}/args.pt'.format(path))
 
-            if sim_args['H'] == H:
-                ev_list += [results['asy_log_pDn']]
-                method_list += ['truth']
-                seed_list += [sim_args['seed']]
-                Hs_list += [H]
-                break
+                if sim_args['H'] == H:
+                    ev_list += [results['asy_log_pDn']]
+                    method_list += ['truth']
+                    seed_list += [sim_args['seed']]
+                    Hs_list += [H]
+                    break
+
+            except:
+                print('missing taskid {}'.format(taskid))
 
     method_list = pd.Series(method_list, dtype='category')
     seed_list = pd.Series(seed_list, dtype="category")

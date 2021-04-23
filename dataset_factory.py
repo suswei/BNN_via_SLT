@@ -9,8 +9,6 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 import numpy as np
 
 
-
-
 class tanh_network(nn.Module):
     def __init__(self, input_dim=1, output_dim=1, H=1):
         super(tanh_network, self).__init__()
@@ -55,27 +53,34 @@ def get_dataset_by_id(args):
         else:
             args.truem = 1
 
-        # generate X
+        # training
         m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
         X = m.sample(torch.Size([args.sample_size]))
-        # generate y
-        mean = 0.0
+        if args.zeromean == 'True':
+            mean = torch.zeros(args.sample_size, 1)
+        else:
+            if args.prior == 'gaussian':
+                theta_a = torch.FloatTensor(1, args.H).normal_(mean=0, std=args.prior_var**(1/2))
+                theta_b = torch.FloatTensor(1, args.H).normal_(mean=0, std=args.prior_var**(1/2))
+            else:
+                theta_a = torch.FloatTensor(1, args.H).uniform_(0)
+                theta_b = torch.FloatTensor(1, args.H).uniform_(0)
+            mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X.T)).T
         y_rv = Normal(mean, 1)
-        y = y_rv.sample(torch.Size([args.sample_size, 1]))
-
-        # properties of data
+        y = y_rv.sample()
         args.nSn = -y_rv.log_prob(y).sum()
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
-
-        # generate X
+        # validation
         X_val = m.sample(torch.Size([args.sample_size]))
-        # generate y
-        mean = 0.0
+        if args.zeromean == 'True':
+            mean = torch.zeros(args.sample_size, 1)
+        else:
+            mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X_val.T)).T
         y_rv = Normal(mean, 1)
-        y_val = y_rv.sample(torch.Size([args.sample_size, 1]))
-        args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
+        y_val = y_rv.sample()
         args.nSn_val = -y_rv.log_prob(y_val).sum()
+        args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 
         # create smaller datasets
         ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
@@ -92,7 +97,6 @@ def get_dataset_by_id(args):
         args.nSns += [args.nSn]
         args.datasets += [args.train_loader]
 
-
     elif args.dataset == 'tanh_general':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
@@ -105,22 +109,19 @@ def get_dataset_by_id(args):
         else:
             args.truem = 1
 
-        # generate X
+        # training
         m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
         X = m.sample(torch.Size([args.sample_size]))
-        # generate y
-        mean = 0.0
+        mean = torch.zeros(args.sample_size, 1)
         y_rv = Normal(mean, 1)
-        y = y_rv.sample(torch.Size([args.sample_size, 1]))
+        y = y_rv.sample()
 
         # properties of data
         args.nSn = -y_rv.log_prob(y).sum()
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
-
-        # generate X
+        # validation
         X_val = m.sample(torch.Size([args.sample_size]))
-        # generate y
         mean = 0.0
         y_rv = Normal(mean, 1)
         y_val = y_rv.sample(torch.Size([args.sample_size, 1]))
@@ -180,6 +181,7 @@ def get_dataset_by_id(args):
         y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
         y_val = y_rv.sample()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
+        args.nSn_val = -y_rv.log_prob(y_val).sum()
 
         # create smaller datasets
         # ns = get_ns(args.sample_size)
