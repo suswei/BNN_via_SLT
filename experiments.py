@@ -9,12 +9,12 @@ def set_sweep_config():
     hyperparameter_experiments = []
     methods = ['nf_gamma']
     modes = ['icml']
-    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+    sample_sizes = [int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
               int(round(np.exp(7))) * 32]
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1]
+    prior_vars = [1e-2]
 
-    tanh_Hs = [1, 16, 64]
+    tanh_Hs = [100, 900, 1600]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -141,7 +141,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'lognslope'
+    path = 'highHlognslope'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -150,8 +150,8 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--lmbda_star --beta_star --exact_EqLogq --epochs 1000 --trainR 1 "
-              "--nf_layers 5 --nf_af tanh "
+              "--lmbda_star --beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
+              "--nf_layers 20 --nf_af tanh "
               "--dataset %s --sample_size %s --zeromean %s "
               "--method %s "
               "--nf_gamma_mode %s "
