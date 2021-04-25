@@ -4,7 +4,7 @@ from dataset_factory import *
 import custom_lr_scheduler
 from normalizing_flows import *
 from utils import *
-
+from scipy import stats
 
 def train(args):
 
@@ -89,7 +89,7 @@ def evaluate(resolution_network, args, R):
         args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
         args.xi_upper = torch.max(xis, dim=0).values.detach()
-        if args.exact_EqLogq:
+        if args.exact_EqLogq and args.method != 'nf_gammatrunc':
             ent = qj_entropy(args).sum()
         else:
             ent = q_entropy_sample(args, xis)
@@ -195,23 +195,26 @@ def main():
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
     elbo_val = elbo_loglik_val.mean() - complexity
+    print('nSn {}, elbo {} '
+          '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
+          .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent,
+                  logprior.mean(), log_jacobians.mean()))
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    print('elbo_loglik_val {}'.format(elbo_loglik_val))
-    print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
+    # print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
-        # i = 0
-        # metric = []
-        # for n in args.ns:
-        #     args.betas[0] = n
-        #     args.train_loader = args.datasets[i]
-        #     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=10)
-        #     metric+= [elbo_loglik - complexity +args.nSns[i]]
-        #     i+=1
-        # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
-        # print('est lmbda {} R2 {}'.format(-slope, r_value))
+    i = 0
+    metric = []
+    for n in args.ns:
+        args.betas[0] = n
+        args.train_loader = args.datasets[i]
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
+        metric+= [elbo_loglik - complexity +args.nSns[i]]
+        i+=1
+    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
+    print('est lmbda {} R2 {}'.format(-slope, r_value))
 
     # elif args.method == 'mf_gaussian':
     #

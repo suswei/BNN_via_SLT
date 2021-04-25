@@ -83,7 +83,8 @@ def get_dataset_by_id(args):
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 
         # create smaller datasets
-        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
         args.datasets = []
         args.ns = ns
         args.nSns = []
@@ -129,7 +130,8 @@ def get_dataset_by_id(args):
         args.nSn_val = -y_rv.log_prob(y_val).sum()
 
         # create smaller datasets
-        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
         args.datasets = []
         args.ns = ns
         args.nSns = []
@@ -185,7 +187,8 @@ def get_dataset_by_id(args):
 
         # create smaller datasets
         # ns = get_ns(args.sample_size)
-        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
         args.datasets = []
         args.ns = ns
         args.nSns = []

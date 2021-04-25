@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="highHnvp"
+#SBATCH --job-name="lognslope"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
