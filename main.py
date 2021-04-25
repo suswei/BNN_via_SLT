@@ -205,16 +205,16 @@ def main():
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
-    i = 0
-    metric = []
-    for n in args.ns:
-        args.betas[0] = n
-        args.train_loader = args.datasets[i]
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
-        metric+= [elbo_loglik - complexity +args.nSns[i]]
-        i+=1
-    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
-    print('est lmbda {} R2 {}'.format(-slope, r_value))
+    # i = 0
+    # metric = []
+    # for n in args.ns:
+    #     args.betas[0] = n
+    #     args.train_loader = args.datasets[i]
+    #     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
+    #     metric+= [elbo_loglik - complexity +args.nSns[i]]
+    #     i+=1
+    # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
+    # print('est lmbda {} R2 {}'.format(-slope, r_value))
 
     # elif args.method == 'mf_gaussian':
     #
