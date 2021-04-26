@@ -48,6 +48,7 @@ def train(args):
                 elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity*pi
             else:
                 elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
+                # elbo = loglik_elbo_vec.mean(dim=0).sum() + (torch.prod(xis,dim=1)*args.batch_size/np.sqrt(args.sample_size)) - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
 
