@@ -6,6 +6,7 @@ from normalizing_flows import *
 from utils import *
 from scipy import stats
 
+
 def train(args):
 
     if args.nf == 'iaf':

@@ -8,6 +8,7 @@ from scipy import stats
 import numpy as np
 from dataset_factory import get_lmbda
 
+
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description='?')
@@ -15,6 +16,8 @@ def main():
     parser.add_argument('--dataset_of_interest', default='reducedrank', type=str, choices=['reducedrank', 'tanh'])
 
     parser.add_argument('--savefig', action='store_true')
+
+    parser.add_argument('--path_prefix', type=str)
 
     args = parser.parse_args()
 
@@ -28,11 +31,8 @@ def main():
     #     })
     #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
 
-    prior_of_interest = 1e-2
-    dataset_of_interest = 'tanh'
-    path_prefix = 'allones_H64lognslope'
 
-    hyperparameter_experiments = torch.load('{}/hyp.pt'.format(path_prefix))
+    hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path_prefix))
     tasks = hyperparameter_experiments.__len__()
 
     Hs_list = []
@@ -43,51 +43,34 @@ def main():
 
     for taskid in range(tasks):
 
-        path = '{}/taskid{}/'.format(path_prefix, taskid)
+        path = '{}/taskid{}/'.format(args.path_prefix, taskid)
         try:
             results = torch.load('{}/results.pt'.format(path))
             sim_args = torch.load('{}/args.pt'.format(path))
 
-            if prior_of_interest == 'unif':
+            ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+            # ev_list += [results['elbo_loglik_val'].detach().numpy()]
+            ns_list += [sim_args['sample_size']]
 
-                if sim_args['prior'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
-
-                    ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                    # ev_list += [results['elbo_loglik_val'].detach().numpy()]
-                    ns_list += [sim_args['sample_size']]
-
-                    if sim_args['method'] == 'nf_gaussian':
-                        method_list += [sim_args['method']]
-                    else:
-                        method_list += ['{}_{}'.format(sim_args['method'], sim_args['nf_gamma_mode'])]
-                    seed_list += [sim_args['seed']]
-                    Hs_list += [sim_args['H']]
-
+            if sim_args['method'] == 'nf_gaussian':
+                method_list += [sim_args['method']]
             else:
+                method_list += ['{}_{}'.format(sim_args['method'], sim_args['nf_gamma_mode'])]
+            seed_list += [sim_args['seed']]
+            Hs_list += [sim_args['H']]
 
-                if sim_args['prior_var'] == prior_of_interest and sim_args['dataset'] == dataset_of_interest:
-
-                    ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                    # ev_list += [results['elbo_loglik_val'].detach().numpy()]
-                    ns_list += [sim_args['sample_size']]
-
-                    if sim_args['method'] == 'nf_gaussian':
-                        method_list += [sim_args['method']]
-                    else:
-                        method_list += ['{}_{}'.format(sim_args['method'],sim_args['nf_gamma_mode'])]
-                    seed_list += [sim_args['seed']]
-                    Hs_list += [sim_args['H']]
         except:
             print('missing taskid {}'.format(taskid))
 
     unique_Hs = list(set(Hs_list))
+    unique_methods = list(set(method_list))
 
     for H in unique_Hs:
 
         for taskid in range(tasks):
 
             try:
-                path = '{}/taskid{}/'.format(path_prefix, taskid)
+                path = '{}/taskid{}/'.format(args.path_prefix, taskid)
                 results = torch.load('{}/results.pt'.format(path))
                 sim_args = torch.load('{}/args.pt'.format(path))
 
@@ -112,20 +95,25 @@ def main():
                                'method': method_list,
                                'seed': seed_list})
 
-    for H in [64]:
-        for method in ['nf_gamma_allones','nf_gaussian']:
+    for H in unique_Hs:
+
+        for method in unique_methods:
+
             temp = summary_pd.loc[summary_pd['H'] == H]
             truth = get_lmbda([H], 'tanh')[0]
             temp = temp.loc[temp['method'] == method]
             evs = temp.groupby('n')['ELBOplusnSn'].mean()
-            ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
-                  int(round(np.exp(7))) * 32] # TODO: don't hardcode
-            ns = [int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32, int(round(np.exp(7))) * 32] # TODO: don't hardcode
-            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(ns), evs.get_values())
-            plt.plot(np.log(ns),evs.get_values(),'.')
+
+            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
+            plt.plot(np.log(evs._index),evs.get_values(),'.')
             plt.title('H {}: method {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, -truth, slope, r_value))
+
+            if args.savefig:
+                plt.savefig('{}/{}H{}'.format(args.path_prefix, method, H), bbox_inches='tight')
+
             plt.show()
 
+            plt.close()
     #
     # g = sns.barplot(x="H", y="ELBOplusnSn",
     #                 hue="method",
