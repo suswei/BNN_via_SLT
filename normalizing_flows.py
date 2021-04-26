@@ -211,54 +211,93 @@ class RealNVP(nn.Module):
 
 
 class R_NVP(nn.Module):
-    def __init__(self, d, k, hidden, layers):
+    def __init__(self, d=1, hidden=12, layers=1):
         super().__init__()
-        self.d, self.k = d, k
-
-        self.sizes = np.concatenate(
-            ([k], np.repeat(hidden, layers + 1), [d-k])).tolist()
-        blocks = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
-                  for in_f, out_f in zip(self.sizes, self.sizes[1:])]
-        blocks = list(itertools.chain(*blocks))
-        del blocks[-1]  # remove the last activation, don't need it in output layer
-
-        blocks2 = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
-                  for in_f, out_f in zip(self.sizes, self.sizes[1:])]
-        blocks2 = list(itertools.chain(*blocks2))
-        del blocks2[-1]  # remove the last activation, don't need it in output layer
-
-        self.sig_net = nn.Sequential(*blocks)
-        print(self.sig_net)
-        self.mu_net = nn.Sequential(*blocks2)
-        print(self.mu_net)
-
-        # self.sig_net = nn.Sequential(
-        #     nn.Linear(k, hidden),
-        #     nn.LeakyReLU(),
-        #     nn.Linear(hidden, d - k))
+        self.d = d
+        self.k = d//2
+        # self.sizes = np.concatenate(
+        #     ([k], np.repeat(hidden, layers + 1), [d-k])).tolist()
+        # blocks = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
+        #           for in_f, out_f in zip(self.sizes, self.sizes[1:])]
+        # blocks = list(itertools.chain(*blocks))
+        # del blocks[-1]  # remove the last activation, don't need it in output layer
         #
+        # blocks2 = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
+        #           for in_f, out_f in zip(self.sizes, self.sizes[1:])]
+        # blocks2 = list(itertools.chain(*blocks2))
+        # del blocks2[-1]  # remove the last activation, don't need it in output layer
+        #
+        # self.sig_net = nn.Sequential(*blocks)
+        # print(self.sig_net)
+        # self.mu_net = nn.Sequential(*blocks2)
+        # print(self.mu_net)
+
+        hidden = 2*(d-1)
+        self.sig_net = nn.Sequential(
+            nn.Linear(d-1, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, 1),
+            # nn.Sigmoid()
+        )
+
+        self.mu_net = nn.Sequential(
+            nn.Linear(d-1, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, 1),
+            # nn.Sigmoid()
+        )
+
+        hidden = 2*self.k
+        self.sig_net2 = nn.Sequential(
+            nn.Linear(self.k, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, d-self.k),
+            # nn.Sigmoid()
+        )
+
+        self.mu_net2 = nn.Sequential(
+            nn.Linear(self.k, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, d-self.k),
+            # nn.Sigmoid()
+        )
+
         # self.mu_net = nn.Sequential(
         #     nn.Linear(k, hidden),
         #     nn.LeakyReLU(),
         #     nn.Linear(hidden, d - k))
 
-    def forward(self, x, flip=True):
-        x1, x2 = x[:, :self.k], x[:, self.k:]
+    def forward(self, x):
 
-        if flip:
-            x2, x1 = x1, x2
-
-        # forward
+        x1, x2 = x[:, :(self.d-1)], x[:, (self.d-1):]
         sig = self.sig_net(x1)
         z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
-
-        if flip:
-            z2, z1 = z1, z2
-
         z_hat = torch.cat([z1, z2], dim=-1)
-
-        # log_pz = self.base_dist.log_prob(z_hat)
         log_jacob = sig.sum(-1)
+
+        x1, x2 = z_hat[:, :self.k], z_hat[:, self.k:]
+        x2, x1 = x1, x2
+        sig = self.sig_net2(x1)
+        z1, z2 = x1, x2*torch.exp(sig) + self.mu_net2(x1)
+        z2, z1 = z2, z1
+        z_hat = torch.cat([z1, z2], dim=1)
+        log_jacob += sig.sum(-1)
 
         # return z_hat, log_pz, log_jacob
         return z_hat, log_jacob

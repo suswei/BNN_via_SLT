@@ -15,7 +15,7 @@ def set_sweep_config():
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [1e-2]
 
-    tanh_Hs = [1, 16, 64]
+    tanh_Hs = [16, 36, 64]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -152,7 +152,6 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
-              "--nf_layers 2 --nf_af tanh "
               "--dataset %s --sample_size %s --zeromean %s "
               "--method %s "
               "--nf_gamma_mode %s "

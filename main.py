@@ -14,7 +14,7 @@ def train(args):
     elif args.nf == 'rnvp':
         resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
     elif args.nf == 'vanilla_rnvp':
-        resolution_network = R_NVP(d=args.w_dim, k=args.w_dim//2, hidden=args.nf_hidden, layers=args.nf_layers)
+        resolution_network = R_NVP(d=args.w_dim)
 
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -30,7 +30,7 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            if args.prior=='unif':
+            if args.prior == 'unif':
                 args.trainR = 10
 
             xis = sample_q(args, args.trainR, exact=True)  # [R, args.w_dim]
