@@ -30,7 +30,7 @@ def main():
 
     prior_of_interest = 1e-2
     dataset_of_interest = 'tanh'
-    path_prefix = 'highHlognslope'
+    path_prefix = 'allones_H64lognslope'
 
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(path_prefix))
     tasks = hyperparameter_experiments.__len__()
@@ -112,15 +112,15 @@ def main():
                                'method': method_list,
                                'seed': seed_list})
 
-    for H in [100, 900, 1600]:
-        for method in ['nf_gamma_icml','nf_gaussian']:
+    for H in [64]:
+        for method in ['nf_gamma_allones','nf_gaussian']:
             temp = summary_pd.loc[summary_pd['H'] == H]
             truth = get_lmbda([H], 'tanh')[0]
             temp = temp.loc[temp['method'] == method]
             evs = temp.groupby('n')['ELBOplusnSn'].mean()
             ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
                   int(round(np.exp(7))) * 32] # TODO: don't hardcode
-            ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32] # TODO: don't hardcode
+            ns = [int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32, int(round(np.exp(7))) * 32] # TODO: don't hardcode
             slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(ns), evs.get_values())
             plt.plot(np.log(ns),evs.get_values(),'.')
             plt.title('H {}: method {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, -truth, slope, r_value))
