@@ -10,12 +10,12 @@ def set_sweep_config():
     hyperparameter_experiments = []
     methods = ['nf_gamma']
     modes = ['allones']
-    sample_sizes = [int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
               int(round(np.exp(7))) * 32]
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1]
+    prior_vars = [1e-2]
 
-    tanh_Hs = [64, 100, 400]
+    tanh_Hs = [1, 16, 64]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -78,19 +78,19 @@ def set_sweep_config():
 
     #################################################  GAUSSIAN PRIOR -- NF_GAUSSIAN ###################################################
 
-    hyperparameter_config = {
-        'dataset': ['tanh'],
-        'sample_size': sample_sizes,
-        'method': ['nf_gaussian'],
-        'nf_gamma_mode': ['icml'],
-        'H': tanh_Hs,
-        'prior': ['gaussian'],
-        'prior_var': prior_vars,
-        'seed': seeds,
-        'zeromean': ['True']
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    # hyperparameter_config = {
+    #     'dataset': ['tanh'],
+    #     'sample_size': sample_sizes,
+    #     'method': ['nf_gaussian'],
+    #     'nf_gamma_mode': ['icml'],
+    #     'H': tanh_Hs,
+    #     'prior': ['gaussian'],
+    #     'prior_var': prior_vars,
+    #     'seed': seeds,
+    #     'zeromean': ['True']
+    # }
+    # keys, values = zip(*hyperparameter_config.items())
+    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 
     # hyperparameter_config = {
@@ -142,7 +142,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'allones_lognslope'
+    path = 'K0_lognslope'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -152,7 +152,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
-              "--nf_layers 1 --nf_af tanh "
+              "--nf_layers 2 --nf_af tanh "
               "--dataset %s --sample_size %s --zeromean %s "
               "--method %s "
               "--nf_gamma_mode %s "

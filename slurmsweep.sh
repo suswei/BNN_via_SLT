@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="lognslope"
+#SBATCH --job-name="K0_lognslope"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-119
+#SBATCH --array=0-59
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

@@ -174,7 +174,7 @@ class RealNVP(nn.Module):
         self.t2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
         self.s2 = base_network(dim // 2, dim // 2, hidden_dim, layers, af)
 
-        self.pre = base_network(dim-1, 1, dim-1, 2, af, positive_output=True)
+        self.pre = base_network(dim-1, 1, 2*dim, 5, af, positive_output=True) # TODO: add variable input
 
     def forward(self, x):
 
