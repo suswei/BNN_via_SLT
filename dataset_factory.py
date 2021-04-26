@@ -44,7 +44,7 @@ def get_dataset_by_id(args):
     if args.dataset == 'tanh':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
-        args.model = tanh_network(H=args.H)
+        # args.model = tanh_network(H=args.H)
         args.w_dim = 2 * args.H
         max_integer = int(math.sqrt(args.H))
         args.trueRLCT = (args.H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
@@ -83,24 +83,25 @@ def get_dataset_by_id(args):
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 
         # create smaller datasets
-        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
-        args.datasets = []
-        args.ns = ns
-        args.nSns = []
-        for n in ns:
-            X = m.sample(torch.Size([n]))
-            y_rv = Normal(0.0, 1)
-            y = y_rv.sample(torch.Size([n, 1]))
-            args.nSns += [- y_rv.log_prob(y).sum()]
-            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        args.ns += [args.sample_size]
-        args.nSns += [args.nSn]
-        args.datasets += [args.train_loader]
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
+        # args.datasets = []
+        # args.ns = ns
+        # args.nSns = []
+        # for n in ns:
+        #     X = m.sample(torch.Size([n]))
+        #     y_rv = Normal(0.0, 1)
+        #     y = y_rv.sample(torch.Size([n, 1]))
+        #     args.nSns += [- y_rv.log_prob(y).sum()]
+        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        # args.ns += [args.sample_size]
+        # args.nSns += [args.nSn]
+        # args.datasets += [args.train_loader]
 
     elif args.dataset == 'tanh_general':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
-        args.model = tanh_network(H=args.H)
+        # args.model = tanh_network(H=args.H)
         args.w_dim = 3 * args.H
         max_integer = int(math.sqrt(args.H))
         args.trueRLCT = args.H/2
@@ -129,19 +130,20 @@ def get_dataset_by_id(args):
         args.nSn_val = -y_rv.log_prob(y_val).sum()
 
         # create smaller datasets
-        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
-        args.datasets = []
-        args.ns = ns
-        args.nSns = []
-        for n in ns:
-            X = m.sample(torch.Size([n]))
-            y_rv = Normal(0.0, 1)
-            y = y_rv.sample(torch.Size([n, 1]))
-            args.nSns += [- y_rv.log_prob(y).sum()]
-            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        args.ns += [args.sample_size]
-        args.nSns += [args.nSn]
-        args.datasets += [args.train_loader]
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
+        # args.datasets = []
+        # args.ns = ns
+        # args.nSns = []
+        # for n in ns:
+        #     X = m.sample(torch.Size([n]))
+        #     y_rv = Normal(0.0, 1)
+        #     y = y_rv.sample(torch.Size([n, 1]))
+        #     args.nSns += [- y_rv.log_prob(y).sum()]
+        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        # args.ns += [args.sample_size]
+        # args.nSns += [args.nSn]
+        # args.datasets += [args.train_loader]
 
 
     # multivariate input x, Gaussian
@@ -156,7 +158,7 @@ def get_dataset_by_id(args):
             1)  # input_dim * H
         args.b_params = torch.eye(args.output_dim)
 
-        args.model = reducedrank(input_dim=args.input_dim, output_dim=args.output_dim, H=args.H)
+        # args.model = reducedrank(input_dim=args.input_dim, output_dim=args.output_dim, H=args.H)
         args.w_dim = (args.input_dim + args.output_dim) * args.H
         if args.w_dim % 2 != 0:
             print('Warning: the NF employed requires args.w_dim be even')
@@ -185,20 +187,21 @@ def get_dataset_by_id(args):
 
         # create smaller datasets
         # ns = get_ns(args.sample_size)
-        ns = [args.sample_size//4, args.sample_size//3, args.sample_size//2]
-        args.datasets = []
-        args.ns = ns
-        args.nSns = []
-        for n in ns:
-            X = m.sample(torch.Size([n]))
-            mean = torch.matmul(torch.matmul(X, args.a_params), args.b_params)
-            y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
-            y = y_rv.sample()
-            args.nSns += [- y_rv.log_prob(y).sum()]
-            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        args.ns += [args.sample_size]
-        args.nSns += [args.nSn]
-        args.datasets += [args.train_loader]
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
+        # args.datasets = []
+        # args.ns = ns
+        # args.nSns = []
+        # for n in ns:
+        #     X = m.sample(torch.Size([n]))
+        #     mean = torch.matmul(torch.matmul(X, args.a_params), args.b_params)
+        #     y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
+        #     y = y_rv.sample()
+        #     args.nSns += [- y_rv.log_prob(y).sum()]
+        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        # args.ns += [args.sample_size]
+        # args.nSns += [args.nSn]
+        # args.datasets += [args.train_loader]
 
     else:
         print('Not a valid dataset name. See options in dataset-factory')

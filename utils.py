@@ -100,7 +100,8 @@ def qj_entropy(args):
         lmbdas = (hs+1)/(2*ks)
         # logz = qj_gengamma_lognorm(hs, ks, betas)
         # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
-        return -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
+        return -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) \
+               - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
     elif args.method == 'nf_gaussian':
 

@@ -4,7 +4,7 @@ from dataset_factory import *
 import custom_lr_scheduler
 from normalizing_flows import *
 from utils import *
-
+from scipy import stats
 
 def train(args):
 
@@ -29,8 +29,9 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            if args.prior == 'unif':
+            if args.prior=='unif':
                 args.trainR = 10
+
             xis = sample_q(args, args.trainR, exact=True)  # [R, args.w_dim]
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
@@ -47,6 +48,7 @@ def train(args):
                 elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity*pi
             else:
                 elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
+                # elbo = loglik_elbo_vec.mean(dim=0).sum() + (torch.prod(xis,dim=1)*args.batch_size/np.sqrt(args.sample_size)) - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
 
@@ -108,7 +110,7 @@ def evaluate(resolution_network, args, R):
         monomial = torch.prod(xis**(2*args.ks.T), dim=1)
         print('resolution map quality {}'.format(((ktheta-monomial)**2).sum()))
 
-    return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas) .mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+    return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -122,7 +124,7 @@ def main():
     parser.add_argument('--dataset', type=str, default='tanh',
                         help='dataset name from dataset_factory.py (default: )',
                         choices=['reducedrank', 'tanh','tanh_general'])
-    parser.add_argument('--zeromean', type=str)
+    parser.add_argument('--zeromean', type=str, default='True')
     parser.add_argument('--H', type=int, default=1)
 
     parser.add_argument('--sample_size', type=int, default=5000,
@@ -193,15 +195,17 @@ def main():
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
     elbo_val = elbo_loglik_val.mean() - complexity
+    print('nSn {}, elbo {} '
+          '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
+          .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent,
+                  logprior.mean(), log_jacobians.mean()))
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
+    # print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
     # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
-
-
-    # i = 0
+        # i = 0
         # metric = []
         # for n in args.ns:
         #     args.betas[0] = n
@@ -224,9 +228,10 @@ def main():
     #         -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))))
     #     print('true lmbda {}'.format(args.trueRLCT))
 
-    results_dict = {'elbo': elbo, 'elbo_val': elbo_val,
-                    'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(
-                        np.log(args.sample_size)),
+    results_dict = {'elbo': elbo,
+                    'elbo_val': elbo_val,
+                    'elbo_loglik_val': elbo_loglik_val,
+                    'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
                     'elbo_hist': elbo_hist}
 
     if args.path is not None:
