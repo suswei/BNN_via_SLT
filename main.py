@@ -58,11 +58,12 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
+            evalR = 1
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=10)
-            print('epoch {}: loss {}, nSn {}, elbo {} '
+                = evaluate(resolution_network, args, R=evalR)
+            print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
-                  .format(epoch, loss, args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
+                  .format(epoch, loss, args.nSn, evalR, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
         scheduler.step(running_loss)

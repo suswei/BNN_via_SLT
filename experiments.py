@@ -9,13 +9,13 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['allones']
+    modes = ['allones', 'icml']
     sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
               int(round(np.exp(7))) * 32]
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [1e-2]
 
-    tanh_Hs = [16, 36, 64]
+    tanh_Hs = [400, 900, 1600]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -29,7 +29,6 @@ def set_sweep_config():
         'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds,
-        'zeromean': ['True']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -78,19 +77,18 @@ def set_sweep_config():
 
     #################################################  GAUSSIAN PRIOR -- NF_GAUSSIAN ###################################################
 
-    # hyperparameter_config = {
-    #     'dataset': ['tanh'],
-    #     'sample_size': sample_sizes,
-    #     'method': ['nf_gaussian'],
-    #     'nf_gamma_mode': ['icml'],
-    #     'H': tanh_Hs,
-    #     'prior': ['gaussian'],
-    #     'prior_var': prior_vars,
-    #     'seed': seeds,
-    #     'zeromean': ['True']
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    hyperparameter_config = {
+        'dataset': ['tanh'],
+        'sample_size': sample_sizes,
+        'method': ['nf_gaussian'],
+        'nf_gamma_mode': ['icml'],
+        'H': tanh_Hs,
+        'prior': ['gaussian'],
+        'prior_var': prior_vars,
+        'seed': seeds,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 
     # hyperparameter_config = {
@@ -142,7 +140,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'K0_lognslope'
+    path = 'K0_highHlognslope'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -151,8 +149,8 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
-              "--dataset %s --sample_size %s --zeromean %s "
+              "--beta_star --exact_EqLogq --epochs 3000 --trainR 1 "
+              "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s "
               "--H %s "
@@ -160,7 +158,7 @@ def main(taskid):
               "--prior_var %s "
               "--seed %s "
               "--path %s "
-              % (temp['dataset'], temp['sample_size'], temp['zeromean'],
+              % (temp['dataset'], temp['sample_size'],
                  temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],

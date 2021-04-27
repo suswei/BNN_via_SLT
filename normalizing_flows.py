@@ -232,7 +232,7 @@ class R_NVP(nn.Module):
         # self.mu_net = nn.Sequential(*blocks2)
         # print(self.mu_net)
 
-        hidden = 2*(d-1)
+        hidden = 16
         self.sig_net = nn.Sequential(
             nn.Linear(d-1, hidden),
             nn.LeakyReLU(),
@@ -240,8 +240,12 @@ class R_NVP(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
             nn.Linear(hidden, 1),
-            # nn.Sigmoid()
+            nn.ReLU()
         )
 
         self.mu_net = nn.Sequential(
@@ -251,13 +255,21 @@ class R_NVP(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
             nn.Linear(hidden, 1),
-            # nn.Sigmoid()
+            nn.ReLU()
         )
 
-        hidden = 2*self.k
+        hidden = 16
         self.sig_net2 = nn.Sequential(
             nn.Linear(self.k, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
@@ -274,6 +286,10 @@ class R_NVP(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
             nn.Linear(hidden, d-self.k),
             # nn.Sigmoid()
         )
@@ -285,7 +301,7 @@ class R_NVP(nn.Module):
 
     def forward(self, x):
 
-        x1, x2 = x[:, :(self.d-1)], x[:, (self.d-1):]
+        x1, x2 = x[:, :(self.d-1)], x[:, (self.d-1):] # x1 all bust last, x2 last element of x
         sig = self.sig_net(x1)
         z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
         z_hat = torch.cat([z1, z2], dim=-1)
@@ -299,6 +315,29 @@ class R_NVP(nn.Module):
         z_hat = torch.cat([z1, z2], dim=1)
         log_jacob += sig.sum(-1)
 
+        x1, x2 = z_hat[:, :self.k], z_hat[:, self.k:]
+        x2, x1 = x1, x2
+        sig = self.sig_net2(x1)
+        z1, z2 = x1, x2*torch.exp(sig) + self.mu_net2(x1)
+        z2, z1 = z2, z1
+        z_hat = torch.cat([z1, z2], dim=1)
+        log_jacob += sig.sum(-1)
+
+        x1, x2 = z_hat[:, :self.k], z_hat[:, self.k:]
+        x2, x1 = x1, x2
+        sig = self.sig_net2(x1)
+        z1, z2 = x1, x2*torch.exp(sig) + self.mu_net2(x1)
+        z2, z1 = z2, z1
+        z_hat = torch.cat([z1, z2], dim=1)
+        log_jacob += sig.sum(-1)
+
+        x1, x2 = z_hat[:, :self.k], z_hat[:, self.k:]
+        x2, x1 = x1, x2
+        sig = self.sig_net2(x1)
+        z1, z2 = x1, x2*torch.exp(sig) + self.mu_net2(x1)
+        z2, z1 = z2, z1
+        z_hat = torch.cat([z1, z2], dim=1)
+        log_jacob += sig.sum(-1)
         # return z_hat, log_pz, log_jacob
         return z_hat, log_jacob
 
