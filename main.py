@@ -10,11 +10,11 @@ from scipy import stats
 def train(args):
 
     if args.nf == 'iaf':
-        resolution_network = IAF(latent_size=args.w_dim,h_size=args.w_dim)
+        resolution_network = IAF(latent_size=args.w_dim, h_size=args.w_dim)
     elif args.nf == 'rnvp':
         resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
     elif args.nf == 'vanilla_rnvp':
-        resolution_network = R_NVP(d=args.w_dim)
+        resolution_network = R_NVP(d=args.w_dim, K0net = args.K0net)
 
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -145,6 +145,7 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=16)
     parser.add_argument('--nf_layers', type=int, default=20)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
+    parser.add_argument('--K0net', action='store_true')
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')

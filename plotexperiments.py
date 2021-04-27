@@ -104,8 +104,8 @@ def main():
             temp = temp.loc[temp['method'] == method]
             evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
-            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
-            plt.plot(np.log(evs._index),evs.get_values(),'.')
+            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index)[1:], evs.get_values()[1:])
+            plt.plot(np.log(evs._index)[1:], evs.get_values()[1:], '.')
             plt.title('H {}: method {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, -truth, slope, r_value))
 
             if args.savefig:

@@ -10,8 +10,7 @@ def set_sweep_config():
     hyperparameter_experiments = []
     methods = ['nf_gamma']
     modes = ['allones', 'icml']
-    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
-              int(round(np.exp(7))) * 32]
+    sample_sizes = [int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32, int(round(np.exp(7))) * 32]
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [1e-2]
 
@@ -140,7 +139,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'K0_highHlognslope'
+    path = 'noK0net_highHlognslope'
     if not os.path.exists(path):
         os.makedirs(path)
 

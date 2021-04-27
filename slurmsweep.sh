@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="K0_highHlognslope"
+#SBATCH --job-name="noK0net_highHlognslope"
 #SBATCH -p physical
 
 #SBATCH --mem=1G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-23:0:00
+#SBATCH --time=0-5:0:00
 
 # Batch arrays
-#SBATCH --array=0-179
+#SBATCH --array=0-134
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

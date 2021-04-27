@@ -211,10 +211,11 @@ class RealNVP(nn.Module):
 
 
 class R_NVP(nn.Module):
-    def __init__(self, d=1, hidden=12, layers=1):
+    def __init__(self, d=1, hidden=12, layers=1, K0net=True):
         super().__init__()
         self.d = d
         self.k = d//2
+        self.K0net = K0net
         # self.sizes = np.concatenate(
         #     ([k], np.repeat(hidden, layers + 1), [d-k])).tolist()
         # blocks = [[nn.Linear(in_f, out_f), nn.LeakyReLU()]
@@ -301,11 +302,15 @@ class R_NVP(nn.Module):
 
     def forward(self, x):
 
-        x1, x2 = x[:, :(self.d-1)], x[:, (self.d-1):] # x1 all bust last, x2 last element of x
-        sig = self.sig_net(x1)
-        z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
-        z_hat = torch.cat([z1, z2], dim=-1)
-        log_jacob = sig.sum(-1)
+        if self.K0net:
+            x1, x2 = x[:, :(self.d-1)], x[:, (self.d-1):] # x1 all bust last, x2 last element of x
+            sig = self.sig_net(x1)
+            z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
+            z_hat = torch.cat([z1, z2], dim=-1)
+            log_jacob = sig.sum(-1)
+        else:
+            z_hat = x
+            log_jacob = 0.0
 
         x1, x2 = z_hat[:, :self.k], z_hat[:, self.k:]
         x2, x1 = x1, x2
