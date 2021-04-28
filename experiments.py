@@ -10,7 +10,7 @@ def set_sweep_config():
     hyperparameter_experiments = []
     methods = ['nf_gamma']
     modes = ['allones', 'icml']
-    sample_sizes = [int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32, int(round(np.exp(7))) * 32]
+    sample_sizes = (np.round(np.exp([8.5, 9.0, 9.5, 10.0]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [1e-2]
 
@@ -28,6 +28,7 @@ def set_sweep_config():
         'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds,
+        'K0net': ['True','False']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -85,6 +86,7 @@ def set_sweep_config():
         'prior': ['gaussian'],
         'prior_var': prior_vars,
         'seed': seeds,
+        'K0net': ['True', 'False']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -148,10 +150,11 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--beta_star --exact_EqLogq --epochs 3000 --trainR 1 "
+              "--nf vanilla_rnvp --nf_layers 10 --beta_star --exact_EqLogq --epochs 3000 --trainR 1 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s "
+              "--K0net %s "
               "--H %s "
               "--prior %s "
               "--prior_var %s "
@@ -159,7 +162,7 @@ def main(taskid):
               "--path %s "
               % (temp['dataset'], temp['sample_size'],
                  temp['method'],
-                 temp['nf_gamma_mode'],
+                 temp['nf_gamma_mode'], temp['K0net'],
                  temp['H'],
                  temp['prior'],
                  temp['prior_var'],

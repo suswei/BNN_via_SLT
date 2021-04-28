@@ -14,7 +14,25 @@ def train(args):
     elif args.nf == 'rnvp':
         resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
     elif args.nf == 'vanilla_rnvp':
-        resolution_network = R_NVP(d=args.w_dim, K0net = args.K0net)
+        # resolution_network = R_NVP(d=args.w_dim, K0net = args.K0net)
+        nets = lambda: nn.Sequential(nn.Linear(args.w_dim, 256), nn.LeakyReLU(), nn.Linear(256, 256), nn.LeakyReLU(),
+                                     nn.Linear(256, args.w_dim), nn.Tanh())
+        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, 256), nn.LeakyReLU(), nn.Linear(256, 256), nn.LeakyReLU(),
+                                     nn.Linear(256, args.w_dim))
+
+        # masks = (torch.eye(args.w_dim).reshape(args.w_dim, args.w_dim)).repeat(no_layers, 1)
+
+        ones = np.ones(args.w_dim)
+        ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
+        half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0), torch.from_numpy((1-ones).astype(np.float32)).unsqueeze(dim=0) ))
+        masks = half_mask.repeat(args.nf_layers,1)
+
+        if args.K0net == 'True':
+            ones = np.ones(args.w_dim)
+            ones[0] = 0
+            masks = torch.cat((masks, torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0)))
+
+        resolution_network = RealNVP(nets, nett, masks)
 
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -145,7 +163,7 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=16)
     parser.add_argument('--nf_layers', type=int, default=20)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
-    parser.add_argument('--K0net', action='store_true')
+    parser.add_argument('--K0net', type=str, default='False', choices=['True','False'])
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')
