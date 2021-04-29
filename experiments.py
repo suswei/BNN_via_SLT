@@ -10,11 +10,10 @@ def set_sweep_config():
     hyperparameter_experiments = []
     methods = ['nf_gamma']
     modes = ['allones', 'icml']
-    sample_sizes = (np.round(np.exp([8.5, 9.0, 9.5, 10.0]))).astype(int)
+    sample_sizes = (np.round(np.exp([7.0, 7.5, 8.0, 8.5]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1e-2]
 
-    tanh_Hs = [400, 900, 1600]
+    tanh_Hs = [400, 900, 1600, 6400]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -26,7 +25,6 @@ def set_sweep_config():
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
         'prior': ['gaussian'],
-        'prior_var': prior_vars,
         'seed': seeds,
         'K0net': ['True','False']
     }
@@ -84,7 +82,6 @@ def set_sweep_config():
         'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
         'prior': ['gaussian'],
-        'prior_var': prior_vars,
         'seed': seeds,
         'K0net': ['True', 'False']
     }
@@ -141,7 +138,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'noK0net_highHlognslope'
+    path = 'highHlognslope_coupling'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -150,14 +147,13 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf vanilla_rnvp --nf_layers 10 --beta_star --exact_EqLogq --epochs 3000 --trainR 1 "
+              "--nf vanilla_rnvp --nf_layers 2 --beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s "
               "--K0net %s "
               "--H %s "
               "--prior %s "
-              "--prior_var %s "
               "--seed %s "
               "--path %s "
               % (temp['dataset'], temp['sample_size'],
@@ -165,7 +161,6 @@ def main(taskid):
                  temp['nf_gamma_mode'], temp['K0net'],
                  temp['H'],
                  temp['prior'],
-                 temp['prior_var'],
                  temp['seed'],
                  path))
 

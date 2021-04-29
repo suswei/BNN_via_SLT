@@ -32,7 +32,7 @@ def train(args):
             ones[0] = 0
             masks = torch.cat((masks, torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0)))
 
-        resolution_network = RealNVP(nets, nett, masks)
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim)
 
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -177,6 +177,7 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
+    args.prior_var = 1/args.H
 
     print(args)
 

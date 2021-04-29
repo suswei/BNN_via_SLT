@@ -4,13 +4,13 @@
 #SBATCH --job-name="coupling_lognslope"
 #SBATCH -p physical
 
-#SBATCH --mem=10G
+#SBATCH --mem=50G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-5:0:00
+#SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-359
+#SBATCH --array=0-479
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

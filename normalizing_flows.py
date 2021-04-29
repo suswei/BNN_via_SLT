@@ -364,13 +364,33 @@ class R_NVP(nn.Module):
 
 # https://github.com/senya-ashukha/real-nvp-pytorch/blob/master/real-nvp-pytorch.ipynb
 class RealNVP(nn.Module):
-    def __init__(self, nets, nett, mask):
+    def __init__(self, nets, nett, mask, d):
         super(RealNVP, self).__init__()
 
         self.mask = nn.Parameter(mask, requires_grad=False)
         self.t = torch.nn.ModuleList([nett() for _ in range(len(mask))])
         self.s = torch.nn.ModuleList([nets() for _ in range(len(mask))])
 
+        self.d = d
+
+        hidden = 256
+        self.sig_net = nn.Sequential(
+            nn.Linear(self.d-1, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, 1),
+            nn.ReLU()
+        )
+
+        self.mu_net = nn.Sequential(
+            nn.Linear(self.d-1, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, 1),
+            nn.ReLU()
+        )
     # def inverse(self, z):
     #     x = z
     #     for i in range(len(self.t)):
@@ -382,7 +402,14 @@ class RealNVP(nn.Module):
 
     def forward(self, x):
         log_det_J, z = x.new_zeros(x.shape[0]), x
-        for i in reversed(range(len(self.t))):
+
+        x1, x2 = x[:, :(self.d - 1)], x[:, (self.d - 1):]  # x1 all bust last, x2 last element of x
+        sig = self.sig_net(x1)
+        z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
+        z = torch.cat([z1, z2], dim=-1)
+        log_det_J += sig.sum(-1)
+
+        for i in reversed(range(len(self.t)-1)):
 
             z_ = self.mask[i] * z
             s = self.s[i](z_) * (1 - self.mask[i])
