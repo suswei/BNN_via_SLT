@@ -98,28 +98,31 @@ def main():
                                'K0net': K0_list,
                                'seed': seed_list})
 
-    for K0 in ['True','False']:
+# for K0 in ['True','False']:
 
-        for H in unique_Hs:
+    for H in unique_Hs:
 
-            for method in unique_methods:
+        for method in unique_methods:
 
-                temp = summary_pd.loc[summary_pd['H'] == H]
-                truth = get_lmbda([H], 'tanh')[0]
-                temp = temp.loc[temp['method'] == method]
-                temp = temp.loc[temp['K0net'] == K0]
+            temp = summary_pd.loc[summary_pd['H'] == H]
+            truth = get_lmbda([H], 'tanh')[0]
+            temp = temp.loc[temp['method'] == method]
+            # temp = temp.loc[temp['K0net'] == K0]
 
-                evs = temp.groupby('n')['ELBOplusnSn'].mean()
+            evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
-                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
-                plt.plot(np.log(evs._index), evs.get_values(), '.')
-                plt.title('H {}: method {} K0 {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, K0, -truth, slope, r_value))
+            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
+            plt.plot(np.log(evs._index), evs.get_values(), '.')
+            # plt.title('H {}: method {} K0 {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, K0, -truth, slope, r_value))
+            plt.title('H {}: method {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, -truth, slope, r_value))
 
-                if args.savefig:
-                    plt.savefig('{}/{}H{}K0{}'.format(args.path_prefix, method, H, K0), bbox_inches='tight')
 
-                plt.show()
-                plt.close()
+            if args.savefig:
+                plt.savefig('{}/{}H{}'.format(args.path_prefix, method, H), bbox_inches='tight')
+                # plt.savefig('{}/{}H{}K0{}'.format(args.path_prefix, method, H, K0), bbox_inches='tight')
+
+            plt.show()
+            plt.close()
     #
     # g = sns.barplot(x="H", y="ELBOplusnSn",
     #                 hue="method",

@@ -26,8 +26,8 @@ def train(args):
         ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
         half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0), torch.from_numpy((1-ones).astype(np.float32)).unsqueeze(dim=0) ))
 
-        if args.K0net == 'True':
-            masks = half_mask.repeat(args.nf_layers-1, 1)
+        if args.K0net == 'True':# has one more layer than K0net=False, but even number of nf_layers ensures flipping is completed
+            masks = half_mask.repeat(args.nf_layers, 1)
             ones = np.ones(args.w_dim)
             ones[0] = 0
             masks = torch.cat((masks, torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0)))
@@ -78,7 +78,7 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            evalR = 1
+            evalR = 10
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=evalR)
             print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
@@ -128,11 +128,12 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-        ktheta = (elbo_loglik + args.nSn)/args.sample_size
-        monomial = torch.prod(xis**(2*args.ks.T), dim=1)
-        print('resolution map quality {}'.format(((ktheta-monomial)**2).sum()))
+        # ktheta = (elbo_loglik + args.nSn)/args.sample_size
+        # monomial = torch.prod(xis**(2*args.ks.T), dim=1)
+        # error_hmonomoial = (log_jacobians-torch.matmul(torch.log(xis),args.hs))**2
+        # print('resolution map quality: k monomial {}, h monomial {}'.format( ((ktheta-monomial)**2).sum(), error_hmonomoial.sum()) )
 
-    return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -165,7 +166,7 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=16)
     parser.add_argument('--nf_layers', type=int, default=20)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
-    parser.add_argument('--K0net', type=str, default='False', choices=['True','False'])
+    parser.add_argument('--K0net', type=str, default='True', choices=['True','False'])
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')

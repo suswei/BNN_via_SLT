@@ -37,8 +37,8 @@ def log_prior(args, thetas):
 
     elif args.prior == 'unif':
 
-        return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
-
+        # return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
+        return torch.zeros(1)
 
 def sample_q(args, R, exact=True):
 

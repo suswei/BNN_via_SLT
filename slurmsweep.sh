@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="lowHlognslope_coupling"
+#SBATCH --job-name="highHlognslope_coupling"
 #SBATCH -p physical
 
-#SBATCH --mem=50G
+#SBATCH --mem=10G
 
 # The maximum running time of the job in days-hours:mins:sec
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-215
+#SBATCH --array=0-71
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
