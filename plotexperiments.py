@@ -40,6 +40,7 @@ def main():
     seed_list = []
     ev_list = []
     ns_list = []
+    K0_list = []
 
     for taskid in range(tasks):
 
@@ -58,7 +59,7 @@ def main():
                 method_list += ['{}_{}'.format(sim_args['method'], sim_args['nf_gamma_mode'])]
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
-
+            K0_list += [sim_args['K0net']]
         except:
             print('missing taskid {}'.format(taskid))
 
@@ -80,6 +81,7 @@ def main():
                     seed_list += [sim_args['seed']]
                     Hs_list += [H]
                     ns_list += [sim_args['sample_size']]
+                    K0_list += [sim_args['K0net']]
 
                     break
 
@@ -93,27 +95,31 @@ def main():
                                'ELBOplusnSn': ev_list,
                                'n': ns_list,
                                'method': method_list,
+                               'K0net': K0_list,
                                'seed': seed_list})
 
-    for H in unique_Hs:
+    for K0 in ['True','False']:
 
-        for method in unique_methods:
+        for H in unique_Hs:
 
-            temp = summary_pd.loc[summary_pd['H'] == H]
-            truth = get_lmbda([H], 'tanh')[0]
-            temp = temp.loc[temp['method'] == method]
-            evs = temp.groupby('n')['ELBOplusnSn'].mean()
+            for method in unique_methods:
 
-            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
-            plt.plot(np.log(evs._index), evs.get_values(), '.')
-            plt.title('H {}: method {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, -truth, slope, r_value))
+                temp = summary_pd.loc[summary_pd['H'] == H]
+                truth = get_lmbda([H], 'tanh')[0]
+                temp = temp.loc[temp['method'] == method]
+                temp = temp.loc[temp['K0net'] == K0]
 
-            if args.savefig:
-                plt.savefig('{}/{}H{}'.format(args.path_prefix, method, H), bbox_inches='tight')
+                evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
-            plt.show()
+                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
+                plt.plot(np.log(evs._index), evs.get_values(), '.')
+                plt.title('H {}: method {} K0 {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, K0, -truth, slope, r_value))
 
-            plt.close()
+                if args.savefig:
+                    plt.savefig('{}/{}H{}K0{}'.format(args.path_prefix, method, H, K0), bbox_inches='tight')
+
+                plt.show()
+                plt.close()
     #
     # g = sns.barplot(x="H", y="ELBOplusnSn",
     #                 hue="method",

@@ -25,12 +25,14 @@ def train(args):
         ones = np.ones(args.w_dim)
         ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
         half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0), torch.from_numpy((1-ones).astype(np.float32)).unsqueeze(dim=0) ))
-        masks = half_mask.repeat(args.nf_layers,1)
 
         if args.K0net == 'True':
+            masks = half_mask.repeat(args.nf_layers-1, 1)
             ones = np.ones(args.w_dim)
             ones[0] = 0
             masks = torch.cat((masks, torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0)))
+        else:
+            masks = half_mask.repeat(args.nf_layers, 1)
 
         resolution_network = RealNVP(nets, nett, masks, args.w_dim)
 
@@ -151,7 +153,7 @@ def main():
                         help='sample size of synthetic dataset')
 
     parser.add_argument('--prior', type=str, default='gaussian')
-    parser.add_argument('--prior_var', type=float)
+    # parser.add_argument('--prior_var', type=float)
 
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--batch_size', type=int, default=500)
@@ -250,7 +252,7 @@ def main():
     #         -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))))
     #     print('true lmbda {}'.format(args.trueRLCT))
 
-    results_dict = {'elbo': elbo,
+    results_dict = {'elbo': elbo, 'elbo_loglik': elbo_loglik, 'complexity': complexity,
                     'elbo_val': elbo_val,
                     'elbo_loglik_val': elbo_loglik_val,
                     'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),

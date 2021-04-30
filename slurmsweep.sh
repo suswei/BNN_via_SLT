@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="coupling_lognslope"
+#SBATCH --job-name="lowHlognslope_coupling"
 #SBATCH -p physical
 
 #SBATCH --mem=50G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-479
+#SBATCH --array=0-215
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
