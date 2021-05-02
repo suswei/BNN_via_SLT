@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="tanh"
+#SBATCH --job-name="tanh1600"
 #SBATCH -p physical
 
 #SBATCH --mem=10G
@@ -10,7 +10,7 @@
 #SBATCH --time=0-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-80
+#SBATCH --array=0-59
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

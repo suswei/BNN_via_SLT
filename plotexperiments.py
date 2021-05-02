@@ -105,6 +105,7 @@ def main():
                                'prior_var': priorvar_list,
                                'seed': seed_list})
 
+    # unique_priorvars = [1e-1]
     for prior_var in unique_priorvars:
 
         for H in unique_Hs:
