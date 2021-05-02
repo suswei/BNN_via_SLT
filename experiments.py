@@ -9,9 +9,10 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['icml']
-    sample_sizes = (np.round(np.exp([7.0, 7.5, 8.0, 8.5]))).astype(int)
-    seeds = [1, 2, 3]
+    modes = ['icml', 'allones']
+    sample_sizes = (np.round(np.exp([7.0, 7.5, 8.0]))).astype(int)
+    seeds = [1]
+    prior_vars = [1, 1e-1, 1e-2]
 
     tanh_Hs = [400, 900, 1600]
     rr_Hs = [40, 80]
@@ -25,6 +26,7 @@ def set_sweep_config():
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
         'prior': ['gaussian'],
+        'prior_var': prior_vars,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -81,6 +83,7 @@ def set_sweep_config():
         'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
         'prior': ['gaussian'],
+        'prior_var': prior_vars,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -136,7 +139,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'highH_lognslope_coupling'
+    path = 'tanh'
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -145,19 +148,19 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf vanilla_rnvp --nf_layers 6 --beta_star --exact_EqLogq --epochs 3000 --trainR 1 "
+              "--nf vanilla_rnvp --nf_layers 6 --beta_star --exact_EqLogq --epochs 2000 --trainR 1 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s "
               "--H %s "
-              "--prior %s "
+              "--prior %s --prior_var %s "
               "--seed %s "
               "--path %s "
               % (temp['dataset'], temp['sample_size'],
                  temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],
-                 temp['prior'],
+                 temp['prior'], temp['prior_var'],
                  temp['seed'],
                  path))
 

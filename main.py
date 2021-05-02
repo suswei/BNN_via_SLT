@@ -154,7 +154,7 @@ def main():
                         help='sample size of synthetic dataset')
 
     parser.add_argument('--prior', type=str, default='gaussian')
-    # parser.add_argument('--prior_var', type=float)
+    parser.add_argument('--prior_var', type=float)
 
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--batch_size', type=int, default=500)
@@ -180,7 +180,6 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
-    args.prior_var = 1/args.H
 
     print(args)
 
