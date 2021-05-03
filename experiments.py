@@ -9,12 +9,13 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['icml', 'allones']
-    sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7, 8.8]))).astype(int)
+    modes = ['allones']
+    # sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7, 8.8]))).astype(int)
+    sample_sizes = (np.round(np.exp([7.5, 7.6, 7.7, 7.8]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1e-2]
+    prior_vars = [1e-1]
 
-    tanh_Hs = [1600]
+    tanh_Hs = [400]
     rr_Hs = [40, 80]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -139,7 +140,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanh1600'
+    path = 'tanh400'
     if not os.path.exists(path):
         os.makedirs(path)
 

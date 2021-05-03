@@ -128,10 +128,12 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-        # ktheta = (elbo_loglik + args.nSn)/args.sample_size
-        # monomial = torch.prod(xis**(2*args.ks.T), dim=1)
+        ktheta = (-elbo_loglik - args.nSn)/args.sample_size
+        monomial = torch.prod(xis**(2*args.ks.T), dim=1)
+        error_kmonomial = ((ktheta - monomial) ** 2).mean()
         # error_hmonomoial = (log_jacobians-torch.matmul(torch.log(xis),args.hs))**2
         # print('resolution map quality: k monomial {}, h monomial {}'.format( ((ktheta-monomial)**2).sum(), error_hmonomoial.sum()) )
+        print('resolution map quality: k monomial {}'.format(error_kmonomial))
 
         return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 

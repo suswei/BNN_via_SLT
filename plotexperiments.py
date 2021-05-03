@@ -119,8 +119,8 @@ def main():
 
                 evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
-                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.get_values())
-                plt.plot(np.log(evs._index), evs.get_values(), '.')
+                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
+                plt.plot(np.log(evs._index), evs.values, '.')
                 # plt.title('H {}: method {} K0 {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, K0, -truth, slope, r_value))
                 plt.title('H {}: method {} prior_var {}, \n truth {} versus slope {:2f} and R2 {:2f}'
                           .format(H, method, prior_var, -truth, slope, r_value))
