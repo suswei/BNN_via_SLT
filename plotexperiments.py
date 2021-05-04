@@ -3,7 +3,6 @@ import torch
 import pandas as pd
 from matplotlib import pyplot as plt
 import argparse
-from experiments import set_sweep_config
 from scipy import stats
 import numpy as np
 from dataset_factory import get_lmbda
@@ -40,7 +39,6 @@ def main():
     seed_list = []
     ev_list = []
     ns_list = []
-    K0_list = []
     priorvar_list = []
 
     for taskid in range(tasks):
@@ -51,7 +49,6 @@ def main():
             sim_args = torch.load('{}/args.pt'.format(path))
 
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-            # ev_list += [results['elbo_loglik_val'].detach().numpy()]
             ns_list += [sim_args['sample_size']]
 
             if sim_args['method'] == 'nf_gaussian':
@@ -61,7 +58,6 @@ def main():
 
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
-            K0_list += [sim_args['K0net']]
             priorvar_list += [sim_args['prior_var']]
 
         except:
@@ -86,7 +82,6 @@ def main():
                     seed_list += [sim_args['seed']]
                     Hs_list += [H]
                     ns_list += [sim_args['sample_size']]
-                    K0_list += [sim_args['K0net']]
                     priorvar_list += [sim_args['prior_var']]
 
                     break
@@ -101,11 +96,10 @@ def main():
                                'ELBOplusnSn': ev_list,
                                'n': ns_list,
                                'method': method_list,
-                               'K0net': K0_list,
                                'prior_var': priorvar_list,
                                'seed': seed_list})
 
-    # unique_priorvars = [1e-1]
+    # log n slope plot
     for prior_var in unique_priorvars:
 
         for H in unique_Hs:
@@ -121,44 +115,42 @@ def main():
 
                 slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
                 plt.plot(np.log(evs._index), evs.values, '.')
-                # plt.title('H {}: method {} K0 {}, \n truth {} versus slope {:2f} and R2 {:2f}'.format(H, method, K0, -truth, slope, r_value))
                 plt.title('H {}: method {} prior_var {}, \n truth {} versus slope {:2f} and R2 {:2f}'
                           .format(H, method, prior_var, -truth, slope, r_value))
 
                 if args.savefig:
-                    plt.savefig('{}/{}H{}prior{}'.format(args.path_prefix, method, H, prior_var), bbox_inches='tight')
-                    # plt.savefig('{}/{}H{}K0{}'.format(args.path_prefix, method, H, K0), bbox_inches='tight')
+                    plt.savefig('{}/{}H{}prior{}'.format(args.path_prefix, method, H, prior_var*1000), bbox_inches='tight')
 
                 plt.show()
                 plt.close()
-        #
-        # g = sns.barplot(x="H", y="ELBOplusnSn",
-        #                 hue="method",
-        #                 data=summary_pd)
-        #
-        # sns.set_style("ticks")
-        # hatches = ['/', '/', '/',
-        #            '+', '+', '+',
-        #            'x', 'x', 'x']
-        # for hatch, patch in zip(hatches, g.patches):
-        #     patch.set_hatch(hatch)
-        # leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
-        # for patch in leg.get_patches():
-        #     patch.set_height(12)
-        #     patch.set_y(-6)
-        #
-        # if prior_of_interest == 'unif':
-        #     title = '{}/{}_unifprior.png'.format(path_prefix, dataset_of_interest)
-        # else:
-        #     title = '{}/{}_priorvar{}.png'.format(path_prefix, dataset_of_interest, prior_of_interest)
-        # plt.title(title)
-        #
-        # if args.savefig:
-        #         plt.savefig(title, bbox_inches='tight')
-        # else:
-        #     plt.show()
-        #
-        # plt.close()
+
+    # g = sns.barplot(x="H", y="ELBOplusnSn",
+    #                 hue="method",
+    #                 data=summary_pd)
+    #
+    # sns.set_style("ticks")
+    # hatches = ['/', '/', '/',
+    #            '+', '+', '+',
+    #            'x', 'x', 'x']
+    # for hatch, patch in zip(hatches, g.patches):
+    #     patch.set_hatch(hatch)
+    # leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
+    # for patch in leg.get_patches():
+    #     patch.set_height(12)
+    #     patch.set_y(-6)
+    #
+    # if prior_of_interest == 'unif':
+    #     title = '{}/{}_unifprior.png'.format(path_prefix, dataset_of_interest)
+    # else:
+    #     title = '{}/{}_priorvar{}.png'.format(path_prefix, dataset_of_interest, prior_of_interest)
+    # plt.title(title)
+    #
+    # if args.savefig:
+    #         plt.savefig(title, bbox_inches='tight')
+    # else:
+    #     plt.show()
+    #
+    # plt.close()
 
 
 if __name__ == "__main__":

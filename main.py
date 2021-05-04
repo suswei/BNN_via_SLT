@@ -4,35 +4,30 @@ from dataset_factory import *
 import custom_lr_scheduler
 from normalizing_flows import *
 from utils import *
-from scipy import stats
 
 
 def train(args):
 
     if args.nf == 'iaf':
+
         resolution_network = IAF(latent_size=args.w_dim, h_size=args.w_dim)
+
     elif args.nf == 'rnvp':
-        resolution_network = RealNVP(dim=args.w_dim, hidden_dim=args.nf_hidden, layers=args.nf_layers, af=args.nf_af)
-    elif args.nf == 'vanilla_rnvp':
-        # resolution_network = R_NVP(d=args.w_dim, K0net = args.K0net)
-        nets = lambda: nn.Sequential(nn.Linear(args.w_dim, 256), nn.LeakyReLU(), nn.Linear(256, 256), nn.LeakyReLU(),
-                                     nn.Linear(256, args.w_dim), nn.Tanh())
-        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, 256), nn.LeakyReLU(), nn.Linear(256, 256), nn.LeakyReLU(),
-                                     nn.Linear(256, args.w_dim))
 
-        # masks = (torch.eye(args.w_dim).reshape(args.w_dim, args.w_dim)).repeat(no_layers, 1)
+        nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(), nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
+        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(), nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.w_dim))
 
-        ones = np.ones(args.w_dim)
-        ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
-        half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0), torch.from_numpy((1-ones).astype(np.float32)).unsqueeze(dim=0) ))
-
-        if args.K0net == 'True':# has one more layer than K0net=False, but even number of nf_layers ensures flipping is completed
-            masks = half_mask.repeat(args.nf_layers, 1)
+        for layer in range(args.nf_layers):
             ones = np.ones(args.w_dim)
-            ones[0] = 0
-            masks = torch.cat((masks, torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0)))
-        else:
-            masks = half_mask.repeat(args.nf_layers, 1)
+            ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
+            half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
+                                   torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
+            if layer == 0:
+                masks = half_mask
+            else:
+                masks = torch.cat((masks, half_mask))
 
         resolution_network = RealNVP(nets, nett, masks, args.w_dim)
 
@@ -69,7 +64,6 @@ def train(args):
                 elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity*pi
             else:
                 elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
-                # elbo = loglik_elbo_vec.mean(dim=0).sum() + (torch.prod(xis,dim=1)*args.batch_size/np.sqrt(args.sample_size)) - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
 
@@ -128,13 +122,6 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-        ktheta = (-elbo_loglik - args.nSn)/args.sample_size
-        monomial = torch.prod(xis**(2*args.ks.T), dim=1)
-        error_kmonomial = ((ktheta - monomial) ** 2).mean()
-        # error_hmonomoial = (log_jacobians-torch.matmul(torch.log(xis),args.hs))**2
-        # print('resolution map quality: k monomial {}, h monomial {}'.format( ((ktheta-monomial)**2).sum(), error_hmonomoial.sum()) )
-        print('resolution map quality: k monomial {}'.format(error_kmonomial))
-
         return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
@@ -148,7 +135,7 @@ def main():
 
     parser.add_argument('--dataset', type=str, default='tanh',
                         help='dataset name from dataset_factory.py (default: )',
-                        choices=['reducedrank', 'tanh','tanh_general'])
+                        choices=['reducedrank', 'tanh', 'tanh_general'])
     parser.add_argument('--zeromean', type=str, default='True')
     parser.add_argument('--H', type=int, default=1)
 
@@ -164,11 +151,10 @@ def main():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default = 1)
 
-    parser.add_argument('--nf', type=str,default='rnvp', choices=['iaf','rnvp','vanilla_rnvp'])
-    parser.add_argument('--nf_hidden', type=int, default=16)
+    parser.add_argument('--nf', type=str,default='rnvp', choices=['iaf','rnvp'])
+    parser.add_argument('--nf_hidden', type=int, default=256)
     parser.add_argument('--nf_layers', type=int, default=20)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
-    parser.add_argument('--K0net', type=str, default='True', choices=['True','False'])
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')

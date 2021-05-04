@@ -409,7 +409,7 @@ class RealNVP(nn.Module):
         z = torch.cat([z1, z2], dim=-1)
         log_det_J += sig.sum(-1)
 
-        for i in reversed(range(len(self.t)-1)):
+        for i in reversed(range(len(self.t))):
 
             z_ = self.mask[i] * z
             s = self.s[i](z_) * (1 - self.mask[i])
