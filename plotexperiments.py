@@ -9,6 +9,7 @@ from dataset_factory import get_lmbda
 
 
 def main():
+
     # Training settings
     parser = argparse.ArgumentParser(description='?')
 
@@ -119,7 +120,7 @@ def main():
                           .format(H, method, prior_var, -truth, slope, r_value))
 
                 if args.savefig:
-                    plt.savefig('{}/{}H{}prior{}'.format(args.path_prefix, method, H, prior_var*1000), bbox_inches='tight')
+                    plt.savefig('{}/{}H{}prior{}.png'.format(args.path_prefix, method, H, prior_var), bbox_inches='tight')
 
                 plt.show()
                 plt.close()
