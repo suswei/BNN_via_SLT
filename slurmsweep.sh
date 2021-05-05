@@ -4,13 +4,13 @@
 #SBATCH --job-name="neurips"
 #SBATCH -p physical
 
-#SBATCH --mem=10G
+#SBATCH --mem=50G
 
 # The maximum running time of the job in days-hours:mins:sec
 #SBATCH --time=5-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-1199
+#SBATCH --array=101-1199
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

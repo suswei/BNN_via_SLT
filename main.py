@@ -250,7 +250,7 @@ def main():
         if not os.path.exists(args.path):
             os.makedirs(args.path)
         torch.save(vars(args), '{}/args.pt'.format(args.path))
-        torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
+        # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
         torch.save(results_dict, '{}/results.pt'.format(args.path))
 
 
