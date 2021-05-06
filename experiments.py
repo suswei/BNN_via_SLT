@@ -11,11 +11,11 @@ def set_sweep_config():
     methods = ['nf_gamma']
     modes = ['allones']
     # sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7, 8.8]))).astype(int)
-    sample_sizes = (np.round(np.exp([7.5, 7.75, 8.0, 8.25, 8.5]))).astype(int)
-    seeds = [1, 2, 3, 4, 5]
+    sample_sizes = (np.round(np.exp([7.5, 8.0, 8.5]))).astype(int)
+    seeds = [1, 2, 3]
 
-    tanh_Hs = [400, 900, 1600]
-    rr_Hs = [20, 30, 40]
+    tanh_Hs = [1600]
+    rr_Hs = [40]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
 
@@ -25,7 +25,7 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
-        'prior_var': [1e-1, 1e-2, 1e-3],
+        'prior_var': [1e-2, 1e-3],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -51,7 +51,7 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
-        'prior_var': [1e-1, 1e-2, 1e-3],
+        'prior_var': [1e-2, 1e-3],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())

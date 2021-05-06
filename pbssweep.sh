@@ -3,7 +3,7 @@
 #PBS -N neurips
 #PBS -M susan.wei@unimelb.edu.au
 #PBS -q normal
-#PBS -l ncpus=48
+#PBS -l ncpus=12
 #PBS -l walltime=48:00:00
 #PBS -l wd
 
@@ -13,7 +13,7 @@
 module load python3
 module load pytorch
 
-for i in {1000..1199}; do
+for i in {0..107}; do
  python3 experiments.py $i > $PBS_JOBID_$i.log &
 done
 
