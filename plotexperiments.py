@@ -41,6 +41,7 @@ def main():
     ev_list = []
     ns_list = []
     priorvar_list = []
+    dataset_list = []
 
     for taskid in range(tasks):
 
@@ -60,6 +61,7 @@ def main():
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
             priorvar_list += [sim_args['prior_var']]
+            dataset_list += [sim_args['dataset']]
 
         except:
             print('missing taskid {}'.format(taskid))
@@ -84,6 +86,7 @@ def main():
                     Hs_list += [H]
                     ns_list += [sim_args['sample_size']]
                     priorvar_list += [sim_args['prior_var']]
+                    dataset_list += [sim_args['dataset']]
 
                     break
 
@@ -93,37 +96,45 @@ def main():
     method_list = pd.Series(method_list, dtype='category')
     seed_list = pd.Series(seed_list, dtype="category")
 
-    summary_pd = pd.DataFrame({'H': Hs_list,
+    summary_pd = pd.DataFrame({'dataset': dataset_list,
+                               'H': Hs_list,
                                'ELBOplusnSn': ev_list,
                                'n': ns_list,
                                'method': method_list,
                                'prior_var': priorvar_list,
                                'seed': seed_list})
 
+    summary_pd = summary_pd.dropna()
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+4] # remove instances where convergence was clearly not reached
+
     # log n slope plot
-    for prior_var in unique_priorvars:
+    for dataset in ['tanh','tanh_general','reducedrank']:
 
-        for H in unique_Hs:
+        for prior_var in unique_priorvars:
 
-            for method in unique_methods:
+            for H in unique_Hs:
 
-                temp = summary_pd.loc[summary_pd['H'] == H]
-                truth = get_lmbda([H], 'tanh')[0]
-                temp = temp.loc[temp['method'] == method]
-                temp = temp.loc[temp['prior_var'] == prior_var]
+                for method in unique_methods:
 
-                evs = temp.groupby('n')['ELBOplusnSn'].mean()
+                    temp = summary_pd.loc[summary_pd['H'] == H]
+                    truth = get_lmbda([H], 'tanh')[0]
+                    temp = temp.loc[temp['method'] == method]
+                    temp = temp.loc[temp['prior_var'] == prior_var]
+                    temp = temp.loc[temp['dataset'] == dataset]
 
-                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
-                plt.plot(np.log(evs._index), evs.values, '.')
-                plt.title('H {}: method {} prior_var {}, \n truth {} versus slope {:2f} and R2 {:2f}'
-                          .format(H, method, prior_var, -truth, slope, r_value))
+                    temp = temp[(np.abs(stats.zscore(temp['ELBOplusnSn'])) < 3)] # remove outliers
 
-                if args.savefig:
-                    plt.savefig('{}/{}H{}prior{}.png'.format(args.path_prefix, method, H, prior_var), bbox_inches='tight')
+                    evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
-                plt.show()
-                plt.close()
+                    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
+                    plt.plot(np.log(evs._index), evs.values, '.')
+                    plt.title('{} H {}: method {} prior_var {}, \n truth {} versus slope {:2f} and R2 {:2f}'
+                              .format(dataset, H, method, prior_var, -truth, slope, r_value))
+
+                    if args.savefig:
+                        plt.savefig('{}/{}{}H{}prior{}.png'.format(args.path_prefix, dataset, method, H, prior_var), bbox_inches='tight')
+                    plt.show()
+                    plt.close()
 
     # g = sns.barplot(x="H", y="ELBOplusnSn",
     #                 hue="method",
