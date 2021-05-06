@@ -20,7 +20,7 @@ def set_sweep_config():
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
 
     hyperparameter_config = {
-        'dataset': ['tanh', 'tanh_general'],
+        'dataset': ['tanh'],
         'sample_size': sample_sizes,
         'method': methods,
         'nf_gamma_mode': modes,
@@ -46,7 +46,7 @@ def set_sweep_config():
     #################################################  GAUSSIAN PRIOR -- NF_GAUSSIAN ###################################################
 
     hyperparameter_config = {
-        'dataset': ['tanh', 'tanh_general'],
+        'dataset': ['tanh'],
         'sample_size': sample_sizes,
         'method': ['nf_gaussian'],
         'nf_gamma_mode': ['icml'],
