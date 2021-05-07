@@ -12,9 +12,9 @@
 # max memory is 64GB per node
 
 module load python3
-module load pytorch
+module load pytorch/1.5.1
 
-for i in {0..71}; do
+for i in {0..119}; do
  python3 experiments.py $i > $PBS_JOBID_$i.log &
 done
 

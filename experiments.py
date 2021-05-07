@@ -11,8 +11,9 @@ def set_sweep_config():
     methods = ['nf_gamma']
     modes = ['allones']
     # sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7, 8.8]))).astype(int)
-    sample_sizes = (np.round(np.exp([7.5, 8.0, 8.5]))).astype(int)
-    seeds = [1, 2, 3]
+    sample_sizes = (np.round(np.exp([8.5, 9.0, 9.5]))).astype(int)
+    seeds = [1, 2, 3, 4, 5]
+    layers = [6, 10]
 
     tanh_Hs = [1600]
     rr_Hs = [40]
@@ -25,8 +26,9 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
-        'prior_var': [1e-2, 1e-3],
+        'prior_var': [1e-2],
         'seed': seeds,
+        'nf_layers': layers
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -37,8 +39,9 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': rr_Hs,
-        'prior_var': [1, 1e-1],
-        'seed': seeds
+        'prior_var': [1e-1],
+        'seed': seeds,
+        'nf_layers': layers
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -51,8 +54,9 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
-        'prior_var': [1e-2, 1e-3],
+        'prior_var': [1e-2],
         'seed': seeds,
+        'nf_layers': layers
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -63,8 +67,9 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'nf_gamma_mode': ['icml'],
         'H': rr_Hs,
-        'prior_var': [1, 1e-1],
-        'seed': seeds
+        'prior_var': [1e-1],
+        'seed': seeds,
+        'nf_layers': layers
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -80,15 +85,15 @@ def main(taskid):
     temp = hyperparameter_experiments[taskid]
 
     path = 'neurips'
-    if not os.path.exists(path):
-        os.makedirs(path)
+    # if not os.path.exists(path):
+    #     os.makedirs(path)
 
     torch.save(hyperparameter_experiments,'{}/hyp.pt'.format(path))
 
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf rnvp --nf_layers 6  --exact_EqLogq --epochs 2000 --trainR 1 "
+              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 3000 --trainR 1 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s --beta_star "
@@ -96,7 +101,8 @@ def main(taskid):
               "--prior_var %s "
               "--seed %s "
               "--path %s "
-              % (temp['dataset'], temp['sample_size'],
+              % (temp['nf_layers'],
+                 temp['dataset'], temp['sample_size'],
                  temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],

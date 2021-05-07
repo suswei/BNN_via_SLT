@@ -66,32 +66,34 @@ def main():
         except:
             print('missing taskid {}'.format(taskid))
 
-    unique_Hs = list(set(Hs_list))
-    unique_methods = list(set(method_list))
-    unique_priorvars = list(set(priorvar_list))
 
-    for H in unique_Hs:
-
-        for taskid in range(tasks):
-
-            try:
-                path = '{}/taskid{}/'.format(args.path_prefix, taskid)
-                results = torch.load('{}/results.pt'.format(path))
-                sim_args = torch.load('{}/args.pt'.format(path))
-
-                if sim_args['H'] == H:
-                    ev_list += [results['asy_log_pDn']]
-                    method_list += ['truth']
-                    seed_list += [sim_args['seed']]
-                    Hs_list += [H]
-                    ns_list += [sim_args['sample_size']]
-                    priorvar_list += [sim_args['prior_var']]
-                    dataset_list += [sim_args['dataset']]
-
-                    break
-
-            except:
-                print('missing taskid {}'.format(taskid))
+    # for dataset in ['tanh','reducedrank']:
+    #
+    #     temp = summary_pd.loc[summary_pd['dataset'] == dataset]
+    #     unique_Hs = list(set(temp['H']))
+    #
+    #     for H in unique_Hs:
+    #
+    #         for taskid in range(tasks):
+    #
+    #             try:
+    #                 path = '{}/taskid{}/'.format(args.path_prefix, taskid)
+    #                 results = torch.load('{}/results.pt'.format(path))
+    #                 sim_args = torch.load('{}/args.pt'.format(path))
+    #
+    #                 if sim_args['H'] == H:
+    #                     ev_list += [results['asy_log_pDn']]
+    #                     method_list += ['truth']
+    #                     seed_list += [sim_args['seed']]
+    #                     Hs_list += [H]
+    #                     ns_list += [sim_args['sample_size']]
+    #                     priorvar_list += [sim_args['prior_var']]
+    #                     dataset_list += [sim_args['dataset']]
+    #
+    #                     break
+    #
+    #             except:
+    #                 print('missing taskid {}'.format(taskid))
 
     method_list = pd.Series(method_list, dtype='category')
     seed_list = pd.Series(seed_list, dtype="category")
@@ -105,10 +107,17 @@ def main():
                                'seed': seed_list})
 
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+4] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+5] # remove instances where convergence was clearly not reached
+
+    unique_methods = list(set(summary_pd['method']))
+
 
     # log n slope plot
-    for dataset in ['tanh','tanh_general','reducedrank']:
+    for dataset in ['tanh','reducedrank']:
+
+        temp = summary_pd.loc[summary_pd['dataset'] == dataset]
+        unique_priorvars = list(set(temp['prior_var']))
+        unique_Hs = list(set(temp['H']))
 
         for prior_var in unique_priorvars:
 
@@ -117,11 +126,11 @@ def main():
                 for method in unique_methods:
 
                     temp = summary_pd.loc[summary_pd['H'] == H]
-                    truth = get_lmbda([H], 'tanh')[0]
+                    truth = get_lmbda([H], dataset)[0]
                     temp = temp.loc[temp['method'] == method]
                     temp = temp.loc[temp['prior_var'] == prior_var]
                     temp = temp.loc[temp['dataset'] == dataset]
-
+                    print(temp)
                     temp = temp[(np.abs(stats.zscore(temp['ELBOplusnSn'])) < 3)] # remove outliers
 
                     evs = temp.groupby('n')['ELBOplusnSn'].mean()
