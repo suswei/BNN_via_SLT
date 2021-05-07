@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="neurips"
+#SBATCH --job-name="nfmixed_neurips"
 #SBATCH -p physical
 
 #SBATCH --mem=10G

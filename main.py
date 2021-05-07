@@ -156,7 +156,7 @@ def main():
     parser.add_argument('--nf_layers', type=int, default=20)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
 
-    parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian'])
+    parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--nf_gamma_mode', type=str, default='icml')
     parser.add_argument('--lmbda_star', action='store_true')
     parser.add_argument('--beta_star', action='store_true')
@@ -171,38 +171,37 @@ def main():
 
     print(args)
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_gaussian':
 
-        if args.nf_gamma_mode == 'abs_gauss':
+    if args.nf_gamma_mode == 'abs_gauss':
 
-            args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
-            args.ks = torch.ones(args.w_dim, 1)
-            args.betas = 0.5*torch.ones(args.w_dim, 1)
+        args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim, 1)
+        args.betas = 0.5*torch.ones(args.w_dim, 1)
 
-        elif args.nf_gamma_mode == 'exp':
+    elif args.nf_gamma_mode == 'exp':
 
-            args.lmbdas = torch.ones(args.w_dim, 1)
-            args.ks = 0.5*torch.ones(args.w_dim, 1)
-            args.betas = torch.ones(args.w_dim, 1)
+        args.lmbdas = torch.ones(args.w_dim, 1)
+        args.ks = 0.5*torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
 
-        elif args.nf_gamma_mode == 'icml':
+    elif args.nf_gamma_mode == 'icml':
 
-            args.lmbdas = args.trueRLCT*torch.ones(args.w_dim, 1)
-            args.ks = torch.ones(args.w_dim, 1)
-            args.betas = args.trueRLCT*torch.ones(args.w_dim, 1)
+        args.lmbdas = args.trueRLCT*torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim, 1)
+        args.betas = args.trueRLCT*torch.ones(args.w_dim, 1)
 
-        elif args.nf_gamma_mode == 'allones':
+    elif args.nf_gamma_mode == 'allones':
 
-            args.lmbdas = torch.ones(args.w_dim, 1)
-            args.ks = torch.ones(args.w_dim, 1)
-            args.betas = torch.ones(args.w_dim, 1)
+        args.lmbdas = torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
 
-        if args.lmbda_star:
-            args.lmbdas[0] = args.trueRLCT
-        if args.beta_star:
-            args.betas[0] = args.sample_size
+    if args.lmbda_star:
+        args.lmbdas[0] = args.trueRLCT
+    if args.beta_star:
+        args.betas[0] = args.sample_size
 
-        args.hs = args.lmbdas * 2 * args.ks - 1
+    args.hs = args.lmbdas * 2 * args.ks - 1
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)

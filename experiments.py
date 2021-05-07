@@ -8,8 +8,8 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    methods = ['nf_gamma']
-    modes = ['allones']
+    methods = ['nf_mixed']
+    modes = ['icml']
     # sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7, 8.8]))).astype(int)
     sample_sizes = (np.round(np.exp([8.5, 9.0, 9.5]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
@@ -84,7 +84,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'neurips'
+    path = 'neurips_nfmixed'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -93,7 +93,7 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 3000 --trainR 1 "
+              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 3000 --trainR 1 --display_interval 10 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s --beta_star "

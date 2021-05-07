@@ -64,6 +64,13 @@ def sample_q(args, R, exact=True):
     elif args.method == 'nf_gaussian':
         xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
 
+    elif args.method == 'nf_mixed':
+        m = Gamma(args.lmbdas[0], args.betas[0])
+        vs = m.sample(torch.Size([R]))
+        xis_beg = vs ** (1 / (2 * args.ks[0].repeat(1, R).T))
+        xis_end = torch.FloatTensor(R, args.w_dim-1).normal_(mean=0, std=1)
+        xis = torch.cat((xis_beg, xis_end),dim=1)
+
     return xis
 
 
@@ -107,6 +114,19 @@ def qj_entropy(args):
 
         stds = 1 # TODO: should allow custom mean/std for nf_gaussian
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
+
+    elif args.method == 'nf_mixed':
+        hs = args.hs
+        ks = args.ks
+        betas = args.betas
+        lmbdas = (hs+1)/(2*ks)
+        # logz = qj_gengamma_lognorm(hs, ks, betas)
+        # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
+        blah = -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) \
+               - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
+        stds = 1
+        blah2 = -(args.w_dim-1) / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
+        return blah[0] + blah2
 
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
