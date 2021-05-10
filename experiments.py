@@ -14,7 +14,7 @@ def set_sweep_config():
     seeds = [1, 2, 3]
     layers = [6]
 
-    tanh_Hs = [100]
+    tanh_Hs = [400, 1600]
     rr_Hs = [20]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -87,12 +87,12 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 2000 --trainR 5 --display_interval 10 "
+              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 2000 --trainR 1 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s --beta_star "
               "--H %s "
-              "--prior unif "
+              "--prior_var 1e-2 "
               "--seed %s "
               "--path %s "
               % (temp['nf_layers'],

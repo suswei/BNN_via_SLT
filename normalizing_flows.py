@@ -423,15 +423,15 @@ class RealNVP(nn.Module):
         for i in reversed(range(len(self.t))):
 
             w_ = self.mask[i] * w
-            # s = self.s[i](w_) * (1 - self.mask[i])
-            # t = self.t[i](w_) * (1 - self.mask[i])
-            # w = (1 - self.mask[i]) * (w - t) * torch.exp(-s) + w_
-            # log_det_J -= s.sum(dim=1)
+            s = self.s[i](w_) * (1 - self.mask[i])
+            t = self.t[i](w_) * (1 - self.mask[i])
+            w = (1 - self.mask[i]) * (w - t) * torch.exp(-s) + w_
+            log_det_J -= s.sum(dim=1)
 
-            s = self.s[i](w_)
-            t = self.t[i](w_)
-            w = (1 - self.mask[i]) * (w * torch.exp(s) + t) + w_
-            log_det_J += s.sum(dim=1)
+            # s = self.s[i](w_)
+            # t = self.t[i](w_)
+            # w = (1 - self.mask[i]) * (w * torch.exp(s) + t) + w_
+            # log_det_J += s.sum(dim=1)
 
         return w, log_det_J
 
