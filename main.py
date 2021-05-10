@@ -24,6 +24,9 @@ def train(args):
             ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
             half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
                                    torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
+            half_mask[0][0] = 0
+            half_mask[1][0] = 0
+
             if layer == 0:
                 masks = half_mask
             else:
@@ -56,7 +59,7 @@ def train(args):
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
-            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
+            complexity = - log_prior(args, thetas, xis).mean() - log_jacobians.mean()  # q_entropy no optimization
 
             if args.blundell_weighting:
                 M = args.sample_size/args.batch_size # number of minibatches
@@ -76,8 +79,10 @@ def train(args):
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=evalR)
             print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
-                  '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
-                  .format(epoch, loss, args.nSn, evalR, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
+                  '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {} ], '
+                  .format(epoch, loss, args.nSn, evalR,
+                          elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
+                          complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
         scheduler.step(running_loss)
@@ -96,6 +101,8 @@ def evaluate(resolution_network, args, R):
     with torch.no_grad():
 
         xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
+        # hmonomial = torch.prod(xis ** args.hs.T, dim=1)
+
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
@@ -110,7 +117,7 @@ def evaluate(resolution_network, args, R):
         else:
             ent = q_entropy_sample(args, xis)
 
-        complexity = ent - log_prior(args, thetas).mean() - log_jacobians.mean()
+        complexity = ent - log_prior(args, thetas, xis).mean() - log_jacobians.mean()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -122,7 +129,7 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas, xis).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -207,7 +214,7 @@ def main():
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
     elbo_val = elbo_loglik_val.mean() - complexity
     print('nSn {}, elbo {} '
-          '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {}], '
+          '= loglik {} (loglik_val {}) - [complexity {} = qentropy {} - logprior {} - logjacob {} ], '
           .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent,
                   logprior.mean(), log_jacobians.mean()))
 

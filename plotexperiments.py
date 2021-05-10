@@ -42,6 +42,7 @@ def main():
     ns_list = []
     priorvar_list = []
     dataset_list = []
+    layers_list = []
 
     for taskid in range(tasks):
 
@@ -62,6 +63,7 @@ def main():
             Hs_list += [sim_args['H']]
             priorvar_list += [sim_args['prior_var']]
             dataset_list += [sim_args['dataset']]
+            layers_list += [sim_args['nf_layers']]
 
         except:
             print('missing taskid {}'.format(taskid))
@@ -104,8 +106,10 @@ def main():
                                'n': ns_list,
                                'method': method_list,
                                'prior_var': priorvar_list,
+                               'nf_layers': layers_list,
                                'seed': seed_list})
 
+    # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
     summary_pd = summary_pd.dropna()
     summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+5] # remove instances where convergence was clearly not reached
 
@@ -125,25 +129,29 @@ def main():
 
                 for method in unique_methods:
 
-                    temp = summary_pd.loc[summary_pd['H'] == H]
-                    truth = get_lmbda([H], dataset)[0]
-                    temp = temp.loc[temp['method'] == method]
-                    temp = temp.loc[temp['prior_var'] == prior_var]
-                    temp = temp.loc[temp['dataset'] == dataset]
-                    print(temp)
-                    temp = temp[(np.abs(stats.zscore(temp['ELBOplusnSn'])) < 3)] # remove outliers
+                    for layer in [6,10]:
 
-                    evs = temp.groupby('n')['ELBOplusnSn'].mean()
+                        temp = summary_pd.loc[summary_pd['H'] == H]
+                        truth = get_lmbda([H], dataset)[0]
+                        temp = temp.loc[temp['method'] == method]
+                        temp = temp.loc[temp['prior_var'] == prior_var]
+                        temp = temp.loc[temp['dataset'] == dataset]
+                        temp = temp.loc[temp['nf_layers'] == layer]
 
-                    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
-                    plt.plot(np.log(evs._index), evs.values, '.')
-                    plt.title('{} H {}: method {} prior_var {}, \n truth {} versus slope {:2f} and R2 {:2f}'
-                              .format(dataset, H, method, prior_var, -truth, slope, r_value))
+                        print(temp)
+                        temp = temp[(np.abs(stats.zscore(temp['ELBOplusnSn'])) < 1)] # remove outliers
 
-                    if args.savefig:
-                        plt.savefig('{}/{}{}H{}prior{}.png'.format(args.path_prefix, dataset, method, H, prior_var), bbox_inches='tight')
-                    plt.show()
-                    plt.close()
+                        evs = temp.groupby('n')['ELBOplusnSn'].mean()
+
+                        slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
+                        plt.plot(np.log(evs._index), evs.values, '.')
+                        plt.title('{} H {}: method {} prior_var {} layers {}, \n truth {} versus slope {:2f} and R2 {:2f}'
+                                  .format(dataset, H, method, prior_var, layer, -truth, slope, r_value))
+
+                        if args.savefig:
+                            plt.savefig('{}/{}{}H{}prior{}.png'.format(args.path_prefix, dataset, method, H, prior_var), bbox_inches='tight')
+                        plt.show()
+                        plt.close()
 
     # g = sns.barplot(x="H", y="ELBOplusnSn",
     #                 hue="method",

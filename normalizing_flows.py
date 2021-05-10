@@ -367,6 +367,7 @@ class RealNVP(nn.Module):
     def __init__(self, nets, nett, mask, d):
         super(RealNVP, self).__init__()
 
+
         self.mask = nn.Parameter(mask, requires_grad=False)
         self.t = torch.nn.ModuleList([nett() for _ in range(len(mask))])
         self.s = torch.nn.ModuleList([nets() for _ in range(len(mask))])
@@ -379,8 +380,12 @@ class RealNVP(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
             nn.Linear(hidden, 1),
-            nn.ReLU()
+            nn.Softplus()
         )
 
         self.mu_net = nn.Sequential(
@@ -388,8 +393,12 @@ class RealNVP(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
+            nn.Linear(hidden, hidden),
+            nn.LeakyReLU(),
             nn.Linear(hidden, 1),
-            nn.ReLU()
+            nn.Softplus()
         )
     # def inverse(self, z):
     #     x = z
@@ -400,29 +409,31 @@ class RealNVP(nn.Module):
     #         x = x_ + (1 - self.mask[i]) * (x * torch.exp(s) + t)
     #     return x
 
-    def forward(self, x):
-        log_det_J, z = x.new_zeros(x.shape[0]), x
+    def forward(self, xi):
 
-        x1, x2 = x[:, :(self.d - 1)], x[:, (self.d - 1):]  # x1 all bust last, x2 last element of x
-        sig = self.sig_net(x1)
-        z1, z2 = x1, x2 * torch.exp(sig) + self.mu_net(x1)
-        z = torch.cat([z1, z2], dim=-1)
-        log_det_J += sig.sum(-1)
+        log_det_J = xi.new_zeros(xi.shape[0])
 
+        # xi1, xi2 = xi[:, :1], xi[:, 1:]
+        # sig = self.sig_net(xi2)
+        # u1, u2 = xi1 * torch.exp(sig) + self.mu_net(xi2), xi2
+        # u = torch.cat([u1, u2], dim=1)
+        # log_det_J += sig.sum(-1)
+
+        w = xi
         for i in reversed(range(len(self.t))):
 
-            z_ = self.mask[i] * z
-            s = self.s[i](z_) * (1 - self.mask[i])
-            t = self.t[i](z_) * (1 - self.mask[i])
-            z = (1 - self.mask[i]) * (z - t) * torch.exp(-s) + z_
-            log_det_J -= s.sum(dim=1)
+            w_ = self.mask[i] * w
+            # s = self.s[i](w_) * (1 - self.mask[i])
+            # t = self.t[i](w_) * (1 - self.mask[i])
+            # w = (1 - self.mask[i]) * (w - t) * torch.exp(-s) + w_
+            # log_det_J -= s.sum(dim=1)
 
-            # s = self.s[i](z_)
-            # t = self.t[i](z_)
-            # z = (1 - self.mask[i]) * (z * torch.exp(s) + t) + z_
-            # log_det_J += s.sum(dim=1)
+            s = self.s[i](w_)
+            t = self.t[i](w_)
+            w = (1 - self.mask[i]) * (w * torch.exp(s) + t) + w_
+            log_det_J += s.sum(dim=1)
 
-        return z, log_det_J
+        return w, log_det_J
 
     # def log_prob(self, x):
     #     z, logp = self.f(x)

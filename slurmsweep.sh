@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="nfmixed_neurips"
+#SBATCH --job-name="unifneurips"
 #SBATCH -p physical
 
-#SBATCH --mem=10G
+#SBATCH --mem=100G
 
 # The maximum running time of the job in days-hours:mins:sec
 #SBATCH --time=1-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-119
+#SBATCH --array=0-17
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

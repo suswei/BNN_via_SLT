@@ -7,7 +7,7 @@ import torch.distributions as D
 
 # TODO: implement mixture prior, log uniform prior, horseshoe prior
 # evaluate log varphi(theta), returns vector
-def log_prior(args, thetas):
+def log_prior(args, thetas, xis):
     """
 
     :param args:
@@ -40,6 +40,7 @@ def log_prior(args, thetas):
         # return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
         return torch.zeros(1)
 
+
 def sample_q(args, R, exact=True):
 
     if args.method == 'nf_gamma':
@@ -68,7 +69,8 @@ def sample_q(args, R, exact=True):
         m = Gamma(args.lmbdas[0], args.betas[0])
         vs = m.sample(torch.Size([R]))
         xis_beg = vs ** (1 / (2 * args.ks[0].repeat(1, R).T))
-        xis_end = torch.FloatTensor(R, args.w_dim-1).normal_(mean=0, std=1)
+        # xis_end = torch.FloatTensor(R, args.w_dim-1).normal_(mean=0, std=1)
+        xis_end = torch.FloatTensor(R, args.w_dim-1).uniform_()
         xis = torch.cat((xis_beg, xis_end),dim=1)
 
     return xis
@@ -107,7 +109,7 @@ def qj_entropy(args):
         lmbdas = (hs+1)/(2*ks)
         # logz = qj_gengamma_lognorm(hs, ks, betas)
         # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
-        return -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) \
+        return -torch.lgamma(lmbdas) +torch.log(betas)/(2*ks) +torch.log(2*ks) \
                - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
     elif args.method == 'nf_gaussian':
@@ -122,12 +124,12 @@ def qj_entropy(args):
         lmbdas = (hs+1)/(2*ks)
         # logz = qj_gengamma_lognorm(hs, ks, betas)
         # return hs*(torch.digamma(lmbda) - torch.log(betas))/(2*ks) - lmbda - logz
-        blah = -torch.lgamma(lmbdas) +torch.log(betas)/2*ks +torch.log(2*ks) \
+        blah = -torch.lgamma(lmbdas) +torch.log(betas)/(2*ks) +torch.log(2*ks) \
                - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
         stds = 1
         blah2 = -(args.w_dim-1) / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
-        return blah[0] + blah2
-
+        # return blah[0] + blah2
+        return blah[0] # assumign other components are uniform
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
 def qj_gengamma_lognorm(h, k, beta, args):

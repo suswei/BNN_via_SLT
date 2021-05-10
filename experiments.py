@@ -8,15 +8,14 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    methods = ['nf_mixed']
-    modes = ['icml']
-    # sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7, 8.8]))).astype(int)
-    sample_sizes = (np.round(np.exp([8.5, 9.0, 9.5]))).astype(int)
-    seeds = [1, 2, 3, 4, 5]
-    layers = [6, 10]
+    methods = ['nf_gamma']
+    modes = ['allones']
+    sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7]))).astype(int)
+    seeds = [1, 2, 3]
+    layers = [6]
 
-    tanh_Hs = [1600]
-    rr_Hs = [40]
+    tanh_Hs = [100]
+    rr_Hs = [20]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
 
@@ -26,25 +25,23 @@ def set_sweep_config():
         'method': methods,
         'nf_gamma_mode': modes,
         'H': tanh_Hs,
-        'prior_var': [1e-2],
         'seed': seeds,
         'nf_layers': layers
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    hyperparameter_config = {
-        'dataset': ['reducedrank'],
-        'sample_size': sample_sizes,
-        'method': methods,
-        'nf_gamma_mode': modes,
-        'H': rr_Hs,
-        'prior_var': [1e-1],
-        'seed': seeds,
-        'nf_layers': layers
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    # hyperparameter_config = {
+    #     'dataset': ['reducedrank'],
+    #     'sample_size': sample_sizes,
+    #     'method': methods,
+    #     'nf_gamma_mode': modes,
+    #     'H': rr_Hs,
+    #     'seed': seeds,
+    #     'nf_layers': layers
+    # }
+    # keys, values = zip(*hyperparameter_config.items())
+    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     #################################################  GAUSSIAN PRIOR -- NF_GAUSSIAN ###################################################
 
@@ -54,26 +51,23 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'nf_gamma_mode': ['icml'],
         'H': tanh_Hs,
-        'prior_var': [1e-2],
         'seed': seeds,
         'nf_layers': layers
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    hyperparameter_config = {
-        'dataset': ['reducedrank'],
-        'sample_size': sample_sizes,
-        'method': ['nf_gaussian'],
-        'nf_gamma_mode': ['icml'],
-        'H': rr_Hs,
-        'prior_var': [1e-1],
-        'seed': seeds,
-        'nf_layers': layers
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
+    # hyperparameter_config = {
+    #     'dataset': ['reducedrank'],
+    #     'sample_size': sample_sizes,
+    #     'method': ['nf_gaussian'],
+    #     'nf_gamma_mode': ['icml'],
+    #     'H': rr_Hs,
+    #     'seed': seeds,
+    #     'nf_layers': layers
+    # }
+    # keys, values = zip(*hyperparameter_config.items())
+    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     return hyperparameter_experiments
 
@@ -84,7 +78,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'neurips_nfmixed'
+    path = 'neurips'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -93,12 +87,12 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 3000 --trainR 1 --display_interval 10 "
+              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 2000 --trainR 5 --display_interval 10 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s --beta_star "
               "--H %s "
-              "--prior_var %s "
+              "--prior unif "
               "--seed %s "
               "--path %s "
               % (temp['nf_layers'],
@@ -106,7 +100,6 @@ def main(taskid):
                  temp['method'],
                  temp['nf_gamma_mode'],
                  temp['H'],
-                 temp['prior_var'],
                  temp['seed'],
                  path))
 
