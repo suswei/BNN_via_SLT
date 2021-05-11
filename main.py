@@ -203,6 +203,12 @@ def main():
         args.ks = torch.ones(args.w_dim, 1)
         args.betas = torch.ones(args.w_dim, 1)
 
+    elif args.nf_gamma_mode == 'independentC':
+
+        args.lmbdas = 1.461632*torch.ones(args.w_dim, 1)
+        args.ks = 0.5*torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
+
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
     if args.beta_star:

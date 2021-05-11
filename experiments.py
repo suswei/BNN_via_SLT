@@ -9,12 +9,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['allones']
-    sample_sizes = (np.round(np.exp([8.5, 8.6, 8.7]))).astype(int)
-    seeds = [1, 2, 3]
-    layers = [6]
+    modes = ['independentC']
+    sample_sizes = (np.round(np.exp([9.0, 9.1, 9.2]))).astype(int)
+    seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    layers = [2]
 
-    tanh_Hs = [400, 1600]
+    tanh_Hs = [1600]
     rr_Hs = [20]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
@@ -87,7 +87,7 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 2000 --trainR 1 --display_interval 100 "
+              "--nf rnvp --nf_layers %s  --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--nf_gamma_mode %s --beta_star "
