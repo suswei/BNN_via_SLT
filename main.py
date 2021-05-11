@@ -75,7 +75,7 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            evalR = 10
+            evalR = 1
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=evalR)
             print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
@@ -125,9 +125,9 @@ def evaluate(resolution_network, args, R):
 
         elbo = elbo_loglik.mean() - complexity
 
-        elbo_loglik_val = 0.0
-        for batch_idx, (data, target) in enumerate(args.val_loader):
-            elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
+        elbo_loglik_val = np.array([0.0])
+        # for batch_idx, (data, target) in enumerate(args.val_loader):
+        #     elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
         return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas, xis).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 

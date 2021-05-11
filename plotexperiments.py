@@ -129,7 +129,7 @@ def main():
 
             for method in unique_methods:
 
-                for layer in [6]:
+                for layer in [2, 6]:
 
                     temp = summary_pd.loc[summary_pd['H'] == H]
                     truth = get_lmbda([H], dataset)[0]
@@ -139,7 +139,7 @@ def main():
                     temp = temp.loc[temp['nf_layers'] == layer]
 
                     print(temp)
-                    temp = temp[(np.abs(stats.zscore(temp['ELBOplusnSn'])) < 1)] # remove outliers
+                    # temp = temp[(np.abs(stats.zscore(temp['ELBOplusnSn'])) < 0.2)] # remove outliers
 
                     evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
@@ -149,7 +149,7 @@ def main():
                               .format(dataset, H, method, 'na', layer, -truth, slope, r_value))
 
                     if args.savefig:
-                        plt.savefig('{}/{}{}H{}prior{}.png'.format(args.path_prefix, dataset, method, H, 'na'), bbox_inches='tight')
+                        plt.savefig('{}/{}{}H{}layer{}prior{}.png'.format(args.path_prefix, dataset, method, H, layer, 'na'), bbox_inches='tight')
                     plt.show()
                     plt.close()
 

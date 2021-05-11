@@ -9,12 +9,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     methods = ['nf_gamma']
-    modes = ['independentC']
+    modes = ['icml', 'allones']
     sample_sizes = (np.round(np.exp([9.0, 9.1, 9.2]))).astype(int)
-    seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    seeds = [1, 2, 3, 4, 5]
     layers = [2]
 
-    tanh_Hs = [1600]
+    tanh_Hs = [900]
     rr_Hs = [20]
 
     ############################################  GAUSSIAN PRIOR -- NF_GAMMA ########################################################
