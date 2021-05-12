@@ -385,7 +385,7 @@ class RealNVP(nn.Module):
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
             nn.Linear(hidden, 1),
-            nn.Softplus()
+            nn.Sigmoid()
         )
 
         self.mu_net = nn.Sequential(
@@ -398,7 +398,7 @@ class RealNVP(nn.Module):
             nn.Linear(hidden, hidden),
             nn.LeakyReLU(),
             nn.Linear(hidden, 1),
-            nn.Softplus()
+            nn.Sigmoid()
         )
     # def inverse(self, z):
     #     x = z

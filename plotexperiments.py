@@ -110,10 +110,11 @@ def main():
                                'seed': seed_list})
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
-    # summary_pd = summary_pd.dropna()
-    # summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+5] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.dropna()
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+5] # remove instances where convergence was clearly not reached
 
     unique_methods = list(set(summary_pd['method']))
+    unique_layers = list(set(summary_pd['nf_layers']))
 
 
     # log n slope plot
@@ -129,7 +130,7 @@ def main():
 
             for method in unique_methods:
 
-                for layer in [2, 6]:
+                for layer in unique_layers:
 
                     temp = summary_pd.loc[summary_pd['H'] == H]
                     truth = get_lmbda([H], dataset)[0]

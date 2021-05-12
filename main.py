@@ -14,9 +14,13 @@ def train(args):
 
     elif args.nf == 'rnvp':
 
-        nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(), nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+        nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                                      nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
-        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(), nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                                      nn.Linear(args.nf_hidden, args.w_dim))
 
         for layer in range(args.nf_layers):
@@ -159,8 +163,8 @@ def main():
     parser.add_argument('--trainR', type=int, default = 1)
 
     parser.add_argument('--nf', type=str,default='rnvp', choices=['iaf','rnvp'])
-    parser.add_argument('--nf_hidden', type=int, default=256)
-    parser.add_argument('--nf_layers', type=int, default=20)
+    parser.add_argument('--nf_hidden', type=int, default=128)
+    parser.add_argument('--nf_layers', type=int, default=2)
     parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
