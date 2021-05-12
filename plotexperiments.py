@@ -144,15 +144,16 @@ def main():
 
                     evs = temp.groupby('n')['ELBOplusnSn'].mean()
 
-                    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
-                    plt.plot(np.log(evs._index), evs.values, '.')
-                    plt.title('{} H {}: method {} prior_var {} layers {}, \n truth {} versus slope {:2f} and R2 {:2f}'
-                              .format(dataset, H, method, 'na', layer, -truth, slope, r_value))
+                    if len(evs._index)>1:
+                        slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
+                        plt.plot(np.log(evs._index), evs.values, '.')
+                        plt.title('{} H {}: method {} prior_var {} layers {}, \n truth {} versus slope {:2f}, intercept {:2f} and R2 {:2f}'
+                                  .format(dataset, H, method, 'na', layer, -truth, slope, intercept, r_value))
 
-                    if args.savefig:
-                        plt.savefig('{}/{}{}H{}layer{}prior{}.png'.format(args.path_prefix, dataset, method, H, layer, 'na'), bbox_inches='tight')
-                    plt.show()
-                    plt.close()
+                        if args.savefig:
+                            plt.savefig('{}/{}{}H{}layer{}prior{}.png'.format(args.path_prefix, dataset, method, H, layer, 'na'), bbox_inches='tight')
+                        plt.show()
+                        plt.close()
 
     # g = sns.barplot(x="H", y="ELBOplusnSn",
     #                 hue="method",

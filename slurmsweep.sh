@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="neurips"
+#SBATCH --job-name="H900"
 #SBATCH -p physical
 
 #SBATCH --mem=100G
@@ -10,7 +10,7 @@
 #SBATCH --time=1-23:0:00
 
 # Batch arrays
-#SBATCH --array=0-269
+#SBATCH --array=0-89
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

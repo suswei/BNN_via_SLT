@@ -28,8 +28,8 @@ def train(args):
             ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
             half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
                                    torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
-            half_mask[0][0] = 0
-            half_mask[1][0] = 0
+            # half_mask[0][0] = 0
+            # half_mask[1][0] = 0
 
             if layer == 0:
                 masks = half_mask
