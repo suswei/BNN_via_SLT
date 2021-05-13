@@ -6,37 +6,43 @@ from normalizing_flows import *
 from utils import *
 
 
+def set_gengamma_varparams(args):
+
+    args.lmbdas = torch.ones(args.w_dim, 1)
+    args.ks = torch.ones(args.w_dim, 1)
+    args.betas = torch.ones(args.w_dim, 1)
+
+    if args.lmbda_star:
+        args.lmbdas[0] = args.trueRLCT
+    if args.beta_star:
+        args.betas[0] = args.sample_size
+
+    args.hs = args.lmbdas * 2 * args.ks - 1
+
+
 def train(args):
 
-    if args.nf == 'iaf':
+    nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
+    nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.w_dim))
 
-        resolution_network = IAF(latent_size=args.w_dim, h_size=args.w_dim)
+    for layer in range(args.no_couplingpairs):
+        ones = np.ones(args.w_dim)
+        ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
+        half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
+                               torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
 
-    elif args.nf == 'rnvp':
+        if layer == 0:
+            masks = half_mask
+        else:
+            masks = torch.cat((masks, half_mask))
 
-        nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
-        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.w_dim))
-
-        for layer in range(args.nf_layers):
-            ones = np.ones(args.w_dim)
-            ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
-            half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
-                                   torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
-            # half_mask[0][0] = 0
-            # half_mask[1][0] = 0
-
-            if layer == 0:
-                masks = half_mask
-            else:
-                masks = torch.cat((masks, half_mask))
-
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim)
+    resolution_network = RealNVP(nets, nett, masks, args.w_dim)
 
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -160,18 +166,15 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--blundell_weighting', action='store_true')
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--trainR', type=int, default = 1)
+    parser.add_argument('--trainR', type=int, default=1)
+    parser.add_argument('--exact_EqLogq', action='store_true')
 
-    parser.add_argument('--nf', type=str,default='rnvp', choices=['iaf','rnvp'])
     parser.add_argument('--nf_hidden', type=int, default=128)
-    parser.add_argument('--nf_layers', type=int, default=2)
-    parser.add_argument('--nf_af', type=str, default='relu',choices=['relu','tanh'])
+    parser.add_argument('--no_couplingpairs', type=int, default=2)
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
-    parser.add_argument('--nf_gamma_mode', type=str, default='icml')
     parser.add_argument('--lmbda_star', action='store_true')
     parser.add_argument('--beta_star', action='store_true')
-    parser.add_argument('--exact_EqLogq', action='store_true')
 
     parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -182,43 +185,8 @@ def main():
 
     print(args)
 
-
-    if args.nf_gamma_mode == 'abs_gauss':
-
-        args.lmbdas = 0.5*torch.ones(args.w_dim, 1)
-        args.ks = torch.ones(args.w_dim, 1)
-        args.betas = 0.5*torch.ones(args.w_dim, 1)
-
-    elif args.nf_gamma_mode == 'exp':
-
-        args.lmbdas = torch.ones(args.w_dim, 1)
-        args.ks = 0.5*torch.ones(args.w_dim, 1)
-        args.betas = torch.ones(args.w_dim, 1)
-
-    elif args.nf_gamma_mode == 'icml':
-
-        args.lmbdas = args.trueRLCT*torch.ones(args.w_dim, 1)
-        args.ks = torch.ones(args.w_dim, 1)
-        args.betas = args.trueRLCT*torch.ones(args.w_dim, 1)
-
-    elif args.nf_gamma_mode == 'allones':
-
-        args.lmbdas = torch.ones(args.w_dim, 1)
-        args.ks = torch.ones(args.w_dim, 1)
-        args.betas = torch.ones(args.w_dim, 1)
-
-    elif args.nf_gamma_mode == 'independentC':
-
-        args.lmbdas = 1.461632*torch.ones(args.w_dim, 1)
-        args.ks = 0.5*torch.ones(args.w_dim, 1)
-        args.betas = torch.ones(args.w_dim, 1)
-
-    if args.lmbda_star:
-        args.lmbdas[0] = args.trueRLCT
-    if args.beta_star:
-        args.betas[0] = args.sample_size
-
-    args.hs = args.lmbdas * 2 * args.ks - 1
+    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+        set_gengamma_varparams(args)
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
