@@ -3,6 +3,8 @@
 # The name of the job:
 #SBATCH --job-name="neurips"
 #SBATCH -p gpgpu
+#SBATCH --gres=gpu:1
+#SBATCH --qos=gpgpuresplat
 
 #SBATCH --mem=5G
 
