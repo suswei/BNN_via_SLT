@@ -8,14 +8,15 @@ from utils import *
 
 def set_gengamma_varparams(args):
 
-    args.lmbdas = torch.ones(args.w_dim, 1)
-    args.ks = torch.ones(args.w_dim, 1)
-    args.betas = torch.ones(args.w_dim, 1)
-
-    # a0 = torch.tensor([1.461632])
-    # args.lmbdas = a0*torch.ones(args.w_dim, 1)
-    # args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1)
-    # args.betas = a0*torch.ones(args.w_dim, 1)
+    if args.nf_gamma_mode == 'allones':
+        args.lmbdas = torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim, 1)
+        args.betas = torch.ones(args.w_dim, 1)
+    elif args.nf_gamma_mode == 'a0':
+        a0 = torch.tensor([1.461632])
+        args.lmbdas = a0*torch.ones(args.w_dim, 1)
+        args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1)
+        args.betas = a0*torch.ones(args.w_dim, 1)
 
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
@@ -27,10 +28,12 @@ def set_gengamma_varparams(args):
 
 def train(args):
 
+
     nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
+                             nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                             nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                             nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
+
     nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
                                  nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                                  nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
@@ -94,7 +97,7 @@ def train(args):
             optimizer.step()
 
         if epoch % args.display_interval == 0:
-            evalR = 1
+            evalR = 10
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=evalR)
             print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
@@ -182,6 +185,7 @@ def main():
 
     parser.add_argument('--nf_hidden', type=int, default=128)
     parser.add_argument('--no_couplingpairs', type=int, default=2)
+    parser.add_argument('--nf_gamma_mode', type=str)
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--lmbda_star', action='store_true')

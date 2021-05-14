@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="neurips"
+#SBATCH --job-name="tanh_a0"
 #SBATCH -p gpgpu
 #SBATCH --gres=gpu:1
 #SBATCH --qos=gpgpuresplat
@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-1499
+#SBATCH --array=0-53
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -32,7 +32,7 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p neurips
+mkdir -p tanh_a0
 
 
 # The job command(s):
