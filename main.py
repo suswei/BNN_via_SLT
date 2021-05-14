@@ -12,6 +12,11 @@ def set_gengamma_varparams(args):
     args.ks = torch.ones(args.w_dim, 1)
     args.betas = torch.ones(args.w_dim, 1)
 
+    # a0 = torch.tensor([1.461632])
+    # args.lmbdas = a0*torch.ones(args.w_dim, 1)
+    # args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1)
+    # args.betas = a0*torch.ones(args.w_dim, 1)
+
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
     if args.beta_star:
@@ -43,6 +48,7 @@ def train(args):
             masks = torch.cat((masks, half_mask))
 
     resolution_network = RealNVP(nets, nett, masks, args.w_dim)
+    resolution_network.to(args.device)
 
     optimizer = torch.optim.Adam(resolution_network.parameters(), lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau\
@@ -55,6 +61,8 @@ def train(args):
 
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
+            data, target = data.to(args.device), target.to(args.device)
+
             resolution_network.train()
             optimizer.zero_grad()
 
@@ -62,6 +70,7 @@ def train(args):
                 args.trainR = 10
 
             xis = sample_q(args, args.trainR, exact=True)  # [R, args.w_dim]
+            xis = xis.to(args.device)
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
@@ -111,6 +120,7 @@ def evaluate(resolution_network, args, R):
     with torch.no_grad():
 
         xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
+        xis = xis.to(args.device)
         # hmonomial = torch.prod(xis ** args.hs.T, dim=1)
 
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
@@ -131,6 +141,7 @@ def evaluate(resolution_network, args, R):
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
+            data, target = data.to(args.device), target.to(args.device)
             elbo_loglik += loglik(thetas, data, target, args).sum(dim=1)
 
         elbo = elbo_loglik.mean() - complexity
@@ -182,6 +193,8 @@ def main():
     args = parser.parse_args()
 
     get_dataset_by_id(args)
+
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(args)
 

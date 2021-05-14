@@ -2,12 +2,12 @@
 
 # The name of the job:
 #SBATCH --job-name="neurips"
-#SBATCH -p physical
+#SBATCH -p gpgpu
 
-#SBATCH --mem=100G
+#SBATCH --mem=5G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=7-23:0:00
+#SBATCH --time=0-48:0:00
 
 # Batch arrays
 #SBATCH --array=0-1499
@@ -31,12 +31,11 @@ fi
 
 # Run the job from the directory where it was launched (default)
 mkdir -p neurips
-logfile="neurips/${SLURM_ARRAY_TASK_ID}.out"
 
 
 # The job command(s):
 source activate singularmf
-MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID} > ${logfile}
+MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
 
 # python3 in spartan command line
 # Python 3.8.5

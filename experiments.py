@@ -12,8 +12,8 @@ def set_sweep_config():
     seeds = [1, 2, 3, 4, 5]
     no_couplingpairs = [2, 5, 10]
 
-    tanh_Hs = [400, 1600]
-    rr_Hs = [20, 40]
+    tanh_Hs = [900, 1600]
+    rr_Hs = [30, 40]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
@@ -57,7 +57,7 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--no_couplingpairs %s  --exact_EqLogq --epochs 2000 --trainR 1 --display_interval 100 "
+              "--no_couplingpairs %s  --exact_EqLogq --epochs 3000 --trainR 1 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--beta_star "
