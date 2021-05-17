@@ -34,10 +34,16 @@ def train(args):
                              nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                              nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
 
-    nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.w_dim))
+    if args.nett_tanh=="true":
+        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
+    else:
+        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                     nn.Linear(args.nf_hidden, args.w_dim))
 
     for layer in range(args.no_couplingpairs):
         ones = np.ones(args.w_dim)
@@ -186,6 +192,7 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=128)
     parser.add_argument('--no_couplingpairs', type=int, default=2)
     parser.add_argument('--nf_gamma_mode', type=str)
+    parser.add_argument('--nett_tanh', type=str)
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--lmbda_star', action='store_true')

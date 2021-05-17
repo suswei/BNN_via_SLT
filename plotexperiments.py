@@ -57,13 +57,13 @@ def main():
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
             ns_list += [sim_args['sample_size']]
 
-            method_list += [sim_args['method']]
+            method_list += ['{}_{}'.format(sim_args['method'],sim_args['nf_gamma_mode'])]
 
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
             priorvar_list += [sim_args['prior_var']]
             dataset_list += [sim_args['dataset']]
-            layers_list += [sim_args['nf_layers']]
+            layers_list += [sim_args['no_couplingpairs']]
 
         except:
             print('missing taskid {}'.format(taskid))
@@ -80,7 +80,7 @@ def main():
     unique_ns = list(set(summary_pd['n']))
 
 
-    for dataset in ['tanh','reducedrank']:
+    for dataset in ['tanh']:
 
         temp = summary_pd.loc[summary_pd['dataset'] == dataset]
         unique_Hs = list(set(temp['H']))
@@ -104,7 +104,7 @@ def main():
                             ns_list += [sim_args['sample_size']]
                             priorvar_list += [sim_args['prior_var']]
                             dataset_list += [sim_args['dataset']]
-                            layers_list += [sim_args['nf_layers']]
+                            layers_list += [sim_args['no_couplingpairs']]
 
                     except:
                         print('missing taskid {}'.format(taskid))
@@ -123,13 +123,13 @@ def main():
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+5] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
 
     unique_methods = list(set(summary_pd['method']))
     unique_layers = list(set(summary_pd['no_couplingpairs']))
 
     # log n slope plot
-    for dataset in ['tanh','reducedrank']:
+    for dataset in ['tanh']:
 
         temp = summary_pd.loc[summary_pd['dataset'] == dataset]
         unique_priorvars = list(set(temp['prior_var']))
