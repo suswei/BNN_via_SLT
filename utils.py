@@ -17,8 +17,8 @@ def log_prior(args, thetas, xis):
 
     if args.prior == 'gaussian':
 
-        return - args.w_dim/2*torch.log(2*torch.Tensor([np.pi])) \
-               - (1/2)*args.w_dim*torch.log(torch.Tensor([args.prior_var])) \
+        return - args.w_dim/2*np.log(2*np.pi) \
+               - (1/2)*args.w_dim*np.log(args.prior_var) \
                - torch.diag(torch.matmul(thetas, thetas.T))/(2*args.prior_var)
 
     elif args.prior == 'logunif':

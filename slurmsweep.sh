@@ -3,16 +3,16 @@
 # The name of the job:
 #SBATCH --job-name="nett_tanh"
 #SBATCH -p gpgpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:p100:1
 #SBATCH --qos=gpgpuresplat
 
 #SBATCH --mem=5G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-48:0:00
+#SBATCH --time=0-6:0:00
 
 # Batch arrays
-#SBATCH --array=0-35
+#SBATCH --array=0-17
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

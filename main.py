@@ -82,6 +82,7 @@ def train(args):
             xis = xis.to(args.device)
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
+
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
             args.theta_upper = torch.max(thetas, dim=0).values.detach()
 

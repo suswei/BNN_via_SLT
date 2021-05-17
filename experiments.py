@@ -13,7 +13,7 @@ def set_sweep_config():
     no_couplingpairs = [10]
     varparams_modes = ['a0']
 
-    tanh_Hs = [100, 400]
+    tanh_Hs = [1600]
     rr_Hs = [40]
 
     hyperparameter_config = {
@@ -90,7 +90,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--no_couplingpairs %s  --nf_gamma_mode %s --nett_tanh true "
-              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 10 "
+              " --exact_EqLogq --epochs 2000 --trainR 5 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--beta_star "
