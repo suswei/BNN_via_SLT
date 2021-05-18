@@ -51,8 +51,8 @@ def main():
 
         path = '{}/taskid{}/'.format(args.path_prefix, taskid)
         try:
-            results = torch.load('{}/results.pt'.format(path))
-            sim_args = torch.load('{}/args.pt'.format(path))
+            results = torch.load('{}/results.pt'.format(path),  map_location=torch.device('cpu'))
+            sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
 
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
             ns_list += [sim_args['sample_size']]
@@ -93,8 +93,8 @@ def main():
 
                     try:
                         path = '{}/taskid{}/'.format(args.path_prefix, taskid)
-                        results = torch.load('{}/results.pt'.format(path))
-                        sim_args = torch.load('{}/args.pt'.format(path))
+                        results = torch.load('{}/results.pt'.format(path), map_location=torch.device('cpu'))
+                        sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
 
                         if sim_args['H'] == H and sim_args['sample_size']==n:
                             ev_list += [results['asy_log_pDn']]
@@ -123,7 +123,7 @@ def main():
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
+    # summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
 
     unique_methods = list(set(summary_pd['method']))
     unique_layers = list(set(summary_pd['no_couplingpairs']))

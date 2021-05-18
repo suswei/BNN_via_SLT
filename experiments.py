@@ -8,13 +8,13 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    sample_sizes = (np.round(np.exp([9.0, 9.25, 9.5]))).astype(int)
-    seeds = [1, 2, 3]
+    sample_sizes = (np.round(np.exp([8.5,8.75,9.0,9.25]))).astype(int)
+    seeds = [1, 2, 3, 4, 5]
     no_couplingpairs = [10]
-    varparams_modes = ['a0']
+    varparams_modes = ['a0', 'allones']
 
-    tanh_Hs = [1600,3200]
-    rr_Hs = [40]
+    tanh_Hs = [1600, 6400]
+    rr_Hs = [40, 80]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
@@ -23,7 +23,7 @@ def set_sweep_config():
         'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': varparams_modes,
-        'prior_var': [1e-2,1e-4],
+        'prior_var': [1e-2],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -37,39 +37,37 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': ['na'],
-        'prior_var': [1e-2,1e-4],
+        'prior_var': [1e-2],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    # hyperparameter_config = {
-    #     'dataset': ['reducedrank'],
-    #     'H': rr_Hs,
-    #     'sample_size': sample_sizes,
-    #     'method': ['nf_gamma'],
-    #     'no_couplingpairs': no_couplingpairs,
-    #     'nets_activation': nets_activations,
-    #     'nf_gamma_mode': varparams_modes,
-    #     'prior_var': [1, 1e-1],
-    #     'seed': seeds,
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-    #
-    # hyperparameter_config = {
-    #     'dataset': ['reducedrank'],
-    #     'H': rr_Hs,
-    #     'sample_size': sample_sizes,
-    #     'method': ['nf_gaussian'],
-    #     'no_couplingpairs': no_couplingpairs,
-    #     'nets_activation': nets_activations,
-    #     'nf_gamma_mode': ['na'],
-    #     'prior_var': [1, 1e-1],
-    #     'seed': seeds,
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    hyperparameter_config = {
+        'dataset': ['reducedrank'],
+        'H': rr_Hs,
+        'sample_size': sample_sizes,
+        'method': ['nf_gamma'],
+        'no_couplingpairs': no_couplingpairs,
+        'nf_gamma_mode': varparams_modes,
+        'prior_var': [1, 1e-1],
+        'seed': seeds,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    hyperparameter_config = {
+        'dataset': ['reducedrank'],
+        'H': rr_Hs,
+        'sample_size': sample_sizes,
+        'method': ['nf_gaussian'],
+        'no_couplingpairs': no_couplingpairs,
+        'nf_gamma_mode': ['na'],
+        'prior_var': [1, 1e-1],
+        'seed': seeds,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     return hyperparameter_experiments
 
@@ -80,7 +78,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'nett_tanh'
+    path = 'comp_nett_tanh'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -90,7 +88,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--no_couplingpairs %s  --nf_gamma_mode %s --nett_tanh true "
-              " --exact_EqLogq --epochs 1000 --trainR 5 --display_interval 100 "
+              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--beta_star "
