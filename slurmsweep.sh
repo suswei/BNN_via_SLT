@@ -9,10 +9,10 @@
 #SBATCH --mem=5G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-6:0:00
+#SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-17
+#SBATCH --array=0-71
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -36,6 +36,9 @@ mkdir -p nett_tanh
 
 
 # The job command(s):
+source /usr/local/module/spartan_new.sh
+module load gcc/8.3.0
+module load cuda/10.1.243
 source activate singularmf
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
 
