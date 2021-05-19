@@ -10,7 +10,7 @@ def set_sweep_config():
     hyperparameter_experiments = []
     sample_sizes = (np.round(np.exp([8.5,8.75,9.0,9.25]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    no_couplingpairs = [10]
+    no_couplingpairs = [2]
     varparams_modes = ['a0', 'allones']
 
     tanh_Hs = [1600, 6400]
@@ -50,7 +50,7 @@ def set_sweep_config():
         'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': varparams_modes,
-        'prior_var': [1, 1e-1],
+        'prior_var': [1],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -63,7 +63,7 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': ['na'],
-        'prior_var': [1, 1e-1],
+        'prior_var': [1],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -88,7 +88,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--no_couplingpairs %s  --nf_gamma_mode %s --nett_tanh true "
-              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 10 "
+              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--beta_star "

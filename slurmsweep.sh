@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=120-359
+#SBATCH --array=120-239
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
