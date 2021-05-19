@@ -78,9 +78,10 @@ def main():
                                'seed': seed_list})
 
     unique_ns = list(set(summary_pd['n']))
+    unique_datasets = list(set(summary_pd['dataset']))
 
 
-    for dataset in ['tanh']:
+    for dataset in unique_datasets:
 
         temp = summary_pd.loc[summary_pd['dataset'] == dataset]
         unique_Hs = list(set(temp['H']))
@@ -123,13 +124,13 @@ def main():
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
     summary_pd = summary_pd.dropna()
-    # summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+4] # remove instances where convergence was clearly not reached
 
     unique_methods = list(set(summary_pd['method']))
     unique_layers = list(set(summary_pd['no_couplingpairs']))
 
     # log n slope plot
-    for dataset in ['tanh']:
+    for dataset in unique_datasets:
 
         temp = summary_pd.loc[summary_pd['dataset'] == dataset]
         unique_priorvars = list(set(temp['prior_var']))

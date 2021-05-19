@@ -251,7 +251,7 @@ def loglik(theta, data, target, args):
 
             mean = torch.matmul(torch.matmul(data, theta_a), theta_b)
 
-            y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
+            y_rv = MultivariateNormal(mean, torch.eye(args.output_dim).to(args.device))
             logprob[r, :] = y_rv.log_prob(target)
 
     elif args.dataset == 'tanh':
@@ -265,7 +265,7 @@ def loglik(theta, data, target, args):
         for r in range(R):
             # 1 by B
             means[r,] = torch.matmul(theta_a[r,].unsqueeze(dim=1).T, torch.tanh(theta_b[r,].unsqueeze(dim=1) * data.T))
-        means = means.to(args.device)
+        # means = means.to(args.device)
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(args.device))
         logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
 
@@ -280,7 +280,7 @@ def loglik(theta, data, target, args):
         for r in range(R):
             # 1 by B
             means[r,] = torch.matmul(theta_a[r,].unsqueeze(dim=1).T, torch.tanh(theta_b[r,].unsqueeze(dim=1) * data.T+theta_c[r,].unsqueeze(dim=1)))
-        y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1))
+        y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(args.device))
         logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
 
     return logprob  # R by B

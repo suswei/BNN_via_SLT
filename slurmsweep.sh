@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-359
+#SBATCH --array=120-359
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -39,7 +39,6 @@ mkdir -p comp_nett_tanh
 source /usr/local/module/spartan_new.sh
 module load gcc/8.3.0
 module load cuda/10.1.243
-source activate singularmf
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
 
 # python3 in spartan command line
