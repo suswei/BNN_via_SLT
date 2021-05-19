@@ -17,6 +17,10 @@ def set_gengamma_varparams(args):
         args.lmbdas = a0*torch.ones(args.w_dim, 1)
         args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1)
         args.betas = a0*torch.ones(args.w_dim, 1)
+    elif args.nf_gamma_mode == 'fixedpt':
+        args.lmbdas = 30*torch.ones(args.w_dim, 1)
+        args.betas = 30*torch.ones(args.w_dim, 1)
+        args.ks = (1/2) * torch.exp(args.lmbdas*(torch.digamma(args.lmbdas)-1))/(torch.exp(torch.lgamma(args.lmbdas)))
 
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT

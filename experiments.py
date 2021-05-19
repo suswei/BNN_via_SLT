@@ -8,10 +8,10 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    sample_sizes = (np.round(np.exp([8.5,8.75,9.0,9.25]))).astype(int)
+    sample_sizes = (np.round(np.exp([8.25, 8.5, 8.75, 9.0]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    no_couplingpairs = [2]
-    varparams_modes = ['a0', 'allones']
+    no_couplingpairs = [10]
+    varparams_modes = ['fixedpt']
 
     tanh_Hs = [1600, 6400]
     rr_Hs = [40, 80]
@@ -25,6 +25,7 @@ def set_sweep_config():
         'nf_gamma_mode': varparams_modes,
         'prior_var': [1e-2],
         'seed': seeds,
+        'nett_tanh': ['true','false']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -39,6 +40,7 @@ def set_sweep_config():
         'nf_gamma_mode': ['na'],
         'prior_var': [1e-2],
         'seed': seeds,
+        'nett_tanh': ['true', 'false']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -50,8 +52,9 @@ def set_sweep_config():
         'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': varparams_modes,
-        'prior_var': [1],
+        'prior_var': [1e-1, 1e-2],
         'seed': seeds,
+        'nett_tanh': ['true', 'false']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -63,8 +66,9 @@ def set_sweep_config():
         'method': ['nf_gaussian'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': ['na'],
-        'prior_var': [1],
+        'prior_var': [1e-1, 1e-2],
         'seed': seeds,
+        'nett_tanh': ['true', 'false']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -78,7 +82,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'comp_nett_tanh'
+    path = 'fxdpt'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -87,8 +91,8 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--no_couplingpairs %s  --nf_gamma_mode %s --nett_tanh true "
-              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 100 "
+              "--no_couplingpairs %s  --nf_gamma_mode %s --nett_tanh %s "
+              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 20 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--beta_star "
@@ -96,7 +100,7 @@ def main(taskid):
               "--prior_var %s "
               "--seed %s "
               "--path %s "
-              % (temp['no_couplingpairs'], temp['nf_gamma_mode'],
+              % (temp['no_couplingpairs'], temp['nf_gamma_mode'], temp['nett_tanh'],
                  temp['dataset'], temp['sample_size'],
                  temp['method'],
                  temp['H'],
