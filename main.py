@@ -15,11 +15,11 @@ def set_gengamma_varparams(args):
     elif args.nf_gamma_mode == 'a0':
         a0 = torch.tensor([1.461632])
         args.lmbdas = a0*torch.ones(args.w_dim, 1)
-        args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1)
+        args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1) # k0 = 0.1309
         args.betas = a0*torch.ones(args.w_dim, 1)
     elif args.nf_gamma_mode == 'fixedpt':
-        args.lmbdas = 30*torch.ones(args.w_dim, 1)
-        args.betas = 30*torch.ones(args.w_dim, 1)
+        args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
+        args.betas = args.lmbda0*torch.ones(args.w_dim, 1)
         args.ks = (1/2) * torch.exp(args.lmbdas*(torch.digamma(args.lmbdas)-1))/(torch.exp(torch.lgamma(args.lmbdas)))
 
     if args.lmbda_star:
@@ -201,6 +201,7 @@ def main():
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--lmbda_star', action='store_true')
+    parser.add_argument('--lmbda0', type=float)
     parser.add_argument('--beta_star', action='store_true')
 
     parser.add_argument('--display_interval',type=int, default=100)

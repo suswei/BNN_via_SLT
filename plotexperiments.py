@@ -46,6 +46,7 @@ def main():
     priorvar_list = []
     dataset_list = []
     layers_list = []
+    nett_tanh_list  = []
 
     for taskid in range(tasks):
 
@@ -64,7 +65,7 @@ def main():
             priorvar_list += [sim_args['prior_var']]
             dataset_list += [sim_args['dataset']]
             layers_list += [sim_args['no_couplingpairs']]
-
+            nett_tanh_list += [sim_args['nett_tanh']]
         except:
             print('missing taskid {}'.format(taskid))
 
@@ -75,6 +76,7 @@ def main():
                                'method': method_list,
                                'prior_var': priorvar_list,
                                'no_couplingpairs': layers_list,
+                               'nett_tanh': nett_tanh_list,
                                'seed': seed_list})
 
     unique_ns = list(set(summary_pd['n']))
@@ -106,6 +108,8 @@ def main():
                             priorvar_list += [sim_args['prior_var']]
                             dataset_list += [sim_args['dataset']]
                             layers_list += [sim_args['no_couplingpairs']]
+                            nett_tanh_list += [sim_args['nett_tanh']]
+
 
                     except:
                         print('missing taskid {}'.format(taskid))
@@ -120,6 +124,7 @@ def main():
                                'method': method_list,
                                'prior_var': priorvar_list,
                                'no_couplingpairs': layers_list,
+                               'nett_tanh': nett_tanh_list,
                                'seed': seed_list})
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
@@ -140,62 +145,64 @@ def main():
 
             for no_couplingpairs in unique_layers:
 
-                temp2 = temp.loc[(temp['prior_var'] == prior_var) & (temp['dataset'] == dataset) & (temp['no_couplingpairs'] == no_couplingpairs)]
+                for nett_tanh in ['true','false']:
 
-                for n in unique_ns:
-                    current_pd = temp2.loc[temp2['n'] == n]
+                    temp2 = temp.loc[(temp['prior_var'] == prior_var)
+                                     & (temp['dataset'] == dataset)
+                                     & (temp['no_couplingpairs'] == no_couplingpairs)
+                                     & (temp['nett_tanh'] == nett_tanh)]
 
-                    # barplot - hold dataset, n, no_couplingpairs, prior_var
-                    g = sns.barplot(x="H", y="ELBOplusnSn",
-                                    hue="method",
-                                    data=current_pd)
+                    for n in unique_ns:
+                        current_pd = temp2.loc[temp2['n'] == n]
 
-                    sns.set_style("ticks")
-                    hatches = ['/', '/', '/',
-                               '+', '+', '+',
-                               'x', 'x', 'x']
-                    for hatch, patch in zip(hatches, g.patches):
-                        patch.set_hatch(hatch)
-                    leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
-                    for patch in leg.get_patches():
-                        patch.set_height(12)
-                        patch.set_y(-6)
+                        # barplot - hold dataset, n, no_couplingpairs, prior_var
+                        g = sns.barplot(x="H", y="ELBOplusnSn",
+                                        hue="method",
+                                        data=current_pd)
 
-                    plt.title(
-                        '{} n {} prior_var {} no_couplinglayers {}'
-                        .format(dataset, n, prior_var, no_couplingpairs))
+                        sns.set_style("ticks")
+                        hatches = ['/', '/', '/',
+                                   '+', '+', '+',
+                                   'x', 'x', 'x']
+                        for hatch, patch in zip(hatches, g.patches):
+                            patch.set_hatch(hatch)
+                        leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
+                        for patch in leg.get_patches():
+                            patch.set_height(12)
+                            patch.set_y(-6)
 
-                    if args.savefig:
-                        plt.savefig(
-                            '{}/barplot_{}n{}layer{}prior{}.png'.format(args.path_prefix, dataset, n, no_couplingpairs,
-                                                                  prior_var), bbox_inches='tight')
-                    plt.show()
-                    plt.close()
+                        plt.title(
+                            '{} n {} prior_var {} no_couplinglayers {} nett_tanh {}'
+                            .format(dataset, n, prior_var, no_couplingpairs, nett_tanh))
 
-                for H in unique_Hs:
+                        if args.savefig:
+                            plt.savefig(
+                                '{}/barplot_{}n{}layer{}nett{}prior{}.png'.format(args.path_prefix, dataset, n, no_couplingpairs, nett_tanh,
+                                                                      prior_var), bbox_inches='tight')
+                        plt.show()
+                        plt.close()
 
-                    truth = get_lmbda([H], dataset)[0]
+                    for H in unique_Hs:
 
-                    for method in unique_methods:
+                        truth = get_lmbda([H], dataset)[0]
 
-                        current_pd = temp2.loc[(temp2['H'] == H) & (temp2['method']==method)]
-                        print(current_pd)
+                        for method in unique_methods:
 
-                        evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
+                            current_pd = temp2.loc[(temp2['H'] == H) & (temp2['method']==method)]
+                            print(current_pd)
 
-                        if len(evs._index)>1:
-                            slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
-                            plt.plot(np.log(evs._index), evs.values, '.')
-                            plt.title('{} H {}: method {} prior_var {} layers {}, \n truth {} versus slope {:2f}, intercept {:2f} and R2 {:2f}'
-                                      .format(dataset, H, method, prior_var, no_couplingpairs, -truth, slope, intercept, r_value))
+                            evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
 
-                            if args.savefig:
-                                plt.savefig('{}/{}{}H{}layer{}prior{}.png'.format(args.path_prefix, dataset, method, H, no_couplingpairs, prior_var), bbox_inches='tight')
-                            plt.show()
-                            plt.close()
+                            if len(evs._index)>1:
+                                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
+                                plt.plot(np.log(evs._index), evs.values, '.')
+                                plt.title('{} H {}: method {} prior_var {} layers {} nett_tanh {}, \n truth {} versus slope {:2f}, intercept {:2f} and R2 {:2f}'
+                                          .format(dataset, H, method, prior_var, no_couplingpairs, nett_tanh, -truth, slope, intercept, r_value))
 
-
-
+                                if args.savefig:
+                                    plt.savefig('{}/{}{}H{}layer{}nett{}prior{}.png'.format(args.path_prefix, dataset, method, H, no_couplingpairs, nett_tanh, prior_var), bbox_inches='tight')
+                                plt.show()
+                                plt.close()
 
 
 if __name__ == "__main__":
