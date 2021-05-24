@@ -11,8 +11,8 @@ def set_sweep_config():
     sample_sizes = (np.round(np.exp([8.5, 8.75]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
     no_couplingpairs = [10]
-    lmbda0s = [30]
-    varparams_modes = ['nf_mixed']
+    lmbda0s = [1000]
+    varparams_modes = ['pgamma']
 
     tanh_Hs = [1600]
     rr_Hs = [40]
@@ -95,7 +95,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--no_couplingpairs %s  --nf_gamma_mode %s --nett_tanh %s --lmbda0 %s "
-              " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 100 "
+              " --exact_EqLogq --epochs 2000 --trainR 5 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
               "--beta_star --lmbda_star "
