@@ -21,6 +21,11 @@ def set_gengamma_varparams(args):
         args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
         args.betas = args.lmbda0*torch.ones(args.w_dim, 1)
         args.ks = (1/2) * torch.exp(args.lmbdas*(torch.digamma(args.lmbdas)-1))/(torch.exp(torch.lgamma(args.lmbdas)))
+        # args.ks = (1/2)*torch.ones(args.w_dim,1)
+    elif args.nf_gamma_mode == 'gaussianlike':
+        args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
+        args.betas = torch.sqrt(args.lmbdas)
+        args.ks = (1/2)*torch.ones(args.w_dim,1)
 
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
