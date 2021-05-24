@@ -26,6 +26,11 @@ def set_gengamma_varparams(args):
         args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
         args.betas = torch.sqrt(args.lmbdas)
         args.ks = (1/2)*torch.ones(args.w_dim,1)
+    elif args.nf_gamma_mode == 'pgamma':
+        args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
+        args.betas = args.lmbda0*torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim,1)/(2*args.lmbda0)
+        args.ks[0] = 1.0
 
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
@@ -220,7 +225,7 @@ def main():
 
     print(args)
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_mixed':
         set_gengamma_varparams(args)
 
     net, elbo_hist = train(args)

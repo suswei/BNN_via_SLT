@@ -8,11 +8,11 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    sample_sizes = (np.round(np.exp([8.25, 8.5, 8.75, 9.0]))).astype(int)
+    sample_sizes = (np.round(np.exp([8.5, 8.75]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
     no_couplingpairs = [10]
     lmbda0s = [30]
-    varparams_modes = ['gaussianlike']
+    varparams_modes = ['nf_mixed']
 
     tanh_Hs = [1600]
     rr_Hs = [40]
@@ -26,7 +26,8 @@ def set_sweep_config():
         'nf_gamma_mode': varparams_modes,
         'prior_var': [1e-2],
         'lmbda0': lmbda0s,
-        'nett_tanh': ['true']
+        'seed': seeds,
+        'nett_tanh': ['false']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -84,7 +85,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'gaussianlike'
+    path = 'mixed'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -97,7 +98,7 @@ def main(taskid):
               " --exact_EqLogq --epochs 3000 --trainR 5 --display_interval 100 "
               "--dataset %s --sample_size %s --zeromean True "
               "--method %s "
-              "--beta_star "
+              "--beta_star --lmbda_star "
               "--H %s "
               "--prior_var %s "
               "--seed %s "
