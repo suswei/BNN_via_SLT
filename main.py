@@ -26,11 +26,16 @@ def set_gengamma_varparams(args):
         args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
         args.betas = torch.sqrt(args.lmbdas)
         args.ks = (1/2)*torch.ones(args.w_dim,1)
-    elif args.nf_gamma_mode == 'pgamma': # constraint lambda_g = beta_g => kj* and all lambdas well specified
-        args.lmbdas = args.trueRLCT*torch.ones(args.w_dim, 1)
-        args.betas = args.trueRLCT*torch.ones(args.w_dim, 1)
-        args.ks = torch.ones(args.w_dim,1)
-
+    elif args.nf_gamma_mode == 'pgamma': # constraint lambda_g = beta_g => kj* and all lambdas well specified, bound on kg to make C nonpositive
+        # args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
+        seq = torch.range(1,args.H,1)
+        l1 =(args.H + seq**2)/(4*seq); l2 = (args.H + seq**2 + seq)/(4*seq +2)
+        args.lmbdas = torch.cat( (l1, l2), dim=0).unsqueeze(dim=1)
+        args.betas = args.lmbdas
+        args.ks = torch.exp(torch.lgamma(args.lmbdas)+args.lmbdas*(1-torch.log(args.lmbdas)))/2
+        args.ks[0] = 1
+        print(args.lmbdas)
+        print(args.ks)
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
     if args.beta_star:
