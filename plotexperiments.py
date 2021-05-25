@@ -152,9 +152,9 @@ def main():
 
             for no_couplingpairs in unique_layers:
 
-                for nett_tanh in ['true','false']:
+                for nett_tanh in ['false']:
 
-                    for lmbda0 in [30]:
+                    for lmbda0 in [1000]:
                         temp2 = temp.loc[(temp['prior_var'] == prior_var)
                                          & (temp['dataset'] == dataset)
                                          & (temp['no_couplingpairs'] == no_couplingpairs)

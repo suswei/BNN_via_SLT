@@ -8,13 +8,13 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    sample_sizes = (np.round(np.exp([8.5, 8.75]))).astype(int)
+    sample_sizes = (np.round(np.exp([8.75, 9.0, 9.25]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
     no_couplingpairs = [10]
     lmbda0s = [1000]
     varparams_modes = ['pgamma']
 
-    tanh_Hs = [1600]
+    tanh_Hs = [1600, 900]
     rr_Hs = [40]
 
     hyperparameter_config = {

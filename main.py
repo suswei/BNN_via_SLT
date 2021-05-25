@@ -26,14 +26,10 @@ def set_gengamma_varparams(args):
         args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
         args.betas = torch.sqrt(args.lmbdas)
         args.ks = (1/2)*torch.ones(args.w_dim,1)
-    elif args.nf_gamma_mode == 'pgamma':
-        args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
-        args.betas = args.lmbda0*torch.ones(args.w_dim, 1)
-        trueRLCT = args.trueRLCT*torch.ones(1)
-        temp = trueRLCT * (torch.digamma(trueRLCT) - 1) + torch.log(2*torch.ones(1)) - torch.lgamma(trueRLCT) - trueRLCT * torch.digamma(trueRLCT) + args.sample_size * (trueRLCT / args.sample_size)
-        temp2 = - temp - (args.w_dim-1)*(args.lmbda0* (torch.digamma(args.lmbda0*torch.ones(1)) - 1 ) - torch.lgamma(args.lmbda0*torch.ones(1)))
-        args.ks = torch.exp(temp2/(args.w_dim-1))/2 * torch.ones(args.w_dim, 1)
-        args.ks[0] = 1
+    elif args.nf_gamma_mode == 'pgamma': # constraint lambda_g = beta_g => kj* and all lambdas well specified
+        args.lmbdas = args.trueRLCT*torch.ones(args.w_dim, 1)
+        args.betas = args.trueRLCT*torch.ones(args.w_dim, 1)
+        args.ks = torch.ones(args.w_dim,1)
 
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
