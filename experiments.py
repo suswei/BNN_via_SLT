@@ -13,8 +13,8 @@ def set_sweep_config():
 
     tanh_Hs = [400, 900, 1600]
     lmbda0s = [30, 1000]
-    prior_vars = [1, 5e-1, 1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4]
-    seeds = [1, 2]
+    prior_vars = np.arange(0.0001, 0.011, 0.001).tolist()
+    seeds = [1, 2, 3, 4, 5]
 
     rr_Hs = [40]
 
@@ -83,7 +83,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'priorhyp'
+    path = 'priorhyp_long'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -93,7 +93,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--no_couplingpairs %s --lmbda0 %s "
-              " --exact_EqLogq --epochs 500 --display_interval 100 "
+              " --exact_EqLogq --epochs 1000 --display_interval 100 "
               "--dataset %s --sample_size %s "
               "--method %s "
               "--beta_star "
