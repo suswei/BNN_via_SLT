@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="mixed"
+#SBATCH --job-name="priorhyp"
 #SBATCH -p gpgpu
 #SBATCH --gres=gpu:p100:1
 #SBATCH --qos=gpgpuresplat
@@ -9,10 +9,10 @@
 #SBATCH --mem=5G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-8:0:00
+#SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-19
+#SBATCH --array=0-161
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -32,7 +32,7 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p mixed
+mkdir -p priorhyp
 
 
 # The job command(s):

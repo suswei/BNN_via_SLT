@@ -8,34 +8,18 @@ from utils import *
 
 def set_gengamma_varparams(args):
 
-    if args.nf_gamma_mode == 'allones':
-        args.lmbdas = torch.ones(args.w_dim, 1)
-        args.ks = torch.ones(args.w_dim, 1)
-        args.betas = torch.ones(args.w_dim, 1)
-    elif args.nf_gamma_mode == 'a0':
-        a0 = torch.tensor([1.461632])
-        args.lmbdas = a0*torch.ones(args.w_dim, 1)
-        args.ks = (1/2)*torch.exp(a0+torch.lgamma(a0))*torch.ones(args.w_dim, 1) # k0 = 0.1309
-        args.betas = a0*torch.ones(args.w_dim, 1)
-    elif args.nf_gamma_mode == 'fixedpt':
-        args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
-        args.betas = args.lmbda0*torch.ones(args.w_dim, 1)
-        args.ks = (1/2) * torch.exp(args.lmbdas*(torch.digamma(args.lmbdas)-1))/(torch.exp(torch.lgamma(args.lmbdas)))
-        # args.ks = (1/2)*torch.ones(args.w_dim,1)
-    elif args.nf_gamma_mode == 'gaussianlike':
-        args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
-        args.betas = torch.sqrt(args.lmbdas)
-        args.ks = (1/2)*torch.ones(args.w_dim,1)
-    elif args.nf_gamma_mode == 'pgamma': # constraint lambda_g = beta_g => kj* and all lambdas well specified, bound on kg to make C nonpositive
-        # args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
-        seq = torch.range(1,args.H,1)
-        l1 =(args.H + seq**2)/(4*seq); l2 = (args.H + seq**2 + seq)/(4*seq +2)
-        args.lmbdas = torch.cat( (l1, l2), dim=0).unsqueeze(dim=1)
-        args.betas = args.lmbdas
-        args.ks = torch.exp(torch.lgamma(args.lmbdas)+args.lmbdas*(1-torch.log(args.lmbdas)))/2
-        args.ks[0] = 1
-        print(args.lmbdas)
-        print(args.ks)
+    # constrain lambda_j = beta_j for j \ne g
+    # further enforce log beta_j - digamma(lambda_j) small for j \ne g
+    # this has the effect of forcing lambda_j = beta_j = large value for j \ne g
+    # let lambda_g be zero of digamma
+    # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
+
+    args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
+    args.lmbdas[0] = torch.tensor([1.461632])
+    args.betas = args.lmbdas
+    k0 = torch.exp(torch.lgamma(args.lmbdas) - args.lmbdas*(torch.digamma(args.lmbdas)-1))/2
+    args.ks = k0*torch.ones(args.w_dim, 1)
+
     if args.lmbda_star:
         args.lmbdas[0] = args.trueRLCT
     if args.beta_star:
@@ -45,7 +29,6 @@ def set_gengamma_varparams(args):
 
 
 def train(args):
-
 
     nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
                              nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
@@ -211,11 +194,11 @@ def main():
     parser.add_argument('--nf_hidden', type=int, default=128)
     parser.add_argument('--no_couplingpairs', type=int, default=2)
     parser.add_argument('--nf_gamma_mode', type=str)
-    parser.add_argument('--nett_tanh', type=str)
+    parser.add_argument('--nett_tanh', type=str, default='false')
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--lmbda_star', action='store_true')
-    parser.add_argument('--lmbda0', type=float)
+    parser.add_argument('--lmbda0', type=float, default=1000.0)
     parser.add_argument('--beta_star', action='store_true')
 
     parser.add_argument('--display_interval',type=int, default=100)

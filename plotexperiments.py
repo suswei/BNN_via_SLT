@@ -11,17 +11,14 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
+
 def main():
 
     # Training settings
     parser = argparse.ArgumentParser(description='?')
-
     parser.add_argument('--dataset_of_interest', default='reducedrank', type=str, choices=['reducedrank', 'tanh'])
-
     parser.add_argument('--savefig', action='store_true')
-
     parser.add_argument('--path_prefix', type=str)
-
     args = parser.parse_args()
 
     # if args.savefig:
@@ -33,7 +30,6 @@ def main():
     #         'pgf.rcfonts': False,
     #     })
     #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
-
 
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path_prefix))
     tasks = hyperparameter_experiments.__len__()
@@ -87,7 +83,6 @@ def main():
     unique_ns = list(set(summary_pd['n']))
     unique_datasets = list(set(summary_pd['dataset']))
 
-
     for dataset in unique_datasets:
 
         temp = summary_pd.loc[summary_pd['dataset'] == dataset]
@@ -116,7 +111,6 @@ def main():
                             nett_tanh_list += [sim_args['nett_tanh']]
                             l0_list += [sim_args['lmbda0']]
 
-
                     except:
                         print('missing taskid {}'.format(taskid))
 
@@ -140,6 +134,7 @@ def main():
 
     unique_methods = list(set(summary_pd['method']))
     unique_layers = list(set(summary_pd['no_couplingpairs']))
+    unique_l0s = list(set(summary_pd['lmbda0']))
 
     # log n slope plot
     for dataset in unique_datasets:
@@ -147,14 +142,15 @@ def main():
         temp = summary_pd.loc[summary_pd['dataset'] == dataset]
         unique_priorvars = list(set(temp['prior_var']))
         unique_Hs = list(set(temp['H']))
+        unique_nett = list(set(temp['nett_tanh']))
 
         for prior_var in unique_priorvars:
 
             for no_couplingpairs in unique_layers:
 
-                for nett_tanh in ['false']:
+                for nett_tanh in unique_nett:
 
-                    for lmbda0 in [1000]:
+                    for lmbda0 in unique_l0s:
                         temp2 = temp.loc[(temp['prior_var'] == prior_var)
                                          & (temp['dataset'] == dataset)
                                          & (temp['no_couplingpairs'] == no_couplingpairs)
@@ -201,6 +197,7 @@ def main():
                                 print(current_pd)
 
                                 evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
+                                print(evs)
 
                                 if len(evs._index)>1:
                                     slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
