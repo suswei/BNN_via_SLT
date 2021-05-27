@@ -142,9 +142,14 @@ def main():
         temp = summary_pd.loc[summary_pd['H'] == H]
         print('H={}'.format(H))
         print(temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean())
-        temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean().unstack().plot()
+        print(temp.groupby(['prior_var','method'])['ELBOplusnSn'].std())
+        std = temp.groupby(['prior_var','method'])['ELBOplusnSn'].std().unstack()
+        temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean().unstack().plot(yerr=std)
         plt.title('H = {}'.format(H))
+        plt.savefig('{}/tanh_H{}.png'.format(args.path_prefix, H))
         plt.show()
+
+
 
 
 

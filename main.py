@@ -198,7 +198,7 @@ def main():
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--lmbda_star', action='store_true')
-    parser.add_argument('--lmbda0', type=float, default=1000.0)
+    parser.add_argument('--lmbda0', type=float, default=30.0)
     parser.add_argument('--beta_star', action='store_true')
 
     parser.add_argument('--display_interval',type=int, default=100)
