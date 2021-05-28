@@ -9,43 +9,43 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
     sample_sizes = (np.round(np.exp([9.0]))).astype(int)
-    no_couplingpairs = [10, 20]
+    no_couplingpairs = [10]
 
-    tanh_Hs = [6400, 12800]
+    tanh_Hs = [400]
     seeds = [1, 2, 3, 4, 5]
 
     rr_Hs = [40]
 
-    for H in tanh_Hs:
 
-        prior_vars = np.arange(1e-5, 7e-3, 0.0005).tolist()
+    prior_vars = np.arange(1e-4, 0.0101, 0.001).tolist()
 
-        hyperparameter_config = {
-            'dataset': ['tanh'],
-            'H': tanh_Hs,
-            'sample_size': sample_sizes,
-            'method': ['nf_gamma'],
-            'no_couplingpairs': no_couplingpairs,
-            'prior_var': prior_vars,
-            'seed': seeds,
-        }
-        keys, values = zip(*hyperparameter_config.items())
-        hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    hyperparameter_config = {
+        'dataset': ['tanh'],
+        'H': tanh_Hs,
+        'sample_size': sample_sizes,
+        'method': ['nf_gamma'],
+        'no_couplingpairs': no_couplingpairs,
+        'prior_var': prior_vars,
+        'lmbda0': [1],
+        'seed': seeds,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 
-        hyperparameter_config = {
-            'dataset': ['tanh'],
-            'H': tanh_Hs,
-            'sample_size': sample_sizes,
-            'method': ['nf_gaussian'],
-            'no_couplingpairs': no_couplingpairs,
-            'nf_gamma_mode': ['na'],
-            'prior_var': prior_vars,
-            'seed': seeds,
-            'lmbda0': [0],
-        }
-        keys, values = zip(*hyperparameter_config.items())
-        hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    # hyperparameter_config = {
+    #     'dataset': ['tanh'],
+    #     'H': tanh_Hs,
+    #     'sample_size': sample_sizes,
+    #     'method': ['nf_gaussian'],
+    #     'no_couplingpairs': no_couplingpairs,
+    #     'nf_gamma_mode': ['na'],
+    #     'prior_var': prior_vars,
+    #     'seed': seeds,
+    #     'lmbda0': [0],
+    # }
+    # keys, values = zip(*hyperparameter_config.items())
+    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     # hyperparameter_config = {
     #     'dataset': ['reducedrank'],
@@ -84,7 +84,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'priorhyp_highH'
+    path = 'priorhyp_lowl0'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -93,8 +93,8 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--no_couplingpairs %s "
-              " --exact_EqLogq --epochs 2000 --display_interval 100 "
+              "--no_couplingpairs %s --lmbda0 %s "
+              " --exact_EqLogq --epochs 1500 --display_interval 10 "
               "--dataset %s --sample_size %s "
               "--method %s "
               "--beta_star "
@@ -102,7 +102,7 @@ def main(taskid):
               "--prior_var %s "
               "--seed %s "
               "--path %s "
-              % (temp['no_couplingpairs'],
+              % (temp['no_couplingpairs'], temp['lmbda0'],
                  temp['dataset'], temp['sample_size'],
                  temp['method'],
                  temp['H'],

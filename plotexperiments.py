@@ -56,7 +56,7 @@ def main():
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
             ns_list += [sim_args['sample_size']]
 
-            method_list += ['{}_{}'.format(sim_args['method'], sim_args['lmbda0'])]
+            method_list += ['{}_{}_{}'.format(sim_args['method'], sim_args['lmbda0'], sim_args['no_couplingpairs'])]
 
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
