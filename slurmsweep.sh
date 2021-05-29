@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="priorhyp_lowl0"
+#SBATCH --job-name="tanh6400_1l0"
 #SBATCH -p gpgpu
 #SBATCH --gres=gpu:p100:1
 #SBATCH --qos=gpgpuresplat
@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-49
+#SBATCH --array=0-89
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -32,7 +32,7 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p priorhyp_lowl0
+mkdir -p tanh6400_1l0
 
 
 # The job command(s):
