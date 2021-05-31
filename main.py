@@ -15,8 +15,8 @@ def set_gengamma_varparams(args):
     # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
 
     args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
-    args.lmbdas[0] = torch.tensor([1.461632])
-    args.betas = args.lmbdas
+    # args.lmbdas[0] = torch.tensor([1.461632])
+    args.betas = torch.exp(args.lmbdas)
     k0 = torch.exp(torch.lgamma(args.lmbdas) - args.lmbdas*(torch.digamma(args.lmbdas)-1))/2
     args.ks = k0*torch.ones(args.w_dim, 1)
 

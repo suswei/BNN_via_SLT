@@ -8,25 +8,25 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
-    sample_sizes = (np.round(np.exp([8.0, 8.5, 9.0]))).astype(int)
-    no_couplingpairs = [10]
+    sample_sizes = (np.round(np.exp([8.0, 8.25, 8.5]))).astype(int)
+    no_couplingpairs = [2, 10]
+    l0s = [1, 30, 100]
 
-    tanh_Hs = [6400]
+    tanh_Hs = [400]
     seeds = [1, 2, 3, 4, 5]
 
     rr_Hs = [40]
 
-
-    prior_vars = np.arange(0.001, 0.004, 0.001).tolist()
+    prior_vars = np.arange(0.001, 0.03, 0.005).tolist()
 
     hyperparameter_config = {
         'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
+        'prior_var': prior_vars,
         'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
-        'prior_var': prior_vars,
-        'lmbda0': [1],
+        'lmbda0': l0s,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -37,10 +37,10 @@ def set_sweep_config():
         'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
+        'prior_var': prior_vars,
         'method': ['nf_gaussian'],
         'no_couplingpairs': no_couplingpairs,
         'nf_gamma_mode': ['na'],
-        'prior_var': prior_vars,
         'seed': seeds,
         'lmbda0': [0],
     }
@@ -84,7 +84,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanh6400_1l0'
+    path = 'tanh400'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -94,7 +94,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--no_couplingpairs %s --lmbda0 %s "
-              " --exact_EqLogq --epochs 1500 --display_interval 100 "
+              " --exact_EqLogq --epochs 500 --display_interval 100 "
               "--dataset %s --sample_size %s "
               "--method %s "
               "--beta_star "
