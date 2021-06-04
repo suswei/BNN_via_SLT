@@ -14,16 +14,11 @@ def set_gengamma_varparams(args):
     # let lambda_g be zero of digamma
     # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
 
-    args.lmbdas = args.lmbda0*torch.ones(args.w_dim, 1)
-    # args.lmbdas[0] = torch.tensor([1.461632])
-    args.betas = torch.exp(args.lmbdas)
-    k0 = torch.exp(torch.lgamma(args.lmbdas) - args.lmbdas*(torch.digamma(args.lmbdas)-1))/2
-    args.ks = k0*torch.ones(args.w_dim, 1)
-
-    if args.lmbda_star:
-        args.lmbdas[0] = args.trueRLCT
-    if args.beta_star:
-        args.betas[0] = args.sample_size
+    args.lmbdas = torch.ones(args.w_dim, 1)
+    args.betas = torch.ones(args.w_dim, 1)
+    args.betas[0] = args.sample_size
+    args.ks = torch.ones(args.w_dim, 1)
+    args.ks[0] = args.k0
 
     args.hs = args.lmbdas * 2 * args.ks - 1
 
@@ -86,6 +81,7 @@ def train(args):
 
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
             args.theta_upper = torch.max(thetas, dim=0).values.detach()
+            # print(thetas.mean(dim=0))
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
@@ -137,6 +133,7 @@ def evaluate(resolution_network, args, R):
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
+        print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
         print('xis min {} max {}'.format(xis.min(), xis.max()))
 
         args.theta_lower = torch.min(thetas, dim=0).values.detach()
@@ -188,18 +185,18 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--blundell_weighting', action='store_true')
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--trainR', type=int, default=1)
+    parser.add_argument('--trainR', type=int, default=5)
     parser.add_argument('--exact_EqLogq', action='store_true')
 
     parser.add_argument('--nf_hidden', type=int, default=128)
     parser.add_argument('--no_couplingpairs', type=int, default=2)
     parser.add_argument('--nf_gamma_mode', type=str)
+    parser.add_argument('--nf_gaussian_mean_var', nargs='+', type = float)
+
     parser.add_argument('--nett_tanh', type=str, default='false')
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
-    parser.add_argument('--lmbda_star', action='store_true')
-    parser.add_argument('--lmbda0', type=float, default=30.0)
-    parser.add_argument('--beta_star', action='store_true')
+    parser.add_argument('--k0', type=float, default=1.0)
 
     parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -212,8 +209,8 @@ def main():
 
     print(args)
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_mixed':
-        set_gengamma_varparams(args)
+    # if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_mixed':
+    set_gengamma_varparams(args)
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)

@@ -136,19 +136,27 @@ def main():
     unique_layers = list(set(summary_pd['no_couplingpairs']))
     unique_l0s = list(set(summary_pd['lmbda0']))
 
-    # ELBO + nSn versus prior hyperparamater
+    # prior hyperparamater versus ELBO + nSn
     # evs = summary_pd.groupby('n')['ELBOplusnSn'].mean()
+    # for H in list(set(summary_pd['H'])):
+    # for H in [400]:
     for H in list(set(summary_pd['H'])):
+
         for n in list(set(summary_pd['n'])):
+            # temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n) &
+            #                       (summary_pd['prior_var']<=0.021)]
             temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n)]
-            print('H={}'.format(H))
-            print(temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean())
-            print(temp.groupby(['prior_var','method'])['ELBOplusnSn'].std())
-            std = temp.groupby(['prior_var','method'])['ELBOplusnSn'].std().unstack()
+            print('H={} n={}'.format(H, n))
+            print(temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean())
+            print(temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].std())
+            std = temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].std().unstack()
             temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean().unstack().plot(yerr=std)
+            # temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean().unstack().plot()
+
             plt.title('H = {} n ={}'.format(H, n))
-            plt.savefig('{}/tanh_H{}_n{}.png'.format(args.path_prefix, H, n))
-            plt.show()
+            plt.savefig('{}/tanh{}_n{}.png'.format(args.path_prefix, H, n))
+            # plt.show()
+            plt.close()
 
     # log n slope plot
     for dataset in unique_datasets:
@@ -164,12 +172,10 @@ def main():
 
                 for nett_tanh in unique_nett:
 
-                    for lmbda0 in unique_l0s:
-                        temp2 = temp.loc[(temp['prior_var'] == prior_var)
-                                         & (temp['dataset'] == dataset)
-                                         & (temp['no_couplingpairs'] == no_couplingpairs)
-                                         & (temp['nett_tanh'] == nett_tanh)
-                                         & (temp['lmbda0'] == lmbda0)]
+                    temp2 = temp.loc[(temp['prior_var'] == prior_var)
+                                     & (temp['dataset'] == dataset)
+                                     & (temp['no_couplingpairs'] == no_couplingpairs)
+                                     & (temp['nett_tanh'] == nett_tanh)]
 
                         # for n in unique_ns:
                         #     current_pd = temp2.loc[temp2['n'] == n]
@@ -201,28 +207,28 @@ def main():
                         #     plt.show()
                         #     plt.close()
 
-                        for H in unique_Hs:
+                    for H in unique_Hs:
 
-                            truth = get_lmbda([H], dataset)[0]
+                        truth = get_lmbda([H], dataset)[0]
 
-                            for method in unique_methods:
+                        for method in unique_methods:
 
-                                current_pd = temp2.loc[(temp2['H'] == H) & (temp2['method']==method)]
-                                print(current_pd)
+                            current_pd = temp2.loc[(temp2['H'] == H) & (temp2['method']==method)]
+                            print(current_pd)
 
-                                evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
-                                print(evs)
+                            evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
+                            print(evs)
 
-                                if len(evs._index)>1:
-                                    slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
-                                    plt.plot(np.log(evs._index), evs.values, '.')
-                                    plt.title('{} H {}: method {} prior_var {} layers {} nett_tanh {}, \n truth {} versus slope {:2f}, intercept {:2f} and R2 {:2f}'
-                                              .format(dataset, H, method, prior_var, no_couplingpairs, nett_tanh, -truth, slope, intercept, r_value))
+                            if len(evs._index)>1:
+                                slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(evs._index), evs.values)
+                                plt.plot(np.log(evs._index), evs.values, '.')
+                                plt.title('{} H {}: method {} prior_var {}, \n truth {} versus slope {:2f}, intercept {:2f} and R2 {:2f}'
+                                          .format(dataset, H, method, prior_var, -truth, slope, intercept, r_value))
 
-                                    if args.savefig:
-                                        plt.savefig('{}/{}{}H{}layer{}nett{}prior{}.png'.format(args.path_prefix, dataset, method, H, no_couplingpairs, nett_tanh, prior_var), bbox_inches='tight')
-                                    plt.show()
-                                    plt.close()
+                                if args.savefig:
+                                    plt.savefig('{}/{}{}_{}_prior{:.4f}.png'.format(args.path_prefix, dataset, method, H, prior_var), bbox_inches='tight')
+                                # plt.show()
+                                plt.close()
 
 
 if __name__ == "__main__":
