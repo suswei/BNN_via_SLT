@@ -43,6 +43,7 @@ def main():
     dataset_list = []
     layers_list = []
     nett_tanh_list = []
+    k0_list = []
     l0_list = []
 
     for taskid in range(tasks):
@@ -56,7 +57,7 @@ def main():
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
             ns_list += [sim_args['sample_size']]
 
-            method_list += ['{}_{}_{}'.format(sim_args['method'], sim_args['lmbda0'], sim_args['no_couplingpairs'])]
+            method_list += ['{}_{}_{}'.format(sim_args['method'], sim_args['k0'], sim_args['no_couplingpairs'])]
 
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
@@ -64,6 +65,7 @@ def main():
             dataset_list += [sim_args['dataset']]
             layers_list += [sim_args['no_couplingpairs']]
             nett_tanh_list += [sim_args['nett_tanh']]
+            k0_list += [sim_args['k0']]
             l0_list += [sim_args['lmbda0']]
 
         except:
@@ -77,6 +79,7 @@ def main():
                                'prior_var': priorvar_list,
                                'no_couplingpairs': layers_list,
                                'nett_tanh': nett_tanh_list,
+                               'k0': k0_list,
                                'lmbda0': l0_list,
                                'seed': seed_list})
 
@@ -109,6 +112,7 @@ def main():
                             dataset_list += [sim_args['dataset']]
                             layers_list += [sim_args['no_couplingpairs']]
                             nett_tanh_list += [sim_args['nett_tanh']]
+                            k0_list += [sim_args['k0']]
                             l0_list += [sim_args['lmbda0']]
 
                     except:
@@ -125,16 +129,17 @@ def main():
                                'prior_var': priorvar_list,
                                'no_couplingpairs': layers_list,
                                'nett_tanh': nett_tanh_list,
+                               'k0': k0_list,
                                'lmbda0': l0_list,
                                'seed': seed_list})
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
+    # summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
 
     unique_methods = list(set(summary_pd['method']))
     unique_layers = list(set(summary_pd['no_couplingpairs']))
-    unique_l0s = list(set(summary_pd['lmbda0']))
+    unique_l0s = list(set(summary_pd['k0']))
 
     # prior hyperparamater versus ELBO + nSn
     # evs = summary_pd.groupby('n')['ELBOplusnSn'].mean()
@@ -176,7 +181,6 @@ def main():
                                      & (temp['dataset'] == dataset)
                                      & (temp['no_couplingpairs'] == no_couplingpairs)
                                      & (temp['nett_tanh'] == nett_tanh)]
-
                         # for n in unique_ns:
                         #     current_pd = temp2.loc[temp2['n'] == n]
                         #
@@ -215,6 +219,8 @@ def main():
 
                             current_pd = temp2.loc[(temp2['H'] == H) & (temp2['method']==method)]
                             print(current_pd)
+
+                            print(current_pd[(np.abs(stats.zscore(current_pd['ELBOplusnSn'])) < 1)])
 
                             evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
                             print(evs)

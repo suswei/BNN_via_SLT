@@ -8,16 +8,17 @@ import numpy as np
 def set_sweep_config():
 
     hyperparameter_experiments = []
+
+    tanh_Hs = [1]
     sample_sizes = (np.round(np.exp([8.0, 8.25, 8.5]))).astype(int)
-    no_couplingpairs = [10]
-    k0s = [1, 10, 100]
-
-    tanh_Hs = [400]
     seeds = [1, 2, 3, 4, 5]
+    # prior_vars = np.arange(0.001, 0.006, 0.001).tolist()
+    prior_vars = [1.0]
 
-    rr_Hs = [40]
+    no_couplingpairs = [10]
+    k0s = [0.5, 1, 10]
+    l0s = [1e-2, 1]
 
-    prior_vars = np.arange(0.001, 0.006, 0.001).tolist()
 
     hyperparameter_config = {
         'dataset': ['tanh'],
@@ -27,6 +28,7 @@ def set_sweep_config():
         'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
         'k0': k0s,
+        'lmbda0': l0s,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -84,7 +86,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanhk0'
+    path = 'H1tanhk0'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -93,15 +95,15 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--no_couplingpairs %s --k0 %s "
-              " --exact_EqLogq --epochs 2000 --display_interval 100 "
+              "--no_couplingpairs %s --k0 %s --lmbda0 %s "
+              " --exact_EqLogq --epochs 500 --display_interval 100 "
               "--dataset %s --sample_size %s "
               "--method %s "
               "--H %s "
               "--prior_var %s "
               "--seed %s "
               "--path %s "
-              % (temp['no_couplingpairs'], temp['k0'],
+              % (temp['no_couplingpairs'], temp['k0'], temp['lmbda0'],
                  temp['dataset'], temp['sample_size'],
                  temp['method'],
                  temp['H'],

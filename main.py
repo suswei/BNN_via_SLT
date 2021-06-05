@@ -15,6 +15,7 @@ def set_gengamma_varparams(args):
     # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
 
     args.lmbdas = torch.ones(args.w_dim, 1)
+    args.lmbdas[0] = args.lmbda0
     args.betas = torch.ones(args.w_dim, 1)
     args.betas[0] = args.sample_size
     args.ks = torch.ones(args.w_dim, 1)
@@ -197,6 +198,7 @@ def main():
 
     parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
     parser.add_argument('--k0', type=float, default=1.0)
+    parser.add_argument('--lmbda0', type=float, default=1.0)
 
     parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
