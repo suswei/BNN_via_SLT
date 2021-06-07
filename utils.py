@@ -63,7 +63,13 @@ def sample_q(args, R, exact=True):
         # TODO: need to check is in [0,args.xi_upper]
 
     elif args.method == 'nf_gaussian':
-        xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
+        # xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
+        xis = torch.FloatTensor(R, args.w_dim).normal_(mean=args.nf_gaussian_mean, std=np.sqrt(args.nf_gaussian_var))
+
+        # m = Gamma(args.lmbdas[0], args.betas[0])
+        # vs = m.sample(torch.Size([R]))
+        # xis_beg = vs ** (1 / (2 * args.ks[0].repeat(1, R).T))
+        # xis = torch.cat((xis_beg, xis_end),dim=1)
 
     elif args.method == 'nf_mixed':
         m = Gamma(args.lmbdas[0], args.betas[0])
@@ -114,8 +120,8 @@ def qj_entropy(args):
 
     elif args.method == 'nf_gaussian':
 
-        stds = 1 # TODO: should allow custom mean/std for nf_gaussian
-        return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (stds ** 2))
+        std = np.sqrt(args.nf_gaussian_var)
+        return -args.w_dim / 2 * np.log(2 * np.pi * np.e * (std ** 2))
 
     elif args.method == 'nf_mixed':
         hs = args.hs
