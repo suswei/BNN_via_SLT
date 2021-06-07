@@ -57,7 +57,7 @@ def main():
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
             ns_list += [sim_args['sample_size']]
 
-            method_list += ['{}_{}_{}'.format(sim_args['method'], sim_args['k0'], sim_args['no_couplingpairs'])]
+            method_list += ['{}_k{}_l{}_{}'.format(sim_args['method'], sim_args['k0'], sim_args['lmbda0'], sim_args['no_couplingpairs'])]
 
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
@@ -135,7 +135,7 @@ def main():
 
     # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
     summary_pd = summary_pd.dropna()
-    # summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+3] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+4] # remove instances where convergence was clearly not reached
 
     unique_methods = list(set(summary_pd['method']))
     unique_layers = list(set(summary_pd['no_couplingpairs']))
@@ -148,6 +148,7 @@ def main():
     for H in list(set(summary_pd['H'])):
 
         for n in list(set(summary_pd['n'])):
+
             # temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n) &
             #                       (summary_pd['prior_var']<=0.021)]
             temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n)]
@@ -155,13 +156,16 @@ def main():
             print(temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean())
             print(temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].std())
             std = temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].std().unstack()
-            temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean().unstack().plot(yerr=std)
-            # temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean().unstack().plot()
+            try:
+                temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean().unstack().plot(yerr=std)
+                # temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean().unstack().plot()
 
-            plt.title('H = {} n ={}'.format(H, n))
-            plt.savefig('{}/tanh{}_n{}.png'.format(args.path_prefix, H, n))
-            # plt.show()
-            plt.close()
+                plt.title('H = {} n ={}'.format(H, n))
+                plt.savefig('{}/tanh{}_n{}.png'.format(args.path_prefix, H, n))
+                # plt.show()
+                plt.close()
+            except:
+                print('blah')
 
     # log n slope plot
     for dataset in unique_datasets:
@@ -180,7 +184,8 @@ def main():
                     temp2 = temp.loc[(temp['prior_var'] == prior_var)
                                      & (temp['dataset'] == dataset)
                                      & (temp['no_couplingpairs'] == no_couplingpairs)
-                                     & (temp['nett_tanh'] == nett_tanh)]
+                                     & (temp['nett_tanh'] == nett_tanh)
+                                    ]
                         # for n in unique_ns:
                         #     current_pd = temp2.loc[temp2['n'] == n]
                         #
@@ -220,7 +225,7 @@ def main():
                             current_pd = temp2.loc[(temp2['H'] == H) & (temp2['method']==method)]
                             print(current_pd)
 
-                            print(current_pd[(np.abs(stats.zscore(current_pd['ELBOplusnSn'])) < 1)])
+                            # print(current_pd[(np.abs(stats.zscore(current_pd['ELBOplusnSn'])) < 1)])
 
                             evs = current_pd.groupby('n')['ELBOplusnSn'].mean()
                             print(evs)

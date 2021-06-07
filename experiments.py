@@ -9,15 +9,26 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [1]
-    sample_sizes = (np.round(np.exp([8.0, 8.25, 8.5]))).astype(int)
+    tanh_Hs = [400, 900, 1600]
+    sample_sizes = (np.round(np.exp([7.0, 7.5, 8.0, 8.5]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    # prior_vars = np.arange(0.001, 0.006, 0.001).tolist()
-    prior_vars = [1.0]
+    prior_vars = [1e-4, 1e-3, 1e-2, 1e-1]
 
     no_couplingpairs = [10]
-    k0s = [0.5, 1, 10]
-    l0s = [1e-2, 1]
+
+    # hyperparameter_config = {
+    #     'dataset': ['tanh'],
+    #     'H': tanh_Hs,
+    #     'sample_size': sample_sizes,
+    #     'prior_var': prior_vars,
+    #     'method': ['nf_gamma'],
+    #     'no_couplingpairs': no_couplingpairs,
+    #     'k0': [1],
+    #     'lmbda0': [1],
+    #     'seed': seeds,
+    # }
+    # keys, values = zip(*hyperparameter_config.items())
+    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 
     hyperparameter_config = {
@@ -25,29 +36,12 @@ def set_sweep_config():
         'H': tanh_Hs,
         'sample_size': sample_sizes,
         'prior_var': prior_vars,
-        'method': ['nf_gamma'],
+        'method': ['nf_gaussian'],
         'no_couplingpairs': no_couplingpairs,
-        'k0': k0s,
-        'lmbda0': l0s,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-
-    # hyperparameter_config = {
-    #     'dataset': ['tanh'],
-    #     'H': tanh_Hs,
-    #     'sample_size': sample_sizes,
-    #     'prior_var': prior_vars,
-    #     'method': ['nf_gaussian'],
-    #     'no_couplingpairs': no_couplingpairs,
-    #     'nf_gamma_mode': ['na'],
-    #     'seed': seeds,
-    #     'lmbda0': [0],
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     # hyperparameter_config = {
     #     'dataset': ['reducedrank'],
@@ -86,7 +80,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'H1tanhk0'
+    path = 'tanh_nfgauss'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -94,22 +88,34 @@ def main(taskid):
 
     path = '{}/taskid{}/'.format(path,taskid)
 
-    os.system("python3 main.py "
-              "--no_couplingpairs %s --k0 %s --lmbda0 %s "
-              " --exact_EqLogq --epochs 500 --display_interval 100 "
-              "--dataset %s --sample_size %s "
-              "--method %s "
-              "--H %s "
-              "--prior_var %s "
-              "--seed %s "
-              "--path %s "
-              % (temp['no_couplingpairs'], temp['k0'], temp['lmbda0'],
-                 temp['dataset'], temp['sample_size'],
-                 temp['method'],
-                 temp['H'],
-                 temp['prior_var'],
-                 temp['seed'],
-                 path))
+    if temp['method'] == 'nf_gaussian':
+        os.system("python3 main.py "
+                  "--mode %s %s 128 0 1 "
+                  "--exact_EqLogq --epochs 1000 --display_interval 100 "
+                  "--data %s %s %s True "
+                  "--prior_dist gaussian %s "
+                  "--seed %s "
+                  "--path %s "
+                  % (temp['method'], temp['no_couplingpairs'],
+                     temp['dataset'], temp['H'], temp['sample_size'],
+                     temp['prior_var'],
+                     temp['seed'],
+                     path))
+
+    elif temp['method'] == 'nf_gamma':
+
+        os.system("python3 main.py "
+                  "--mode %s %s 128 %s %s %s "
+                  "--exact_EqLogq --epochs 1000 --display_interval 100 "
+                  "--data %s %s %s True "
+                  "--prior_dist gaussian %s "
+                  "--seed %s "
+                  "--path %s "
+                  % (temp['method'], temp['no_couplingpairs'], temp['k0'], temp['lmbda0'], temp['beta0'],
+                     temp['dataset'], temp['H'], temp['sample_size'],
+                     temp['prior_var'],
+                     temp['seed'],
+                     path))
 
 
 if __name__ == "__main__":

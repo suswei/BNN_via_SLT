@@ -14,33 +14,31 @@ def set_gengamma_varparams(args):
     # let lambda_g be zero of digamma
     # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
 
-    args.lmbdas = torch.ones(args.w_dim, 1)
-    args.lmbdas[0] = args.lmbda0
+    args.lmbdas = 1.46*torch.ones(args.w_dim, 1)
+    # args.lmbdas = 0.5*torch.ones(args.w_dim,1)
+    # args.lmbdas[0] = args.lmbda0
     args.betas = torch.ones(args.w_dim, 1)
-    args.betas[0] = args.sample_size
-    args.ks = torch.ones(args.w_dim, 1)
-    args.ks[0] = args.k0
+    # args.betas[0] = args.sample_size
+    args.ks = torch.exp(1.46+torch.lgamma(1.46*torch.ones(1)))*torch.ones(args.w_dim, 1)/2
+    # args.ks = torch.ones(args.w_dim, 1)
+    # args.ks = torch.ones(args.w_dim,1)
+    # args.ks[0] = args.k0
 
     args.hs = args.lmbdas * 2 * args.ks - 1
 
 
 def train(args):
 
+
     nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
                              nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                              nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                              nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
 
-    if args.nett_tanh=="true":
-        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
-    else:
-        nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                     nn.Linear(args.nf_hidden, args.w_dim))
+    nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.w_dim))
 
     for layer in range(args.no_couplingpairs):
         ones = np.ones(args.w_dim)
@@ -170,17 +168,10 @@ def main():
 
     parser.add_argument('--seed', type=int, default=1234)
 
-    parser.add_argument('--dataset', type=str, default='tanh',
-                        help='dataset name from dataset_factory.py (default: )',
-                        choices=['reducedrank', 'tanh', 'tanh_general'])
-    parser.add_argument('--zeromean', type=str, default='True')
-    parser.add_argument('--H', type=int, default=1)
+    parser.add_argument('--data', nargs='*')
+    parser.add_argument('--prior_dist', nargs='*')
 
-    parser.add_argument('--sample_size', type=int, default=5000,
-                        help='sample size of synthetic dataset')
-
-    parser.add_argument('--prior', type=str, default='gaussian')
-    parser.add_argument('--prior_var', type=float)
+    parser.add_argument('--mode', nargs='*')
 
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--batch_size', type=int, default=500)
@@ -189,30 +180,42 @@ def main():
     parser.add_argument('--trainR', type=int, default=5)
     parser.add_argument('--exact_EqLogq', action='store_true')
 
-    parser.add_argument('--nf_hidden', type=int, default=128)
-    parser.add_argument('--no_couplingpairs', type=int, default=2)
-    parser.add_argument('--nf_gamma_mode', type=str)
-    parser.add_argument('--nf_gaussian_mean_var', nargs='+', type = float)
-
-    parser.add_argument('--nett_tanh', type=str, default='false')
-
-    parser.add_argument('--method', type=str, default='nf_gamma', choices=['nf_gamma','nf_gammatrunc','nf_gaussian','mf_gaussian', 'nf_mixed'])
-    parser.add_argument('--k0', type=float, default=1.0)
-    parser.add_argument('--lmbda0', type=float, default=1.0)
-
     parser.add_argument('--display_interval',type=int, default=100)
     parser.add_argument('--path', type=str)
 
     args = parser.parse_args()
 
+    args.dataset, args.H, args.sample_size, args.zeromean = args.data
+    args.H = int(args.H)
+    args.sample_size = int(args.sample_size)
+
+    args.prior, args.prior_var = args.prior_dist
+    args.prior_var = float(args.prior_var)
+
+    if args.mode[0] == 'nf_gamma':
+
+        args.method = 'nf_gamma'
+        args.no_couplingpairs = int(args.mode[1])
+        args.nf_hidden = int(args.mode[2])
+        args.k0 = float(args.mode[3])
+        args.lmbda0 = float(args.mode[4])
+        args.beta0 = float(args.mode[5])
+
+    elif args.mode[0] == 'nf_gaussian':
+
+        args.method = 'nf_gaussian'
+        args.no_couplingpairs = int(args.mode[1])
+        args.nf_hidden = int(args.mode[2])
+        args.nf_gaussian_mean = float(args.mode[3])
+        args.nf_gaussian_var = float(args.mode[4])
+
     get_dataset_by_id(args)
+    args.batch_size = np.int(np.round(args.sample_size/10))
+    set_gengamma_varparams(args)
 
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(args)
-
-    # if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc' or args.method == 'nf_mixed':
-    set_gengamma_varparams(args)
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
