@@ -16,32 +16,32 @@ def set_sweep_config():
 
     no_couplingpairs = [10]
 
-    # hyperparameter_config = {
-    #     'dataset': ['tanh'],
-    #     'H': tanh_Hs,
-    #     'sample_size': sample_sizes,
-    #     'prior_var': prior_vars,
-    #     'method': ['nf_gamma'],
-    #     'no_couplingpairs': no_couplingpairs,
-    #     'k0': [1],
-    #     'lmbda0': [1],
-    #     'seed': seeds,
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-
     hyperparameter_config = {
         'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
         'prior_var': prior_vars,
-        'method': ['nf_gaussian'],
+        'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
+        'k0': [1],
+        'lmbda0': [1],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+
+    # hyperparameter_config = {
+    #     'dataset': ['tanh'],
+    #     'H': tanh_Hs,
+    #     'sample_size': sample_sizes,
+    #     'prior_var': prior_vars,
+    #     'method': ['nf_gaussian'],
+    #     'no_couplingpairs': no_couplingpairs,
+    #     'seed': seeds,
+    # }
+    # keys, values = zip(*hyperparameter_config.items())
+    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     # hyperparameter_config = {
     #     'dataset': ['reducedrank'],
@@ -80,7 +80,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanh_nfgauss'
+    path = 'tanh_nfgamma'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -105,13 +105,13 @@ def main(taskid):
     elif temp['method'] == 'nf_gamma':
 
         os.system("python3 main.py "
-                  "--mode %s %s 128 %s %s %s "
+                  "--mode %s %s 128 %s %s true "
                   "--exact_EqLogq --epochs 1000 --display_interval 100 "
                   "--data %s %s %s True "
                   "--prior_dist gaussian %s "
                   "--seed %s "
                   "--path %s "
-                  % (temp['method'], temp['no_couplingpairs'], temp['k0'], temp['lmbda0'], temp['beta0'],
+                  % (temp['method'], temp['no_couplingpairs'], temp['k0'], temp['lmbda0'],
                      temp['dataset'], temp['H'], temp['sample_size'],
                      temp['prior_var'],
                      temp['seed'],
