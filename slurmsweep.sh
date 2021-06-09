@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-89
+#SBATCH --array=0-179
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -32,7 +32,7 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p tanh_nfgamma
+mkdir -p tanh_nfgamma_smallkg_largekj
 
 
 # The job command(s):

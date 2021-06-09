@@ -13,14 +13,11 @@ def set_gengamma_varparams(args):
     # this has the effect of forcing lambda_j = beta_j = large value for j \ne g
     # let lambda_g be zero of digamma
     # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
-    a0 = 1.461632
-    args.lmbdas = a0*torch.ones(args.w_dim, 1)
+    args.lmbdas = torch.ones(args.w_dim, 1)
     # args.lmbdas = 0.5*torch.ones(args.w_dim,1)
-    args.lmbdas[0] = args.lmbda0
-    args.betas = a0*torch.ones(args.w_dim, 1)
-    if args.betastar == 'true':
-        args.betas[0] = args.sample_size
-    args.ks = torch.exp(a0+torch.lgamma(a0*torch.ones(1)))*torch.ones(args.w_dim, 1)/2
+    args.betas = torch.ones(args.w_dim, 1)
+    args.betas[0] = args.sample_size
+    args.ks = 10*torch.ones(args.w_dim, 1)
     args.ks[0] = args.k0
 
     args.hs = args.lmbdas * 2 * args.ks - 1
@@ -193,15 +190,16 @@ def main():
 
     get_dataset_by_id(args)
     args.batch_size = np.int(np.round(args.sample_size/10))
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    print(args)
 
     if args.mode[0] == 'nf_gamma':
 
         args.method = 'nf_gamma'
         args.no_couplingpairs = int(args.mode[1])
         args.nf_hidden = int(args.mode[2])
-        args.lmbda0 = float(args.mode[3])
-        args.k0 = float(args.mode[4])
-        args.betastar = args.mode[5]
+        args.k0 = float(args.mode[3])
         set_gengamma_varparams(args)
 
     elif args.mode[0] == 'nf_gaussian':
@@ -211,10 +209,6 @@ def main():
         args.nf_hidden = int(args.mode[2])
         args.nf_gaussian_mean = float(args.mode[3])
         args.nf_gaussian_var = float(args.mode[4])
-
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    print(args)
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
