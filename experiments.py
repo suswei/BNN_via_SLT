@@ -3,18 +3,19 @@ import os
 import itertools
 import torch
 import numpy as np
+from dataset_factory import get_lmbda
 
 
 def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [400, 900, 1600]
+    tanh_Hs = [16, 64]
     sample_sizes = (np.round(np.exp([7.0, 7.5, 8.0, 8.5]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1e-3, 1e-2, 1e-1]
+    prior_vars = [1e-1]
 
-    no_couplingpairs = [10]
+    no_couplingpairs = [2]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
@@ -23,24 +24,24 @@ def set_sweep_config():
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
         'no_couplingpairs': no_couplingpairs,
-        'k0': [1],
+        'l0': get_lmbda(tanh_Hs, 'tanh'),
+        'k0': [1, 2, 3],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-
-    # hyperparameter_config = {
-    #     'dataset': ['tanh'],
-    #     'H': tanh_Hs,
-    #     'sample_size': sample_sizes,
-    #     'prior_var': prior_vars,
-    #     'method': ['nf_gaussian'],
-    #     'no_couplingpairs': no_couplingpairs,
-    #     'seed': seeds,
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    hyperparameter_config = {
+        'dataset': ['tanh'],
+        'H': tanh_Hs,
+        'sample_size': sample_sizes,
+        'prior_var': prior_vars,
+        'method': ['nf_gaussian'],
+        'no_couplingpairs': no_couplingpairs,
+        'seed': seeds,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     # hyperparameter_config = {
     #     'dataset': ['reducedrank'],
@@ -79,7 +80,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanh_nfgamma_smallkg_largekj'
+    path = 'ignoreC_tanh'
     # if not os.path.exists(path):
     #     os.makedirs(path)
 
@@ -104,13 +105,13 @@ def main(taskid):
     elif temp['method'] == 'nf_gamma':
 
         os.system("python3 main.py "
-                  "--mode %s %s 128 %s "
-                  "--exact_EqLogq --epochs 1000 --display_interval 100 "
+                  "--mode %s %s 128 %s %s "
+                  "--exact_EqLogq --epochs 1000 --display_interval 100 --trainR 5 "
                   "--data %s %s %s True "
                   "--prior_dist gaussian %s "
                   "--seed %s "
                   "--path %s "
-                  % (temp['method'], temp['no_couplingpairs'], temp['k0'],
+                  % (temp['method'], temp['no_couplingpairs'], temp['k0'], temp['l0'],
                      temp['dataset'], temp['H'], temp['sample_size'],
                      temp['prior_var'],
                      temp['seed'],

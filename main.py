@@ -13,18 +13,19 @@ def set_gengamma_varparams(args):
     # this has the effect of forcing lambda_j = beta_j = large value for j \ne g
     # let lambda_g be zero of digamma
     # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
-    args.lmbdas = torch.ones(args.w_dim, 1)
-    # args.lmbdas = 0.5*torch.ones(args.w_dim,1)
-    args.betas = torch.ones(args.w_dim, 1)
-    args.betas[0] = args.sample_size
-    args.ks = 10*torch.ones(args.w_dim, 1)
-    args.ks[0] = args.k0
+    args.lmbdas = 1000*torch.ones(args.w_dim, 1)
+    args.betas = 1001*torch.ones(args.w_dim, 1)
 
+    args.lmbdas[0] = args.l0
+    args.betas[0] = args.sample_size
+
+    # args.ks = (1 / 2) * b ** (-args.w_dim / (args.w_dim - 1)) * torch.ones(args.w_dim, 1)
+    args.ks = (1/2)*torch.ones(args.w_dim,1)
+    args.ks[0] = args.k0
     args.hs = args.lmbdas * 2 * args.ks - 1
 
 
 def train(args):
-
 
     nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
                              nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
@@ -41,7 +42,6 @@ def train(args):
         ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
         half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
                                torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
-
         if layer == 0:
             masks = half_mask
         else:
@@ -76,7 +76,6 @@ def train(args):
 
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
             args.theta_upper = torch.max(thetas, dim=0).values.detach()
-            # print(thetas.mean(dim=0))
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
@@ -189,7 +188,7 @@ def main():
     args.prior_var = float(args.prior_var)
 
     get_dataset_by_id(args)
-    args.batch_size = np.int(np.round(args.sample_size/10))
+    args.batch_size = np.int(np.round(args.sample_size))
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(args)
@@ -199,7 +198,8 @@ def main():
         args.method = 'nf_gamma'
         args.no_couplingpairs = int(args.mode[1])
         args.nf_hidden = int(args.mode[2])
-        args.k0 = float(args.mode[3])
+        args.l0 = float(args.mode[3])
+        args.k0 = float(args.mode[4])
         set_gengamma_varparams(args)
 
     elif args.mode[0] == 'nf_gaussian':
@@ -209,6 +209,8 @@ def main():
         args.nf_hidden = int(args.mode[2])
         args.nf_gaussian_mean = float(args.mode[3])
         args.nf_gaussian_var = float(args.mode[4])
+        # args.nf_gaussian_mean = 0
+        # args.nf_gaussian_var = 1
 
     net, elbo_hist = train(args)
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
