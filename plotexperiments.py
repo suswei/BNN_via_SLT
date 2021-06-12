@@ -161,35 +161,35 @@ def main():
 
 
             temp2 = temp.loc[(temp['prior_var'] == prior_var) & (temp['dataset'] == dataset)]
-                # for n in unique_ns:
-                #     current_pd = temp2.loc[temp2['n'] == n]
-                #
-                #     # barplot - hold dataset, n, no_couplingpairs, prior_var
-                #     g = sns.barplot(x="H", y="ELBOplusnSn",
-                #                     hue="method",
-                #                     data=current_pd)
-                #
-                #     sns.set_style("ticks")
-                #     hatches = ['/', '/', '/',
-                #                '+', '+', '+',
-                #                'x', 'x', 'x']
-                #     for hatch, patch in zip(hatches, g.patches):
-                #         patch.set_hatch(hatch)
-                #     leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
-                #     for patch in leg.get_patches():
-                #         patch.set_height(12)
-                #         patch.set_y(-6)
-                #
-                #     plt.title(
-                #         '{} n {} prior_var {} no_couplinglayers {} nett_tanh {}'
-                #         .format(dataset, n, prior_var, no_couplingpairs, nett_tanh))
-                #
-                #     if args.savefig:
-                #         plt.savefig(
-                #             '{}/barplot_{}n{}layer{}nett{}prior{}.png'.format(args.path_prefix, dataset, n, no_couplingpairs, nett_tanh,
-                #                                                   prior_var), bbox_inches='tight')
-                #     plt.show()
-                #     plt.close()
+            for n in unique_ns:
+                current_pd = temp2.loc[temp2['n'] == n]
+
+                # barplot - hold dataset, n, no_couplingpairs, prior_var
+                g = sns.barplot(x="H", y="ELBOplusnSn",
+                                hue="method",
+                                data=current_pd)
+
+                sns.set_style("ticks")
+                hatches = ['/', '/', '/',
+                           '+', '+', '+',
+                           'x', 'x', 'x']
+                for hatch, patch in zip(hatches, g.patches):
+                    patch.set_hatch(hatch)
+                leg = plt.legend(bbox_to_anchor=(1, 1), loc=2)
+                for patch in leg.get_patches():
+                    patch.set_height(12)
+                    patch.set_y(-6)
+
+                plt.title(
+                    '{} n {} prior_var {}'
+                    .format(dataset, n, prior_var))
+
+                if args.savefig:
+                    plt.savefig(
+                        '{}/barplot_{}n{}prior{}.png'.format(args.path_prefix, dataset, n,
+                                                              prior_var), bbox_inches='tight')
+                plt.show()
+                plt.close()
 
             for H in unique_Hs:
 

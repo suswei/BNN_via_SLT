@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="ignoreC_tanh"
+#SBATCH --job-name="tanh6400"
 #SBATCH -p gpgpu
 #SBATCH --gres=gpu:p100:1
 #SBATCH --qos=gpgpuresplat
 
-#SBATCH --mem=5G
+#SBATCH --mem=10G
 
 # The maximum running time of the job in days-hours:mins:sec
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-279
+#SBATCH --array=0-39
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

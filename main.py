@@ -8,20 +8,13 @@ from utils import *
 
 def set_gengamma_varparams(args):
 
-    # constrain lambda_j = beta_j for j \ne g
-    # further enforce log beta_j - digamma(lambda_j) small for j \ne g
-    # this has the effect of forcing lambda_j = beta_j = large value for j \ne g
-    # let lambda_g be zero of digamma
-    # enforce all k_j to be such that lambda*(digamma(lambda)-1) + log(2k) - lgamma(lambda) = 0
-    args.lmbdas = 1000*torch.ones(args.w_dim, 1)
-    args.betas = 1001*torch.ones(args.w_dim, 1)
 
-    args.lmbdas[0] = args.l0
-    args.betas[0] = args.sample_size
+    args.betas = args.trueRLCT*torch.ones(args.w_dim, 1)
+    args.betas[0] = args.sample_size # fixed
+    args.lmbdas = args.trueRLCT*torch.ones(args.w_dim, 1)
 
-    # args.ks = (1 / 2) * b ** (-args.w_dim / (args.w_dim - 1)) * torch.ones(args.w_dim, 1)
-    args.ks = (1/2)*torch.ones(args.w_dim,1)
-    args.ks[0] = args.k0
+    args.ks = torch.ones(args.w_dim,1)
+
     args.hs = args.lmbdas * 2 * args.ks - 1
 
 
@@ -66,9 +59,6 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            if args.prior == 'unif':
-                args.trainR = 10
-
             xis = sample_q(args, args.trainR, exact=True)  # [R, args.w_dim]
             xis = xis.to(args.device)
 
@@ -79,7 +69,7 @@ def train(args):
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
-            complexity = - log_prior(args, thetas, xis).mean() - log_jacobians.mean()  # q_entropy no optimization
+            complexity = - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
 
             if args.blundell_weighting:
                 M = args.sample_size/args.batch_size # number of minibatches
@@ -122,24 +112,18 @@ def evaluate(resolution_network, args, R):
 
         xis = sample_q(args, R, exact=True)  # [R, args.w_dim]
         xis = xis.to(args.device)
-        # hmonomial = torch.prod(xis ** args.hs.T, dim=1)
 
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
-        print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
         print('xis min {} max {}'.format(xis.min(), xis.max()))
+        print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
 
         args.theta_lower = torch.min(thetas, dim=0).values.detach()
         args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
-        args.xi_upper = torch.max(xis, dim=0).values.detach()
-        if args.exact_EqLogq and args.method != 'nf_gammatrunc':
-            ent = qj_entropy(args).sum()
-        else:
-            ent = q_entropy_sample(args, xis)
-
-        complexity = ent - log_prior(args, thetas, xis).mean() - log_jacobians.mean()
+        ent = qj_entropy(args, xis).sum()
+        complexity = ent - log_prior(args, thetas).mean() - log_jacobians.mean()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -152,7 +136,7 @@ def evaluate(resolution_network, args, R):
         # for batch_idx, (data, target) in enumerate(args.val_loader):
         #     elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
 
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas, xis).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -184,22 +168,21 @@ def main():
     args.H = int(args.H)
     args.sample_size = int(args.sample_size)
 
-    args.prior, args.prior_var = args.prior_dist
-    args.prior_var = float(args.prior_var)
+    args.prior = args.prior_dist[0]
+    if args.prior == 'gaussian':
+        args.prior_var = float(args.prior_dist[1])
 
     get_dataset_by_id(args)
-    args.batch_size = np.int(np.round(args.sample_size))
+    args.batch_size = np.int(np.round(args.sample_size/20))
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(args)
 
-    if args.mode[0] == 'nf_gamma':
+    if args.mode[0] == 'nf_gamma' or args.mode[0] == 'nf_gammatrunc':
 
-        args.method = 'nf_gamma'
+        args.method = args.mode[0]
         args.no_couplingpairs = int(args.mode[1])
         args.nf_hidden = int(args.mode[2])
-        args.l0 = float(args.mode[3])
-        args.k0 = float(args.mode[4])
         set_gengamma_varparams(args)
 
     elif args.mode[0] == 'nf_gaussian':
@@ -221,32 +204,7 @@ def main():
                   logprior.mean(), log_jacobians.mean()))
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    # print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
-    # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
-
-        # i = 0
-        # metric = []
-        # for n in args.ns:
-        #     args.betas[0] = n
-        #     args.train_loader = args.datasets[i]
-        #     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=10)
-        #     metric+= [elbo_loglik - complexity +args.nSns[i]]
-        #     i+=1
-        # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
-        # print('est lmbda {} R2 {}'.format(-slope, r_value))
-
-    # elif args.method == 'mf_gaussian':
-    #
-    #     # TODO: might be out of date, especially w.r.t. prior
-    #     print(args)
-    #     net = train_pyvarinf(args)
-    #     elbo, _, _ = evaluate_pyvarinf(net, args, R=10)
-    #
-    #     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    #     print('-lambda log n + (m-1) log log n: {}'.format(
-    #         -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))))
-    #     print('true lmbda {}'.format(args.trueRLCT))
 
     results_dict = {'elbo': elbo, 'elbo_loglik': elbo_loglik, 'complexity': complexity,
                     'elbo_val': elbo_val,
