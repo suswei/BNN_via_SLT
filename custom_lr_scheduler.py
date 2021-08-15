@@ -52,9 +52,9 @@ class CustomReduceLROnPlateau(object):
         >>>     scheduler.step(val_loss)
     """
 
-    def __init__(self, optimizer, mode='min', factor=0.1, patience=10,
+    def __init__(self, optimizer, mode='min', factor=0.9, patience=100,
                  verbose=False, threshold=1e-4, threshold_mode='rel',
-                 cooldown=0, min_lr=0, eps=1e-8):
+                 cooldown=0, min_lr=0, eps=1e-6):
 
         if factor >= 1.0:
             raise ValueError('Factor should be < 1.0.')

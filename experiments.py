@@ -9,10 +9,10 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [400, 900, 1600]
-    sample_sizes = (np.round(np.exp([7.0, 7.5, 8.0, 8.5]))).astype(int)
+    tanh_Hs = [16, 64, 400, 900, 1600]
+    sample_sizes = (np.round(np.exp([8.5]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1e-3, 1e-2, 1e-1]
+    prior_vars = [1]
 
     no_couplingpairs = [10]
 
@@ -21,9 +21,8 @@ def set_sweep_config():
         'H': tanh_Hs,
         'sample_size': sample_sizes,
         'prior_var': prior_vars,
-        'method': ['nf_gamma'],
+        'method': ['nf_gamma', 'nf_gaussian'],
         'no_couplingpairs': no_couplingpairs,
-        'k0': [1],
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -79,42 +78,26 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanh_nfgamma_smallkg_largekj'
-    # if not os.path.exists(path):
-    #     os.makedirs(path)
+    path = 'tanh'
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     torch.save(hyperparameter_experiments,'{}/hyp.pt'.format(path))
 
     path = '{}/taskid{}/'.format(path,taskid)
 
-    if temp['method'] == 'nf_gaussian':
-        os.system("python3 main.py "
-                  "--mode %s %s 128 0 1 "
-                  "--exact_EqLogq --epochs 1000 --display_interval 100 "
-                  "--data %s %s %s True "
-                  "--prior_dist gaussian %s "
-                  "--seed %s "
-                  "--path %s "
-                  % (temp['method'], temp['no_couplingpairs'],
-                     temp['dataset'], temp['H'], temp['sample_size'],
-                     temp['prior_var'],
-                     temp['seed'],
-                     path))
-
-    elif temp['method'] == 'nf_gamma':
-
-        os.system("python3 main.py "
-                  "--mode %s %s 128 %s "
-                  "--exact_EqLogq --epochs 1000 --display_interval 100 "
-                  "--data %s %s %s True "
-                  "--prior_dist gaussian %s "
-                  "--seed %s "
-                  "--path %s "
-                  % (temp['method'], temp['no_couplingpairs'], temp['k0'],
-                     temp['dataset'], temp['H'], temp['sample_size'],
-                     temp['prior_var'],
-                     temp['seed'],
-                     path))
+    os.system("python3 main.py "
+              "--mode %s %s 128 "
+              "--epochs 1000 --display_interval 100 "
+              "--data %s %s %s True "
+              "--prior_dist gaussian %s "
+              "--seed %s "
+              "--path %s "
+              % (temp['method'], temp['no_couplingpairs'],
+                 temp['dataset'], temp['H'], temp['sample_size'],
+                 temp['prior_var'],
+                 temp['seed'],
+                 path))
 
 
 if __name__ == "__main__":
