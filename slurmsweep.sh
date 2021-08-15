@@ -32,6 +32,7 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
+mkdir -p tanh
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh

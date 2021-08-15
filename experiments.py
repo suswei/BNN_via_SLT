@@ -79,8 +79,8 @@ def main(taskid):
     temp = hyperparameter_experiments[taskid]
 
     path = 'tanh'
-    if not os.path.exists(path):
-        os.makedirs(path)
+    # if not os.path.exists(path):
+        # os.makedirs(path)
 
     torch.save(hyperparameter_experiments,'{}/hyp.pt'.format(path))
 
