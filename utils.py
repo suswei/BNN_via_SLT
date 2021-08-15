@@ -141,12 +141,12 @@ def gamma_icdf(shape, rate, args):
 
     small_shape_regime = shape < 5
 
-    u = torch.FloatTensor(R, args.w_dim).uniform_(0)
+    u = torch.FloatTensor(R, args.w_dim).uniform_(0).to(args.device)
     g = torch.exp(torch.lgamma(shape*small_shape_regime + (~small_shape_regime)))
     num = (u * shape * g) ** (1 / shape)
     small_shape = num/rate
 
-    z = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
+    z = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1).to(args.device)
     large_shape = (shape + torch.sqrt(shape) * z) / rate
 
     return small_shape_regime*small_shape + (~small_shape_regime)*large_shape
