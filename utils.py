@@ -43,18 +43,22 @@ def log_prior(args, thetas):
 
 def sample_q(resolution_network, args, R, exact=False):
 
-    betas = torch.cat((args.sample_size * torch.ones(1, 1), resolution_network.betas))
+    betas = torch.cat((args.sample_size * torch.ones(1, 1), resolution_network.betas)).to(args.device)
 
     if args.method == 'nf_gamma':
 
         ks = torch.abs(resolution_network.ks.repeat(1, R)).T + 1
+        ks = ks.to(args.device)
 
         if exact:
-            m = Gamma(torch.abs(resolution_network.lmbdas)+1, betas)
+            shape = torch.abs(resolution_network.lmbdas)+1
+            shape = shape.to(args.device)
+            m = Gamma(shape, betas)
             vs = m.sample(torch.Size([R])).squeeze(dim=2)
             xis = vs ** (1 / (2 * ks))
         else:
             shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T + 1
+            shape = shape.to(args.device)
             rate = betas.repeat(1, R).T
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
@@ -105,11 +109,17 @@ def sample_q(resolution_network, args, R, exact=False):
 def exp_logqj(resolution_network, args):
 
     betas = torch.cat((args.sample_size * torch.ones(1, 1), resolution_network.betas))
+    betas = betas.to(args.device)
 
     if args.method == 'nf_gamma':
+
         ks = torch.abs(resolution_network.ks)+1
+        ks = ks.to(args.device)
+
         lmbdas = torch.abs(resolution_network.lmbdas)+1
-        return -torch.lgamma(lmbdas) +torch.log(betas)/(2*ks) +torch.log(2*ks) \
+        lmbdas = lmbdas.to(args.device)
+
+        return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) +torch.log(2*ks) \
                - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
     elif args.method == 'nf_gaussian':

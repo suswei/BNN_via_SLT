@@ -87,7 +87,7 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--mode %s %s 128 "
+              "--mode %s %s 32 "
               "--epochs 1000 --display_interval 100 "
               "--data %s %s %s True "
               "--prior_dist gaussian %s "
