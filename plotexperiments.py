@@ -16,9 +16,9 @@ def main():
 
     # Training settings
     parser = argparse.ArgumentParser(description='?')
-    parser.add_argument('--dataset_of_interest', default='reducedrank', type=str, choices=['reducedrank', 'tanh'])
+    # parser.add_argument('--dataset', default='reducedrank', type=str, choices=['reducedrank', 'tanh'])
     parser.add_argument('--savefig', action='store_true')
-    parser.add_argument('--path_prefix', type=str)
+    parser.add_argument('--path', type=str)
     args = parser.parse_args()
 
     # if args.savefig:
@@ -31,7 +31,7 @@ def main():
     #     })
     #     plt.rcParams["figure.figsize"] = (6.75/2, 3)
 
-    hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path_prefix))
+    hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path))
     tasks = hyperparameter_experiments.__len__()
 
     Hs_list = []
@@ -42,12 +42,10 @@ def main():
     priorvar_list = []
     dataset_list = []
     layers_list = []
-    # k0_list = []
-    # l0_list = []
 
     for taskid in range(tasks):
 
-        path = '{}/taskid{}/'.format(args.path_prefix, taskid)
+        path = '{}/taskid{}/'.format(args.path, taskid)
         try:
 
             results = torch.load('{}/results.pt'.format(path),  map_location=torch.device('cpu'))
@@ -60,7 +58,7 @@ def main():
             if sim_args['method'] == 'nf_gaussian':
                 method_list += ['{}_{}'.format(sim_args['method'], sim_args['no_couplingpairs'])]
             elif sim_args['method'] == 'nf_gamma':
-                method_list += ['{}_pairs{}_lmbda{}_k{}'.format(sim_args['method'], sim_args['no_couplingpairs'],sim_args['lmbda0'], sim_args['k0'])]
+                method_list += ['{}_pairs{}'.format(sim_args['method'], sim_args['no_couplingpairs'])]
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
             priorvar_list += [sim_args['prior_var']]
@@ -93,7 +91,7 @@ def main():
                 for taskid in range(tasks):
 
                     try:
-                        path = '{}/taskid{}/'.format(args.path_prefix, taskid)
+                        path = '{}/taskid{}/'.format(args.path, taskid)
                         results = torch.load('{}/results.pt'.format(path), map_location=torch.device('cpu'))
                         sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
 
@@ -144,7 +142,7 @@ def main():
                 # temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean().unstack().plot()
 
                 plt.title('H = {} n ={}'.format(H, n))
-                plt.savefig('{}/tanh{}_n{}.png'.format(args.path_prefix, H, n))
+                plt.savefig('{}/tanh{}_n{}.png'.format(args.path, H, n))
                 # plt.show()
                 plt.close()
             except:
@@ -186,7 +184,7 @@ def main():
                 #
                 #     if args.savefig:
                 #         plt.savefig(
-                #             '{}/barplot_{}n{}layer{}nett{}prior{}.png'.format(args.path_prefix, dataset, n, no_couplingpairs, nett_tanh,
+                #             '{}/barplot_{}n{}layer{}nett{}prior{}.png'.format(args.path, dataset, n, no_couplingpairs, nett_tanh,
                 #                                                   prior_var), bbox_inches='tight')
                 #     plt.show()
                 #     plt.close()
@@ -212,7 +210,7 @@ def main():
                                   .format(dataset, H, method, prior_var, -truth, slope, intercept, r_value))
 
                         if args.savefig:
-                            plt.savefig('{}/{}{}_{}_prior{:.4f}.png'.format(args.path_prefix, dataset, H, method, prior_var), bbox_inches='tight')
+                            plt.savefig('{}/{}{}_{}_prior{:.4f}.png'.format(args.path, dataset, H, method, prior_var), bbox_inches='tight')
                         # plt.show()
                         plt.close()
 
