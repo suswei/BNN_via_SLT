@@ -58,7 +58,10 @@ def sample_q(resolution_network, args, R, exact=False):
             shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T + 1
             rate = betas.repeat(1, R).T
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
+            r = torch.nn.ReLU()
+            vs = r(vs)
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
+
 
     # TODO: not currently reparametrizable, need to check is in [0, args.xi_upper]
     # elif args.method == 'nf_gammatrunc':
@@ -149,7 +152,11 @@ def gamma_icdf(shape, rate, args):
     z = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1).to(args.device)
     large_shape = (shape + torch.sqrt(shape) * z) / rate
 
-    return small_shape_regime*small_shape + (~small_shape_regime)*large_shape
+    vs = small_shape_regime*small_shape + (~small_shape_regime)*large_shape
+    if torch.any(torch.isnan(vs)):
+        print('nan vs')
+
+    return vs
 
     # if shape[0,0] < 36.0: #u is unif 0,1
     #     # inverse cdf of gamma with shape and rate

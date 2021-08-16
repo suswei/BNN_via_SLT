@@ -33,14 +33,14 @@ def train(args):
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
-        return 'lmbdas' in n or 'ks' in n
+        return 'betas' in n or 'ks' in n
 
     def is_varparam2(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
     grouped_parameters = [
-        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 100},
-        {"params": [p for n, p in params if 'betas' in n ], 'lr': args.lr * 1000},
+        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 1000},
+        {"params": [p for n, p in params if 'lambdas' in n ], 'lr': args.lr * 10},
         {"params": [p for n, p in params if not is_varparam2(n)], 'lr': args.lr},
     ]
 
@@ -63,6 +63,7 @@ def train(args):
 
             xis = sample_q(resolution_network, args, args.trainR)  # [R, args.w_dim]
             xis = xis.to(args.device)
+
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
 
@@ -95,15 +96,11 @@ def train(args):
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
-
-
         # scheduler.step(running_loss)
         #
         # if scheduler.has_convergence_been_reached():
         #     print('INFO: Converence has been reached. Stopping iterations.')
         #     break
-
-
 
     return resolution_network, elbo_hist
 

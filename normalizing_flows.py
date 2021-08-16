@@ -15,9 +15,9 @@ class RealNVP(nn.Module):
         super(RealNVP, self).__init__()
 
         # TODO: custom initialization input?
-        self.lmbdas = torch.nn.Parameter(torch.cat((torch.rand(1, 1), torch.rand(d-1, 1))), requires_grad=True)
+        self.lmbdas = torch.nn.Parameter(torch.cat((torch.rand(1, 1), torch.rand(d-1, 1)+100)), requires_grad=True)
         self.ks = torch.nn.Parameter(torch.cat((torch.rand(1, 1), torch.rand(d-1, 1)+10)), requires_grad=True)
-        self.betas = torch.nn.Parameter(torch.rand(d-1, 1)+50, requires_grad=True)
+        self.betas = torch.nn.Parameter(torch.rand(d-1, 1)+100, requires_grad=True)
 
         self.mask = nn.Parameter(mask, requires_grad=False)
         self.t = torch.nn.ModuleList([nett() for _ in range(len(mask))])
