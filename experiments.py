@@ -9,10 +9,10 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [16, 64, 400, 900, 1600]
+    tanh_Hs = [400, 900, 1600]
     sample_sizes = (np.round(np.exp([8.5]))).astype(int)
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1]
+    prior_vars = [1e-1]
 
     no_couplingpairs = [10]
 
@@ -87,7 +87,7 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--mode %s %s 32 "
+              "--mode %s %s 128 "
               "--epochs 1000 --display_interval 100 "
               "--data %s %s %s True "
               "--prior_dist gaussian %s "
