@@ -40,13 +40,8 @@ def train(args):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
     grouped_parameters = [
-<<<<<<< HEAD
         {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 10}, #TODO: a more systematic way to set these lr's
         {"params": [p for n, p in params if 'lambdas' in n], 'lr': args.lr * 100},
-=======
-        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr*10},
-        {"params": [p for n, p in params if 'betas' in n], 'lr': args.lr*0},
->>>>>>> 6138242f71c8a66a93e79404fb7324e48eb3d87e
         {"params": [p for n, p in params if not is_varparam2(n)], 'lr': args.lr},
     ]
 
@@ -97,18 +92,7 @@ def train(args):
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
-<<<<<<< HEAD
 
-
-=======
-            # elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-            #     = evaluate(resolution_network, args, R=evalR, exact=False)
-            # print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
-            #       '= loglik {} (loglik_val {}) - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
-            #       .format(epoch, loss, args.nSn, evalR,
-            #               elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
-            #               complexity, ent, logprior.mean(), log_jacobians.mean()))
->>>>>>> 6138242f71c8a66a93e79404fb7324e48eb3d87e
         # scheduler.step(running_loss)
         #
         # if scheduler.has_convergence_been_reached():
