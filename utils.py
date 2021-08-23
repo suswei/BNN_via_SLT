@@ -47,21 +47,22 @@ def sample_q(resolution_network, args, R, exact=False):
 
     if args.method == 'nf_gamma':
 
-        ks = torch.abs(resolution_network.ks.repeat(1, R)).T + 1
+        ks = torch.abs(resolution_network.ks.repeat(1, R)).T
 
         if exact:
-            shape = torch.abs(resolution_network.lmbdas)+1
+            shape = torch.abs(resolution_network.lmbdas)
             m = Gamma(shape, betas)
             vs = m.sample(torch.Size([R])).squeeze(dim=2)
             xis = vs ** (1 / (2 * ks))
+
+
         else:
-            shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T + 1
+            shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T
             rate = betas.repeat(1, R).T
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             r = torch.nn.ReLU()
             vs = r(vs)
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
-
 
     # TODO: not currently reparametrizable, need to check is in [0, args.xi_upper]
     # elif args.method == 'nf_gammatrunc':
@@ -112,10 +113,10 @@ def exp_logqj(resolution_network, args):
 
     if args.method == 'nf_gamma':
 
-        ks = torch.abs(resolution_network.ks)+1
-        lmbdas = torch.abs(resolution_network.lmbdas)+1
+        ks = torch.abs(resolution_network.ks)
+        lmbdas = torch.abs(resolution_network.lmbdas)
 
-        return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) +torch.log(2*ks) \
+        return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) + torch.log(2*ks) \
                - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
     elif args.method == 'nf_gaussian':
@@ -142,7 +143,7 @@ def gamma_icdf(shape, rate, args):
 
     R = rate.shape[0]
 
-    small_shape_regime = shape < 5
+    small_shape_regime = shape < 4
 
     u = torch.FloatTensor(R, args.w_dim).uniform_(0).to(args.device)
     g = torch.exp(torch.lgamma(shape*small_shape_regime + (~small_shape_regime)))
@@ -153,8 +154,7 @@ def gamma_icdf(shape, rate, args):
     large_shape = (shape + torch.sqrt(shape) * z) / rate
 
     vs = small_shape_regime*small_shape + (~small_shape_regime)*large_shape
-    if torch.any(torch.isnan(vs)):
-        print('nan vs')
+
 
     return vs
 

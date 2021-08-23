@@ -29,7 +29,7 @@ def train(args):
         else:
             masks = torch.cat((masks, half_mask))
 
-    resolution_network = RealNVP(nets, nett, masks, args.w_dim)
+    resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.trueRLCT)
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
@@ -39,8 +39,8 @@ def train(args):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
     grouped_parameters = [
-        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 1000},
-        {"params": [p for n, p in params if 'lambdas' in n ], 'lr': args.lr * 10},
+        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 10}, #TODO: a more systematic way to set these lr's
+        {"params": [p for n, p in params if 'lambdas' in n], 'lr': args.lr * 100},
         {"params": [p for n, p in params if not is_varparam2(n)], 'lr': args.lr},
     ]
 
@@ -64,7 +64,6 @@ def train(args):
             xis = sample_q(resolution_network, args, args.trainR)  # [R, args.w_dim]
             xis = xis.to(args.device)
 
-
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
 
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
@@ -80,10 +79,6 @@ def train(args):
             loss.backward()
             optimizer.step()
 
-            # print('lmbdas {}'.format(resolution_network.lmbdas))
-            # print('ks {}'.format(resolution_network.ks))
-            # print('betas {}'.format(resolution_network.betas))
-
         if epoch % args.display_interval == 0:
 
             evalR = 10
@@ -95,6 +90,8 @@ def train(args):
                           elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
+
+
 
         # scheduler.step(running_loss)
         #
@@ -197,6 +194,10 @@ def main():
             args.nf_gaussian_var = float(args.mode[4])
 
     net, elbo_hist = train(args)
+    print('lmbdas {}'.format(net.lmbdas))
+    print('ks {}'.format(net.ks))
+    print('betas {}'.format(net.betas))
+
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
     elbo_val = elbo_loglik_val.mean() - complexity
     print('nSn {}, elbo {} '
