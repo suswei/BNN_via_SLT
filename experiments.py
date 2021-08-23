@@ -12,6 +12,8 @@ def set_sweep_config():
     tanh_Hs = [400, 900]
 
     sample_sizes = (np.round(np.exp([8.5]))).astype(int)
+    sample_sizes = [5000]
+
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [1e-1]
 

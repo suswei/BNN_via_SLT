@@ -6,13 +6,12 @@ from normalizing_flows import *
 from utils import *
 
 
-# TODO: alternate training lambda, k, beta and NF params?
-def train(args):
+def setup_affinecoupling(args):
 
     nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                             nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                             nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                             nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
+                                 nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
 
     nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
                                  nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
@@ -30,25 +29,35 @@ def train(args):
         else:
             masks = torch.cat((masks, half_mask))
 
+    return nets, nett, masks
+
+
+def train(args):
+
+    nets, nett, masks = setup_affinecoupling(args)
+
     resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.trueRLCT)
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
-        return 'lambdas' in n or 'ks' in n
-
-    def is_varparam2(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
+    args.lr_lmbda = args.lr*10
+    args.lr_k = args.lr*10
+    args.lr_beta = args.lr*10
+
     grouped_parameters = [
-        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 10}, #TODO: a more systematic way to set these lr's
-        {"params": [p for n, p in params if 'lambdas' in n], 'lr': args.lr * 100},
-        {"params": [p for n, p in params if not is_varparam2(n)], 'lr': args.lr},
+        {"params": [p for n, p in params if 'lmbdas' in n], 'lr': args.lr_lmbda},
+        {"params": [p for n, p in params if 'ks' in n], 'lr': args.lr_k},
+        {"params": [p for n, p in params if 'betas' in n], 'lr': args.lr_beta},
+        {"params": [p for n, p in params if not is_varparam(n)], 'lr': args.lr},
     ]
 
     resolution_network.to(args.device)
 
     optimizer = torch.optim.Adam(grouped_parameters, lr=args.lr)
     scheduler = custom_lr_scheduler.CustomReduceLROnPlateau(optimizer)
+    torch.autograd.set_detect_anomaly(True)
 
     elbo_hist = []
     for epoch in range(1, args.epochs):
@@ -196,9 +205,9 @@ def main():
             args.nf_gaussian_var = float(args.mode[4])
 
     net, elbo_hist = train(args)
-    print('lmbdas {}'.format(net.lmbdas))
-    print('ks {}'.format(net.ks))
-    print('betas {}'.format(net.betas))
+    # print('lmbdas {}'.format(net.lmbdas))
+    # print('ks {}'.format(net.ks))
+    # print('betas {}'.format(net.betas))
 
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
     elbo_val = elbo_loglik_val.mean() - complexity

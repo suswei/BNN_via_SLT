@@ -44,6 +44,7 @@ def log_prior(args, thetas):
 def sample_q(resolution_network, args, R, exact=False):
 
     betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
+    betas = torch.abs(betas)
 
     if args.method == 'nf_gamma':
 
@@ -55,7 +56,6 @@ def sample_q(resolution_network, args, R, exact=False):
             vs = m.sample(torch.Size([R])).squeeze(dim=2)
             xis = vs ** (1 / (2 * ks))
 
-
         else:
             shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T
             rate = betas.repeat(1, R).T
@@ -63,6 +63,9 @@ def sample_q(resolution_network, args, R, exact=False):
             r = torch.nn.ReLU()
             vs = r(vs)
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
+
+            if torch.any(torch.isnan(xis)):
+                print('nan xis')
 
     # TODO: not currently reparametrizable, need to check is in [0, args.xi_upper]
     # elif args.method == 'nf_gammatrunc':
@@ -73,8 +76,7 @@ def sample_q(resolution_network, args, R, exact=False):
 
     elif args.method == 'nf_gaussian':
         # xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
-        xis = torch.FloatTensor(R, args.w_dim).normal_(mean=args.nf_gaussian_mean, std=np.sqrt(args.nf_gaussian_var))
-
+        xis = torch.normal(args.nf_gaussian_mean, np.sqrt(args.nf_gaussian_var), size=(R, args.w_dim)).to(args.device)
         # m = Gamma(args.lmbdas[0], args.betas[0])
         # vs = m.sample(torch.Size([R]))
         # xis_beg = vs ** (1 / (2 * args.ks[0].repeat(1, R).T))
@@ -110,11 +112,13 @@ def sample_q(resolution_network, args, R, exact=False):
 def exp_logqj(resolution_network, args):
 
     betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
+    betas = torch.abs(betas)
 
     if args.method == 'nf_gamma':
 
         ks = torch.abs(resolution_network.ks)
         lmbdas = torch.abs(resolution_network.lmbdas)
+        # lmbdas = resolution_network.lmbdas
 
         return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) + torch.log(2*ks) \
                - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
@@ -125,49 +129,41 @@ def exp_logqj(resolution_network, args):
 
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
-def qj_gengamma_lognorm(h, k, beta, args):
-
-    lmbda = (h + 1) / (2 * k)
-    G = torch.lgamma(lmbda)
-
-    if args.method == 'nf_gamma':
-        return G - torch.log(2*k) - lmbda*torch.log(beta)
-    elif args.method == 'nf_gammatrunc':
-        temp = beta * (args.xi_upper.unsqueeze(dim=1) ** (2 * k))
-        return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.igamma(lmbda, temp))
-
+# def qj_gengamma_lognorm(h, k, beta, args):
+#
+#     lmbda = (h + 1) / (2 * k)
+#     G = torch.lgamma(lmbda)
+#
+#     if args.method == 'nf_gamma':
+#         return G - torch.log(2*k) - lmbda*torch.log(beta)
+#     elif args.method == 'nf_gammatrunc':
+#         temp = beta * (args.xi_upper.unsqueeze(dim=1) ** (2 * k))
+#         return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.igamma(lmbda, temp))
+#
 
 # generate gamma(shape,rate) through inverse CDF
 
 def gamma_icdf(shape, rate, args):
+# only implementing large shape case
 
     R = rate.shape[0]
 
-    small_shape_regime = shape < 4
+    # small_shape_regime = shape < 4
+    #
+    # u = torch.rand(R, args.w_dim).to(args.device)
+    # # u = torch.FloatTensor(R, args.w_dim).uniform_(0).to(args.device)
+    # g = torch.exp(torch.lgamma(shape*small_shape_regime + (~small_shape_regime)))
+    # num = (u * shape * g) ** (1 / shape)
+    # small_shape = num/rate
 
-    u = torch.FloatTensor(R, args.w_dim).uniform_(0).to(args.device)
-    g = torch.exp(torch.lgamma(shape*small_shape_regime + (~small_shape_regime)))
-    num = (u * shape * g) ** (1 / shape)
-    small_shape = num/rate
-
-    z = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1).to(args.device)
+    z = torch.normal(0, 1, size=(R, args.w_dim)).to(args.device)
+    # z = torch.Tensor(R, args.w_dim).normal_(mean=0, std=1).to(args.device)
     large_shape = (shape + torch.sqrt(shape) * z) / rate
 
-    vs = small_shape_regime*small_shape + (~small_shape_regime)*large_shape
-
+    # vs = small_shape_regime*small_shape + (~small_shape_regime)*large_shape
+    vs = large_shape
 
     return vs
 
-    # if shape[0,0] < 36.0: #u is unif 0,1
-    #     # inverse cdf of gamma with shape and rate
-    #     # using approximation in Knowles
-    #     u = torch.FloatTensor(R, args.w_dim).uniform_(0)
-    #     g = torch.exp(torch.lgamma(shape))
-    #     num = (u*shape*g)**(1/shape)
-    #     return num/rate
-    # else: # here u is N(0,1)
-    #     u = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
-    #     if ((shape + torch.sqrt(shape) * u) < 0).sum() > 0:
-    #         print('warning xi generated negative')
-    #     return (shape + torch.sqrt(shape) * u)/rate
+
 

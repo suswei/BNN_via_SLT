@@ -20,7 +20,6 @@ class RealNVP(nn.Module):
         self.ks = torch.nn.Parameter(torch.ones(d, 1)/2, requires_grad=True) #decreasing k will increase variance
         self.betas = torch.nn.Parameter(torch.rand(d-1, 1)+trueRLCT, requires_grad=True)
 
-
         self.mask = nn.Parameter(mask, requires_grad=False)
         self.t = torch.nn.ModuleList([nett() for _ in range(len(mask))])
         self.s = torch.nn.ModuleList([nets() for _ in range(len(mask))])
