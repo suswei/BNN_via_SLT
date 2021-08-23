@@ -6,6 +6,7 @@ from normalizing_flows import *
 from utils import *
 
 
+# TODO: alternate training lambda, k, beta and NF params?
 def train(args):
 
     nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
@@ -33,14 +34,19 @@ def train(args):
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
-        return 'betas' in n or 'ks' in n
+        return 'lambdas' in n or 'ks' in n
 
     def is_varparam2(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
     grouped_parameters = [
+<<<<<<< HEAD
         {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr * 10}, #TODO: a more systematic way to set these lr's
         {"params": [p for n, p in params if 'lambdas' in n], 'lr': args.lr * 100},
+=======
+        {"params": [p for n, p in params if is_varparam(n)], 'lr': args.lr*10},
+        {"params": [p for n, p in params if 'betas' in n], 'lr': args.lr*0},
+>>>>>>> 6138242f71c8a66a93e79404fb7324e48eb3d87e
         {"params": [p for n, p in params if not is_varparam2(n)], 'lr': args.lr},
     ]
 
@@ -83,16 +89,26 @@ def train(args):
 
             evalR = 10
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=evalR)
-            print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
+                = evaluate(resolution_network, args, R=evalR, exact=True)
+            print('epoch {}: loss {}, nSn {}, (R = {}) exact elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
                   .format(epoch, loss, args.nSn, evalR,
                           elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
+<<<<<<< HEAD
 
 
+=======
+            # elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
+            #     = evaluate(resolution_network, args, R=evalR, exact=False)
+            # print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
+            #       '= loglik {} (loglik_val {}) - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
+            #       .format(epoch, loss, args.nSn, evalR,
+            #               elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
+            #               complexity, ent, logprior.mean(), log_jacobians.mean()))
+>>>>>>> 6138242f71c8a66a93e79404fb7324e48eb3d87e
         # scheduler.step(running_loss)
         #
         # if scheduler.has_convergence_been_reached():
@@ -102,13 +118,13 @@ def train(args):
     return resolution_network, elbo_hist
 
 
-def evaluate(resolution_network, args, R):
+def evaluate(resolution_network, args, R, exact):
 
     resolution_network.eval()
 
     with torch.no_grad():
 
-        xis = sample_q(resolution_network, args, R, exact=True)  # [R, args.w_dim]
+        xis = sample_q(resolution_network, args, R, exact=exact)  # [R, args.w_dim]
         xis = xis.to(args.device)
 
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
@@ -157,7 +173,7 @@ def main():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
 
-    parser.add_argument('--display_interval',type=int, default=100)
+    parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
 
     args = parser.parse_args()
@@ -166,8 +182,10 @@ def main():
     args.H = int(args.H)
     args.sample_size = int(args.sample_size)
 
+    # TODO: needs to take into account other prior options in utils.py
     args.prior, args.prior_var = args.prior_dist
     args.prior_var = float(args.prior_var)
+    # args.prior = args.prior_dist[0]
 
     get_dataset_by_id(args)
     args.batch_size = np.int(np.round(args.sample_size/10))

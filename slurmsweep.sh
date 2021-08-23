@@ -12,7 +12,11 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
+<<<<<<< HEAD
 #SBATCH --array=0-19
+=======
+#SBATCH --array=0-29
+>>>>>>> 6138242f71c8a66a93e79404fb7324e48eb3d87e
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
