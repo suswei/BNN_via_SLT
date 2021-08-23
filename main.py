@@ -200,7 +200,7 @@ def main():
     print('ks {}'.format(net.ks))
     print('betas {}'.format(net.betas))
 
-    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
+    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
     elbo_val = elbo_loglik_val.mean() - complexity
     print('nSn {}, elbo {} '
           '= loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ], '
