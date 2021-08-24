@@ -15,7 +15,7 @@ class RealNVP(nn.Module):
         super(RealNVP, self).__init__()
 
         # initialize at N(lambda/beta, lambda/beta**2)**(1/2k) = N(1, 1/trueRLCT)
-        self.lmbdas = torch.nn.Parameter(torch.cat((torch.ones(1,1)*trueRLCT, torch.rand(d-1, 1)+trueRLCT)), requires_grad=True)
+        self.lmbdas = torch.nn.Parameter(torch.cat((torch.ones(1, 1)*trueRLCT, torch.rand(d-1, 1)+trueRLCT)), requires_grad=True)
         # self.ks = torch.nn.Parameter(torch.cat((torch.rand(1, 1)+0.5, torch.rand(d-1, 1)+0.5)), requires_grad=True)
         self.ks = torch.nn.Parameter(torch.ones(d, 1)/2, requires_grad=True) #decreasing k will increase variance
         self.betas = torch.nn.Parameter(torch.rand(d-1, 1)+trueRLCT, requires_grad=True)
