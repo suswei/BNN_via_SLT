@@ -38,7 +38,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'q_mean_var': ['0 1']
+        'q_mean_var': ['0 1'],
         'no_couplingpairs': no_couplingpairs,
         'seed': seeds,
     }
