@@ -95,15 +95,15 @@ def main():
                         results = torch.load('{}/results.pt'.format(path), map_location=torch.device('cpu'))
                         sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
 
-                        if sim_args['H'] == H and sim_args['sample_size']==n:
-                            ev_list += [results['asy_log_pDn']]
-                            method_list += ['truth']
-                            seed_list += [sim_args['seed']]
-                            Hs_list += [H]
-                            ns_list += [sim_args['sample_size']]
-                            priorvar_list += [sim_args['prior_var']]
-                            dataset_list += [sim_args['dataset']]
-                            layers_list += [sim_args['no_couplingpairs']]
+                        # if sim_args['H'] == H and sim_args['sample_size']==n:
+                        #     ev_list += [results['asy_log_pDn']]
+                        #     method_list += ['truth']
+                        #     seed_list += [sim_args['seed']]
+                        #     Hs_list += [H]
+                        #     ns_list += [sim_args['sample_size']]
+                        #     priorvar_list += [sim_args['prior_var']]
+                        #     dataset_list += [sim_args['dataset']]
+                        #     layers_list += [sim_args['no_couplingpairs']]
 
                     except:
                         print('missing taskid {}'.format(taskid))

@@ -9,7 +9,7 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [16, 64, 128, 256, 512]
+    tanh_Hs = [16, 64, 128]
 
     sample_sizes = (np.round(np.exp([8.5]))).astype(int)
     sample_sizes = [5000]
@@ -17,7 +17,7 @@ def set_sweep_config():
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [100]
 
-    no_couplingpairs = [2]
+    no_couplingpairs = [10, 20]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
@@ -105,7 +105,7 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--mode %s %s 128 %s "
-              "--epochs 2000 --display_interval 100 "
+              "--epochs 1000 --display_interval 100 "
               "--data %s %s %s False "
               "--prior_dist gaussian %s "
               "--seed %s "
