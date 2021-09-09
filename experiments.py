@@ -9,7 +9,7 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [16, 64, 128]
+    tanh_Hs = [1, 16, 64, 128]
 
     sample_sizes = (np.round(np.exp([8.5]))).astype(int)
     sample_sizes = [5000]
@@ -17,7 +17,7 @@ def set_sweep_config():
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [100]
 
-    no_couplingpairs = [10, 20]
+    no_couplingpairs = [2]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
@@ -25,7 +25,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'q_mean_var': ['0 1'],
+        'varparam0': ['0 1'],
         'no_couplingpairs': no_couplingpairs,
         'seed': seeds,
     }
@@ -38,7 +38,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'q_mean_var': ['0 1'],
+        'varparam0': ['100', '1000'],
         'no_couplingpairs': no_couplingpairs,
         'seed': seeds,
     }
@@ -104,13 +104,13 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--mode %s %s 128 %s "
-              "--epochs 1000 --display_interval 100 "
+              "--mode %s %s 16 %s "
+              "--epochs 500 --display_interval 100 "
               "--data %s %s %s False "
               "--prior_dist gaussian %s "
               "--seed %s "
               "--path %s "
-              % (temp['method'], temp['no_couplingpairs'], temp['q_mean_var'],
+              % (temp['method'], temp['no_couplingpairs'], temp['varparam0'],
                  temp['dataset'], temp['H'], temp['sample_size'],
                  temp['prior_var'],
                  temp['seed'],

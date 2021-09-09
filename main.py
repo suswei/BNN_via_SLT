@@ -36,15 +36,16 @@ def train(args):
 
     nets, nett, masks = setup_affinecoupling(args)
 
-    resolution_network = RealNVP(nets, nett, masks, args.w_dim)
+    resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.lmbda0)
+    print(resolution_network)
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
-    args.lr_lmbda = args.lr*10
+    args.lr_lmbda = args.lr*100
     args.lr_k = args.lr*10
-    args.lr_beta = args.lr*10
+    args.lr_beta = args.lr*100
 
     grouped_parameters = [
         {"params": [p for n, p in params if 'lmbdas' in n], 'lr': args.lr_lmbda},
@@ -186,17 +187,21 @@ def main():
 
     print(args)
 
+    args.no_couplingpairs = int(args.mode[1])
+    args.nf_hidden = int(args.mode[2])
+
     if args.mode[0] == 'nf_gamma':
 
         args.method = 'nf_gamma'
-        args.no_couplingpairs = int(args.mode[1])
-        args.nf_hidden = int(args.mode[2])
+        if len(args.mode) == 3:
+            args.lmbda0 = 10
+        else:
+            args.lmbda0 = float(args.mode[3])
 
     elif args.mode[0] == 'nf_gaussian':
 
+        args.lmbda0=0 #won't be used, for initializing RealNVP
         args.method = 'nf_gaussian'
-        args.no_couplingpairs = int(args.mode[1])
-        args.nf_hidden = int(args.mode[2])
         if len(args.mode) == 3:
             args.nf_gaussian_mean = 0.0
             args.nf_gaussian_var = 1.0

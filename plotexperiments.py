@@ -58,7 +58,7 @@ def main():
             if sim_args['method'] == 'nf_gaussian':
                 method_list += ['{}_{}_{}_{}'.format(sim_args['method'], sim_args['no_couplingpairs'], sim_args['mode'][3], sim_args['mode'][4])]
             elif sim_args['method'] == 'nf_gamma':
-                method_list += ['{}_{}'.format(sim_args['method'], sim_args['no_couplingpairs'])]
+                method_list += ['{}_{}_{}'.format(sim_args['method'], sim_args['no_couplingpairs'], sim_args['mode'][3])]
             seed_list += [sim_args['seed']]
             Hs_list += [sim_args['H']]
             priorvar_list += [sim_args['prior_var']]
