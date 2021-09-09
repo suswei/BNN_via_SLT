@@ -9,13 +9,13 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [16, 64]
+    tanh_Hs = [16, 64, 128, 256, 512]
 
     sample_sizes = (np.round(np.exp([8.5]))).astype(int)
     sample_sizes = [5000]
 
     seeds = [1, 2, 3, 4, 5]
-    prior_vars = [1e-1, 1, 5]
+    prior_vars = [100]
 
     no_couplingpairs = [2]
 

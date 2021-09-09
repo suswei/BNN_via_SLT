@@ -36,7 +36,7 @@ def train(args):
 
     nets, nett, masks = setup_affinecoupling(args)
 
-    resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.trueRLCT)
+    resolution_network = RealNVP(nets, nett, masks, args.w_dim)
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
