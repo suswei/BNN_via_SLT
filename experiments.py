@@ -9,14 +9,14 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [16, 64, 128]
+    tanh_Hs = [256, 512]
     sample_sizes = [5000]
-    zeromeans = ['True', 'False']
+    zeromeans = ['False']
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [100]
 
-    nf_couplingpairs = [2, 10]
-    no_hiddens = [16, 128]
+    nf_couplingpairs = [2]
+    no_hiddens = [16]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
