@@ -9,11 +9,11 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [256, 512]
-    sample_sizes = [5000]
-    zeromeans = ['False']
-    seeds = [1, 2, 3, 4, 5]
-    prior_vars = [100]
+    tanh_Hs = [16, 64, 128, 256, 512]
+    sample_sizes = [1000, 5000]
+    zeromeans = ['True', 'False']
+    seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    prior_vars = [1, 100]
 
     nf_couplingpairs = [2]
     no_hiddens = [16]
@@ -25,7 +25,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'varparam0': ['0 1'],
+        'varparam0': ['0 1', '0 100'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
         'seed': seeds,
@@ -40,7 +40,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'varparam0': ['100 1', '1000 1', '100 0.25', '1000 0.25'],
+        'varparam0': ['1000 1'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
         'seed': seeds,
@@ -109,7 +109,7 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s %s "
               "--mode %s %s %s %s "
-              "--epochs 100 --display_interval 100 "
+              "--epochs 500 --display_interval 100 "
               "--prior_dist gaussian %s "
               "--seed %s "
               "--path %s "

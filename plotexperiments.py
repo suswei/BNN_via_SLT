@@ -70,7 +70,9 @@ def main():
 
     unique_ns = list(set(ns_list))
     unique_Hs = list(set(Hs_list))
+    unique_zeromean = list(set(zeromean_list))
 
+    # TODO: need to loop over prior_vars
     for n, H, taskid in [(n, H, taskid) for n in unique_ns for H in unique_Hs for taskid in list(range(tasks))]:
 
         try:
@@ -88,6 +90,7 @@ def main():
                 priorvar_list += [sim_args['prior_var']]
 
                 ev_list += [results['asy_log_pDn']]
+                # TODO: this block seems to not be doing anything at the moment
                 method_list += ['truth']
 
         except:
@@ -107,12 +110,12 @@ def main():
     ####################################################################################################################
 
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+4] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+6] # remove instances where convergence was clearly not reached
 
     ####################################################################################################################
 
     # prior variance versus ELBO + nSn
-    for n, H, zeromean in [(n, H, zeromean) for n in unique_ns for H in unique_Hs for zeromean in ['True','False']]:
+    for n, H, zeromean in [(n, H, zeromean) for n in unique_ns for H in unique_Hs for zeromean in unique_zeromean]:
 
         temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n) * (summary_pd['zeromean'] == zeromean)]
         print('H={} n={} zeromean = {}'.format(H, n, zeromean))
