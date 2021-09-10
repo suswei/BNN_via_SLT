@@ -18,7 +18,7 @@ def setup_affinecoupling(args):
                                  nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
                                  nn.Linear(args.nf_hidden, args.w_dim))
 
-    for layer in range(args.no_couplingpairs):
+    for layer in range(args.nf_couplingpair):
         ones = np.ones(args.w_dim)
         ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
         half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
@@ -36,14 +36,18 @@ def train(args):
 
     nets, nett, masks = setup_affinecoupling(args)
 
-    resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.lmbda0)
+    if args.method == 'nf_gaussian':
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim)
+    elif args.method == 'nf_gamma':
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.lmbda0, args.k0)
+
     print(resolution_network)
     params = list(resolution_network.named_parameters())
 
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
-    args.lr_lmbda = args.lr*100
+    args.lr_lmbda = args.lr*10
     args.lr_k = args.lr*10
     args.lr_beta = args.lr*100
 
@@ -187,7 +191,7 @@ def main():
 
     print(args)
 
-    args.no_couplingpairs = int(args.mode[1])
+    args.nf_couplingpair = int(args.mode[1])
     args.nf_hidden = int(args.mode[2])
 
     if args.mode[0] == 'nf_gamma':
@@ -195,12 +199,13 @@ def main():
         args.method = 'nf_gamma'
         if len(args.mode) == 3:
             args.lmbda0 = 10
+            args.k0 = 1
         else:
             args.lmbda0 = float(args.mode[3])
+            args.k0 = float(args.mode[4])
 
     elif args.mode[0] == 'nf_gaussian':
 
-        args.lmbda0=0 #won't be used, for initializing RealNVP
         args.method = 'nf_gaussian'
         if len(args.mode) == 3:
             args.nf_gaussian_mean = 0.0

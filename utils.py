@@ -43,11 +43,10 @@ def log_prior(args, thetas):
 
 def sample_q(resolution_network, args, R, exact=False):
 
-    betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
-    betas = torch.abs(betas)
-
     if args.method == 'nf_gamma':
 
+        betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
+        betas = torch.abs(betas)
         ks = torch.abs(resolution_network.ks.repeat(1, R)).T
 
         if exact:
@@ -111,11 +110,10 @@ def sample_q(resolution_network, args, R, exact=False):
 # E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
 def exp_logqj(resolution_network, args):
 
-    betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
-    betas = torch.abs(betas)
-
     if args.method == 'nf_gamma':
 
+        betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
+        betas = torch.abs(betas)
         ks = torch.abs(resolution_network.ks)
         lmbdas = torch.abs(resolution_network.lmbdas)
         # lmbdas = resolution_network.lmbdas

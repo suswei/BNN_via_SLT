@@ -14,9 +14,7 @@ pd.set_option('display.width', 1000)
 
 def main():
 
-    # Training settings
     parser = argparse.ArgumentParser(description='?')
-    # parser.add_argument('--dataset', default='reducedrank', type=str, choices=['reducedrank', 'tanh'])
     parser.add_argument('--savefig', action='store_true')
     parser.add_argument('--path', type=str)
     args = parser.parse_args()
@@ -34,15 +32,18 @@ def main():
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path))
     tasks = hyperparameter_experiments.__len__()
 
-    Hs_list = []
-    method_list = []
-    seed_list = []
-    ev_list = []
-    ns_list = []
-    priorvar_list = []
     dataset_list = []
-    layers_list = []
+    Hs_list = []
+    ns_list = []
+    zeromean_list = []
+    seed_list = []
+    priorvar_list = []
 
+    method_list = []
+
+    ev_list = []
+
+    ####################################################################################################################
     for taskid in range(tasks):
 
         path = '{}/taskid{}/'.format(args.path, taskid)
@@ -51,33 +52,33 @@ def main():
             results = torch.load('{}/results.pt'.format(path),  map_location=torch.device('cpu'))
             sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
 
-            ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-            ns_list += [sim_args['sample_size']]
-
-            # method_list += ['{}_k{}_l{}_{}'.format(sim_args['method'], sim_args['k0'], sim_args['lmbda0'], sim_args['no_couplingpairs'])]
-            if sim_args['method'] == 'nf_gaussian':
-                method_list += ['{}_{}_{}_{}'.format(sim_args['method'], sim_args['no_couplingpairs'], sim_args['mode'][3], sim_args['mode'][4])]
-            elif sim_args['method'] == 'nf_gamma':
-                method_list += ['{}_{}_{}'.format(sim_args['method'], sim_args['no_couplingpairs'], sim_args['mode'][3])]
-            seed_list += [sim_args['seed']]
-            Hs_list += [sim_args['H']]
-            priorvar_list += [sim_args['prior_var']]
             dataset_list += [sim_args['dataset']]
-            layers_list += [sim_args['no_couplingpairs']]
+            Hs_list += [sim_args['H']]
+            ns_list += [sim_args['sample_size']]
+            zeromean_list += [sim_args['zeromean']]
+            seed_list += [sim_args['seed']]
+            priorvar_list += [sim_args['prior_var']]
+
+            ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+
+            method_list += ['{}_{}_{}_{}_{}'.format(sim_args['method'], sim_args['nf_couplingpair'], sim_args['nf_hidden'],
+                                                 sim_args['mode'][3], sim_args['mode'][4])]
         except:
             print('missing taskid {}'.format(taskid))
 
     summary_pd = pd.DataFrame({'dataset': dataset_list,
                                'H': Hs_list,
-                               'ELBOplusnSn': ev_list,
                                'n': ns_list,
-                               'method': method_list,
+                               'zeromean': zeromean_list,
+                               'seed': seed_list,
                                'prior_var': priorvar_list,
-                               'no_couplingpairs': layers_list,
-                               'seed': seed_list})
+                               'method': method_list,
+                               'ELBOplusnSn': ev_list,
+                               })
+    ####################################################################################################################
 
-    unique_ns = list(set(summary_pd['n']))
     unique_datasets = list(set(summary_pd['dataset']))
+    unique_ns = list(set(summary_pd['n']))
 
     for dataset in unique_datasets:
 
@@ -103,7 +104,7 @@ def main():
                         #     ns_list += [sim_args['sample_size']]
                         #     priorvar_list += [sim_args['prior_var']]
                         #     dataset_list += [sim_args['dataset']]
-                        #     layers_list += [sim_args['no_couplingpairs']]
+                        #     layers_list += [sim_args['nf_couplingpair']]
 
                     except:
                         print('missing taskid {}'.format(taskid))
@@ -117,15 +118,18 @@ def main():
                                'n': ns_list,
                                'method': method_list,
                                'prior_var': priorvar_list,
-                               'no_couplingpairs': layers_list,
+                               # 'nf_couplingpair': layers_list,
                                'seed': seed_list})
 
-    # summary_pd = summary_pd.loc[summary_pd['n']!=13360]
+    ####################################################################################################################
+
     summary_pd = summary_pd.dropna()
     summary_pd = summary_pd.loc[summary_pd['ELBOplusnSn']>=-1e+4] # remove instances where convergence was clearly not reached
 
+    ####################################################################################################################
+
     unique_methods = list(set(summary_pd['method']))
-    unique_layers = list(set(summary_pd['no_couplingpairs']))
+    # unique_layers = list(set(summary_pd['nf_couplingpair']))
 
     # prior hyperparamater versus ELBO + nSn
     for H in list(set(summary_pd['H'])):
@@ -162,7 +166,7 @@ def main():
                 # for n in unique_ns:
                 #     current_pd = temp2.loc[temp2['n'] == n]
                 #
-                #     # barplot - hold dataset, n, no_couplingpairs, prior_var
+                #     # barplot - hold dataset, n, nf_couplingpair, prior_var
                 #     g = sns.barplot(x="H", y="ELBOplusnSn",
                 #                     hue="method",
                 #                     data=current_pd)
@@ -180,11 +184,11 @@ def main():
                 #
                 #     plt.title(
                 #         '{} n {} prior_var {} no_couplinglayers {} nett_tanh {}'
-                #         .format(dataset, n, prior_var, no_couplingpairs, nett_tanh))
+                #         .format(dataset, n, prior_var, nf_couplingpair, nett_tanh))
                 #
                 #     if args.savefig:
                 #         plt.savefig(
-                #             '{}/barplot_{}n{}layer{}nett{}prior{}.png'.format(args.path, dataset, n, no_couplingpairs, nett_tanh,
+                #             '{}/barplot_{}n{}layer{}nett{}prior{}.png'.format(args.path, dataset, n, nf_couplingpair, nett_tanh,
                 #                                                   prior_var), bbox_inches='tight')
                 #     plt.show()
                 #     plt.close()

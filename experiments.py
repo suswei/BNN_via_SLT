@@ -9,24 +9,25 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [1, 16, 64, 128]
-
-    sample_sizes = (np.round(np.exp([8.5]))).astype(int)
+    tanh_Hs = [16, 64, 128]
     sample_sizes = [5000]
-
+    zeromeans = ['True', 'False']
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [100]
 
-    no_couplingpairs = [2]
+    nf_couplingpairs = [2, 10]
+    no_hiddens = [16, 128]
 
     hyperparameter_config = {
         'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
+        'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
         'varparam0': ['0 1'],
-        'no_couplingpairs': no_couplingpairs,
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -36,10 +37,12 @@ def set_sweep_config():
         'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
+        'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'varparam0': ['100', '1000'],
-        'no_couplingpairs': no_couplingpairs,
+        'varparam0': ['100 1', '1000 1', '100 0.25', '1000 0.25'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
         'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
@@ -52,7 +55,7 @@ def set_sweep_config():
     #     'sample_size': sample_sizes,
     #     'prior_var': prior_vars,
     #     'method': ['nf_gaussian'],
-    #     'no_couplingpairs': no_couplingpairs,
+    #     'nf_couplingpair': nf_couplingpair,
     #     'seed': seeds,
     # }
     # keys, values = zip(*hyperparameter_config.items())
@@ -63,7 +66,7 @@ def set_sweep_config():
     #     'H': rr_Hs,
     #     'sample_size': sample_sizes,
     #     'method': ['nf_gamma'],
-    #     'no_couplingpairs': no_couplingpairs,
+    #     'nf_couplingpair': nf_couplingpair,
     #     'nf_gamma_mode': varparams_modes,
     #     'prior_var': [1e-1, 1e-2],
     #     'seed': seeds,
@@ -77,7 +80,7 @@ def set_sweep_config():
     #     'H': rr_Hs,
     #     'sample_size': sample_sizes,
     #     'method': ['nf_gaussian'],
-    #     'no_couplingpairs': no_couplingpairs,
+    #     'nf_couplingpair': nf_couplingpair,
     #     'nf_gamma_mode': ['na'],
     #     'prior_var': [1e-1, 1e-2],
     #     'seed': seeds,
@@ -104,14 +107,14 @@ def main(taskid):
     path = '{}/taskid{}/'.format(path,taskid)
 
     os.system("python3 main.py "
-              "--mode %s %s 16 %s "
-              "--epochs 500 --display_interval 100 "
-              "--data %s %s %s False "
+              "--data %s %s %s %s "
+              "--mode %s %s %s %s "
+              "--epochs 100 --display_interval 100 "
               "--prior_dist gaussian %s "
               "--seed %s "
               "--path %s "
-              % (temp['method'], temp['no_couplingpairs'], temp['varparam0'],
-                 temp['dataset'], temp['H'], temp['sample_size'],
+              % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
+                 temp['method'], temp['nf_couplingpair'], temp['nf_hidden'], temp['varparam0'],
                  temp['prior_var'],
                  temp['seed'],
                  path))
