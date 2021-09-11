@@ -38,8 +38,8 @@ def train(args):
 
     if args.method == 'nf_gaussian':
         resolution_network = RealNVP(nets, nett, masks, args.w_dim)
-    elif args.method == 'nf_gamma':
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.lmbda0, args.k0)
+    elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.method == 'nf_gamma', args.lmbda0, args.k0)
 
     print(resolution_network)
     params = list(resolution_network.named_parameters())
@@ -85,7 +85,7 @@ def train(args):
             args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
             loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
-            complexity = exp_logqj(resolution_network, args).sum() - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
+            complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
@@ -136,7 +136,7 @@ def evaluate(resolution_network, args, R, exact):
 
         args.xi_upper = torch.max(xis, dim=0).values.detach()
 
-        ent = exp_logqj(resolution_network, args).sum()
+        ent = Eqj_logqj(resolution_network, args).sum()
         complexity = ent - log_prior(args, thetas).mean() - log_jacobians.mean()
 
         elbo_loglik = 0.0
@@ -194,9 +194,10 @@ def main():
     args.nf_couplingpair = int(args.mode[1])
     args.nf_hidden = int(args.mode[2])
 
-    if args.mode[0] == 'nf_gamma':
+    if args.mode[0] == 'nf_gamma' or args.mode[0] == 'nf_gammatrunc':
 
-        args.method = 'nf_gamma'
+        args.method = args.mode[0]
+        args.upper = 1 # should be input for nf_gammatrunc
         if len(args.mode) == 3:
             args.lmbda0 = 10
             args.k0 = 1

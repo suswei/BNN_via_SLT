@@ -11,12 +11,12 @@ from torch.nn.parameter import Parameter
 
 # https://github.com/senya-ashukha/real-nvp-pytorch/blob/master/real-nvp-pytorch.ipynb
 class RealNVP(nn.Module):
-    def __init__(self, nets, nett, mask, d, lmbda0=None, k0=None):
+    def __init__(self, nets, nett, mask, d, lmbdas_requires_grad = True, lmbda0=None, k0=None):
         super(RealNVP, self).__init__()
 
         if lmbda0 is not None and k0 is not None:
             # initialize lambda=beta both large, N(lambda/beta, lambda/beta**2)**(1/2k) = N(1, 1/beta)
-            self.lmbdas = torch.nn.Parameter(torch.cat((torch.ones(1, 1), torch.rand(d-1, 1)+lmbda0)), requires_grad=True)
+            self.lmbdas = torch.nn.Parameter(torch.cat((torch.ones(1, 1), torch.rand(d-1, 1)+lmbda0)), requires_grad=lmbdas_requires_grad)
             # self.ks = torch.nn.Parameter(torch.cat((torch.rand(1, 1)+0.5, torch.rand(d-1, 1)+0.5)), requires_grad=True)
             self.ks = torch.nn.Parameter(torch.cat((torch.ones(1, 1), torch.ones(d-1, 1)*k0)), requires_grad=True) #decreasing k will increase variance
             self.betas = torch.nn.Parameter(torch.rand(d-1, 1)+lmbda0, requires_grad=True)

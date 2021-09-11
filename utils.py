@@ -43,7 +43,7 @@ def log_prior(args, thetas):
 
 def sample_q(resolution_network, args, R, exact=False):
 
-    if args.method == 'nf_gamma':
+    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
 
         betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
         betas = torch.abs(betas)
@@ -61,17 +61,16 @@ def sample_q(resolution_network, args, R, exact=False):
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             r = torch.nn.ReLU()
             vs = r(vs)
+            if torch.any(torch.isnan(vs)):
+                print('nan xis')
+            if torch.any(torch.isnan(ks)):
+                print('nan ks')
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
 
-            if torch.any(torch.isnan(xis)):
-                print('nan xis')
-
-    # TODO: not currently reparametrizable, need to check is in [0, args.xi_upper]
-    # elif args.method == 'nf_gammatrunc':
-    #     m = Gamma(resolution_network.lmbdas, betas)
-    #     vs = m.sample(torch.Size([R])).squeeze(dim=2)
-    #     xis = vs ** (1 / (2 * resolution_network.ks.repeat(1, R).T))
-    #
+        if args.method == 'nf_gammatrunc':
+            xis = xis[torch.all(xis <= args.upper, dim=1),:]
+            if len(xis.size()) == 0:
+                print('no xis')
 
     elif args.method == 'nf_gaussian':
         # xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
@@ -106,20 +105,26 @@ def sample_q(resolution_network, args, R, exact=False):
 #         return (hs*torch.log(xis)-betas*(xis**(2*ks))).mean(dim=0).sum() - qj_gengamma_lognorm(args.hs, args.ks, args.betas, args).sum()
 
 
-# q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'})
-# E_{q_j} \log q_j = \frac{h_j'}{2k_j'} ( \psi(\lambda_j') - \log \beta_j ) - \lambda_j' - \log Z_j
-def exp_logqj(resolution_network, args):
+# q_j(\xi_j) \propto \xi_j^{h_j} \exp(-\beta_j \xi_j^{2k_j})
+# E_{q_j} \log q_j = \frac{h_j}{2k_j} ( \psi(\lambda_j) - \log \beta_j ) - \lambda_j - \log Z_j
+def Eqj_logqj(resolution_network, args):
 
-    if args.method == 'nf_gamma':
+    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
 
         betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
         betas = torch.abs(betas)
         ks = torch.abs(resolution_network.ks)
         lmbdas = torch.abs(resolution_network.lmbdas)
-        # lmbdas = resolution_network.lmbdas
 
-        return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) + torch.log(2*ks) \
-               - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
+        if args.method=='nf_gammatrunc':
+            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=True, b=args.upper)
+
+        else:
+            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None)
+
+        return (lmbdas - 1 / (2 * ks))*(torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ
+        # return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) + torch.log(2*ks) \
+        #        - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
     elif args.method == 'nf_gaussian':
 
@@ -127,17 +132,16 @@ def exp_logqj(resolution_network, args):
 
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
-# def qj_gengamma_lognorm(h, k, beta, args):
-#
-#     lmbda = (h + 1) / (2 * k)
-#     G = torch.lgamma(lmbda)
-#
-#     if args.method == 'nf_gamma':
-#         return G - torch.log(2*k) - lmbda*torch.log(beta)
-#     elif args.method == 'nf_gammatrunc':
-#         temp = beta * (args.xi_upper.unsqueeze(dim=1) ** (2 * k))
-#         return G - torch.log(2*k) - lmbda*torch.log(beta) + torch.log(torch.igamma(lmbda, temp))
-#
+def qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None):
+
+    logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
+
+    if trunc:
+        # torch.igamma: The backward pass with respect to first argument is not yet supported.
+        return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
+    else:
+        return logZ
+
 
 # generate gamma(shape,rate) through inverse CDF
 
