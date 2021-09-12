@@ -11,6 +11,7 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
+
 # run separately for different datasets
 def main():
 
@@ -40,7 +41,6 @@ def main():
     priorvar_list = []
 
     method_list = []
-
     ev_list = []
 
     ####################################################################################################################
@@ -63,38 +63,51 @@ def main():
 
             method_list += ['{}_{}_{}_{}_{}'.format(sim_args['method'], sim_args['nf_couplingpair'], sim_args['nf_hidden'],
                                                  sim_args['mode'][3], sim_args['mode'][4])]
+
+            dataset_list += [sim_args['dataset']]
+            Hs_list += [sim_args['H']]
+            ns_list += [sim_args['sample_size']]
+            zeromean_list += [sim_args['zeromean']]
+            seed_list += [sim_args['seed']]
+            priorvar_list += [sim_args['prior_var']]
+
+            ev_list += [results['asy_log_pDn']]
+
+            method_list += ['truth']
+
         except:
             print('missing taskid {}'.format(taskid))
 
     ####################################################################################################################
 
-    unique_ns = list(set(ns_list))
-    unique_Hs = list(set(Hs_list))
-    unique_zeromean = list(set(zeromean_list))
 
-    # TODO: need to loop over prior_vars
-    for n, H, taskid in [(n, H, taskid) for n in unique_ns for H in unique_Hs for taskid in list(range(tasks))]:
 
-        try:
-            path = '{}/taskid{}/'.format(args.path, taskid)
-            results = torch.load('{}/results.pt'.format(path), map_location=torch.device('cpu'))
-            sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
-
-            if sim_args['H'] == H and sim_args['sample_size'] == n and sim_args['zeromean'] == True:
-
-                dataset_list += [sim_args['dataset']]
-                Hs_list += [H]
-                ns_list += [sim_args['sample_size']]
-                zeromean_list += [sim_args['zeromean']]
-                seed_list += [sim_args['seed']]
-                priorvar_list += [sim_args['prior_var']]
-
-                ev_list += [results['asy_log_pDn']]
-                # TODO: this block seems to not be doing anything at the moment
-                method_list += ['truth']
-
-        except:
-            print('missing taskid {}'.format(taskid))
+    # for n, H, prior_var, taskid in [(n, H, prior_var, taskid)
+    #                                 for n in unique_ns
+    #                                 for H in unique_Hs
+    #                                 for prior_var in priorvar_list
+    #                                 for taskid in list(range(tasks))]:
+    #
+    #     try:
+    #         path = '{}/taskid{}/'.format(args.path, taskid)
+    #         results = torch.load('{}/results.pt'.format(path), map_location=torch.device('cpu'))
+    #         sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
+    #
+    #         if sim_args['H'] == H and sim_args['sample_size'] == n and sim_args['zeromean'] == True:
+    #
+    #             dataset_list += [sim_args['dataset']]
+    #             Hs_list += [H]
+    #             ns_list += [sim_args['sample_size']]
+    #             zeromean_list += [sim_args['zeromean']]
+    #             seed_list += [sim_args['seed']]
+    #             priorvar_list += [sim_args['prior_var']]
+    #
+    #             ev_list += [results['asy_log_pDn']]
+    #             # TODO: this block seems to not be doing anything at the moment
+    #             method_list += ['truth']
+    #
+    #     except:
+    #         print('missing taskid {}'.format(taskid))
 
 
     summary_pd = pd.DataFrame({'dataset': dataset_list,
@@ -114,11 +127,21 @@ def main():
 
     ####################################################################################################################
 
-    # prior variance versus ELBO + nSn
-    for n, H, zeromean in [(n, H, zeromean) for n in unique_ns for H in unique_Hs for zeromean in unique_zeromean]:
+    unique_ns = list(set(ns_list))
+    unique_Hs = list(set(Hs_list))
+    unique_zeromean = list(set(zeromean_list))
+    unique_priorvars = list(set(priorvar_list))
 
-        temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n) * (summary_pd['zeromean'] == zeromean)]
-        print('H={} n={} zeromean = {}'.format(H, n, zeromean))
+    # ELBO + nSn horizontal barplot for each method
+    for n, H, prior_var, zeromean in [(n, H, prior_var, zeromean)
+                                      for n in unique_ns
+                                      for H in unique_Hs
+                                      for prior_var in unique_priorvars
+                                      for zeromean in unique_zeromean]:
+
+        title = 'tanh{}_n{}_zeromean{}_priorvar{}'.format(H, n, zeromean, prior_var)
+        temp = summary_pd.loc[(summary_pd['H'] == H) & (summary_pd['n'] == n) & (summary_pd['prior_var'] == prior_var) & (summary_pd['zeromean'] == zeromean)]
+        print(title)
         pd_mean = temp.groupby(['method'])['ELBOplusnSn'].mean()
         print(pd_mean)
         pd_mean.sort_values().plot.barh()
@@ -135,8 +158,8 @@ def main():
             # temp.groupby(['prior_var','method'])['ELBOplusnSn'].mean().unstack().plot(yerr=std)
             # temp.groupby(['prior_var', 'method'])['ELBOplusnSn'].mean().unstack().plot()
             plt.gcf().tight_layout()
-            plt.title('H={} n={} zeromean = {}'.format(H, n, zeromean))
-            plt.savefig('{}/tanh{}_n{}_zeromean{}.png'.format(args.path, H, n, zeromean))
+            plt.title(title)
+            plt.savefig('{}/{}.png'.format(args.path, title))
             plt.show()
             plt.close()
         except:

@@ -9,23 +9,24 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    tanh_Hs = [16, 64, 128, 256, 512]
-    sample_sizes = [1000, 5000]
-    zeromeans = ['True', 'False']
+    dataset = ['reducedrank']
+    Hs = [4, 8, 16]
+    sample_sizes = [1000]
+    zeromeans = ['True']
     seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    prior_vars = [1, 100]
+    prior_vars = [100]
 
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
     hyperparameter_config = {
-        'dataset': ['tanh'],
-        'H': tanh_Hs,
+        'dataset': dataset,
+        'H': Hs,
         'sample_size': sample_sizes,
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'varparam0': ['0 1', '0 100'],
+        'varparam0': ['0 1'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
         'seed': seeds,
@@ -34,8 +35,8 @@ def set_sweep_config():
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     hyperparameter_config = {
-        'dataset': ['tanh'],
-        'H': tanh_Hs,
+        'dataset': dataset,
+        'H': Hs,
         'sample_size': sample_sizes,
         'zeromean': zeromeans,
         'prior_var': prior_vars,
@@ -98,7 +99,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'tanh'
+    path = 'reducedrank'
     # if not os.path.exists(path):
         # os.makedirs(path)
 

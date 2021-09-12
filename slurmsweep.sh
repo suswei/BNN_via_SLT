@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="tanh"
+#SBATCH --job-name="rr"
 #SBATCH -p gpgpu
 #SBATCH --gres=gpu:p100:1
 #SBATCH --qos=gpgpuresplat
@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-49
+#SBATCH --array=0-59
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -32,7 +32,7 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p tanh
+mkdir -p reducedrank
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh

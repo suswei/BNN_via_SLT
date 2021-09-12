@@ -163,7 +163,7 @@ def get_dataset_by_id(args):
         if args.w_dim % 2 != 0:
             print('Warning: the NF employed requires args.w_dim be even')
         args.trueRLCT = (args.output_dim * args.H - args.H ** 2 + args.input_dim * args.H) / 2  # rank r = H
-        args.truem = 1
+        args.truem = 1 # TODO: theoretical support for this?
 
         # generate x
         m = MultivariateNormal(torch.zeros(args.input_dim), torch.eye(
