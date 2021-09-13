@@ -4,6 +4,7 @@ from dataset_factory import *
 import custom_lr_scheduler
 from normalizing_flows import *
 from utils import *
+from demo2d import posterior_viz
 
 
 def setup_affinecoupling(args):
@@ -116,7 +117,7 @@ def train(args):
     return resolution_network, elbo_hist
 
 
-def evaluate(resolution_network, args, R, exact):
+def evaluate(resolution_network, args, R, exact, viz=False):
 
     resolution_network.eval()
 
@@ -126,6 +127,8 @@ def evaluate(resolution_network, args, R, exact):
         xis = xis.to(args.device)
 
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
+        if viz:
+            posterior_viz(thetas, args, saveimgpath=None)
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
         # print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
@@ -220,7 +223,9 @@ def main():
     # print('ks {}'.format(net.ks))
     # print('betas {}'.format(net.betas))
 
-    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
+    if args.H == 1 and args.dataset == 'tanh':
+        viz = True
+    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True, viz = viz)
     elbo_val = elbo_loglik_val.mean() - complexity
     print('nSn {}, elbo {} '
           '= loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ], '
