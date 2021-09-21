@@ -10,11 +10,11 @@ def set_sweep_config():
     hyperparameter_experiments = []
 
     dataset = ['reducedrank']
-    Hs = [4, 8, 16]
-    sample_sizes = [1000]
+    Hs = [4, 8, 16, 32]
+    sample_sizes = [5000]
     zeromeans = ['True']
     seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    prior_vars = [100]
+    prior_vars = [1, 100]
 
     nf_couplingpairs = [2]
     no_hiddens = [16]
@@ -26,7 +26,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'varparam0': ['0 1'],
+        'varparam0': ['0 1', '1 .001'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
         'seed': seeds,
