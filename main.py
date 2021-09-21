@@ -4,7 +4,7 @@ from dataset_factory import *
 import custom_lr_scheduler
 from normalizing_flows import *
 from utils import *
-from demo2d import posterior_viz
+# from demo2d import posterior_viz
 
 
 def setup_affinecoupling(args):
@@ -222,7 +222,7 @@ def main():
     # print('lmbdas {}'.format(net.lmbdas))
     # print('ks {}'.format(net.ks))
     # print('betas {}'.format(net.betas))
-
+    viz = False
     if args.H == 1 and args.dataset == 'tanh':
         viz = True
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True, viz = viz)

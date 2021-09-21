@@ -9,10 +9,10 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    dataset = ['reducedrank']
-    Hs = [4, 8, 16, 32]
+    dataset = ['tanh']
+    Hs = [16, 64, 256, 1024]
     sample_sizes = [5000]
-    zeromeans = ['True']
+    zeromeans = ['True','False']
     seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     prior_vars = [1, 100]
 
@@ -99,7 +99,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'reducedrank'
+    path = 'tanh_2d45484'
     # if not os.path.exists(path):
         # os.makedirs(path)
 
