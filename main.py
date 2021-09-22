@@ -1,10 +1,10 @@
 import os
 import argparse
-from dataset_factory import *
 import custom_lr_scheduler
+from dataset_factory import *
 from normalizing_flows import *
 from utils import *
-# from demo2d import posterior_viz
+from demo2d import *
 
 
 def setup_affinecoupling(args):
@@ -85,7 +85,7 @@ def train(args):
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
             args.theta_upper = torch.max(thetas, dim=0).values.detach()
 
-            loglik_elbo_vec = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
+            loglik_elbo_vec, _ = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
 
@@ -117,7 +117,7 @@ def train(args):
     return resolution_network, elbo_hist
 
 
-def evaluate(resolution_network, args, R, exact, viz=False):
+def evaluate(resolution_network, args, R, exact):
 
     resolution_network.eval()
 
@@ -127,8 +127,7 @@ def evaluate(resolution_network, args, R, exact, viz=False):
         xis = xis.to(args.device)
 
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
-        if viz:
-            posterior_viz(thetas, args, saveimgpath=None)
+
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
         # print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
@@ -145,7 +144,9 @@ def evaluate(resolution_network, args, R, exact, viz=False):
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
-            elbo_loglik += loglik(thetas, data, target, args).sum(dim=1)
+            temp, _ = loglik(thetas, data, target, args)
+            temp = temp.sum(dim=1)
+            elbo_loglik += temp
 
         elbo = elbo_loglik.mean() - complexity
 
@@ -225,7 +226,7 @@ def main():
     viz = False
     if args.H == 1 and args.dataset == 'tanh':
         viz = True
-    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True, viz = viz)
+    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
     elbo_val = elbo_loglik_val.mean() - complexity
     print('nSn {}, elbo {} '
           '= loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ], '
@@ -262,6 +263,23 @@ def main():
         torch.save(vars(args), '{}/args.pt'.format(args.path))
         # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
         torch.save(results_dict, '{}/results.pt'.format(args.path))
+
+    if args.dataset == 'tanh' and args.H == 1:
+
+        net.eval()
+        R = 500
+        with torch.no_grad():
+
+            xis = sample_q(net, args, R=R, exact=True)  # [R, args.w_dim]
+            xis = xis.to(args.device)
+            thetas, log_jacobians = net(xis)
+
+        # saveimgpath = '{}_{}_{}_posterior'.format(args.data, args.prior_dist, args.mode)
+        # posterior_viz(thetas, args, saveimgpath)
+
+        saveimgpath = '{}_{}_{}_pred_dist'.format(args.data, args.prior_dist, args.mode)
+        pred_dist(thetas, args, saveimgpath)
+
 
 
 if __name__ == "__main__":

@@ -58,6 +58,9 @@ def get_dataset_by_id(args):
         X = m.sample(torch.Size([args.sample_size]))
         if args.zeromean == 'True':
             mean = torch.zeros(args.sample_size, 1)
+            theta_a = torch.zeros(1, args.H)
+            theta_b = torch.zeros(1, args.H)
+
         else:
             if args.prior == 'gaussian':
                 theta_a = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
@@ -66,9 +69,15 @@ def get_dataset_by_id(args):
                 theta_a = torch.FloatTensor(1, args.H).uniform_(0)
                 theta_b = torch.FloatTensor(1, args.H).uniform_(0)
             mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X.T)).T
+
+        args.theta_a = theta_a
+        args.theta_b = theta_b
+
         y_rv = Normal(mean, 1)
         y = y_rv.sample()
         args.nSn = -y_rv.log_prob(y).sum()
+        args.X = X
+        args.y = y
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
         # validation
@@ -285,4 +294,4 @@ def loglik(theta, data, target, args):
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(args.device))
         logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
 
-    return logprob  # R by B
+    return logprob, means  # R by B
