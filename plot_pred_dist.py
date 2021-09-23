@@ -20,27 +20,32 @@ def plot_pred_dist(thetas, args, saveimgpath):
     if args.H == 1:
         ax1.scatter(thetas[:, 0], thetas[:, 1], c='lightblue', s=20, label='drawn parameters')
         ax1.plot(args.theta_a.squeeze(dim=0), args.theta_b.squeeze(dim=0), 'r*', label='true')
-        ax1.set_xlabel('$\theta_1$')
-        ax1.set_xlabel('$\theta_2$')
+        ax1.set_xlabel(r'$\theta_1$')
+        ax1.set_ylabel(r'$\theta_2$')
         ax1.legend()
 
     else:
         pca = PCA(n_components=2)
         pca_result = pca.fit_transform(thetas)
         pca_pd = pd.DataFrame({'PC1': pca_result[:, 0], 'PC2': pca_result[:, 1]})
-        sns.scatterplot(ax=ax1,
-            x="PC1", y="PC2",
-            palette='lightblue',
-            data=pca_pd,
-            alpha=0.3
-        )
+        # sns.scatterplot(ax=ax1,
+        #     x="PC1", y="PC2",
+        #     palette='lightblue',
+        #     data=pca_pd,
+        #     alpha=0.3
+        # )
+        ax1.scatter(pca_result[:, 0], pca_result[:, 1], c='lightblue', s=20, label='drawn parameters')
         ax1.set_xlabel('PC 1')
         ax1.set_ylabel('PC 2')
 
     ax1.set_title('drawn parameters')
 
-    xl = 0.75
-    xu = 1.0
+    if args.H == 1:
+        xl = -1.0
+        xu = 1.0
+    else:
+        xl = 0.25
+        xu = 1.0
     tempx = torch.arange(xl, xu, .01)
     predictions = torch.empty(size=(thetas.shape[0], tempx.shape[0]))
     i = 0
