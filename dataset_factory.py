@@ -264,7 +264,7 @@ def loglik(theta, data, target, args):
             y_rv = MultivariateNormal(mean, torch.eye(args.output_dim).to(args.device))
             logprob[r, :] = y_rv.log_prob(target)
         logprob = logprob.to(args.device)
-
+        means = []
     elif args.dataset == 'tanh':
 
         R = theta.shape[0]

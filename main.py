@@ -4,7 +4,7 @@ import custom_lr_scheduler
 from dataset_factory import *
 from normalizing_flows import *
 from utils import *
-from demo2d import *
+from plot_pred_dist import *
 
 
 def setup_affinecoupling(args):
@@ -168,7 +168,7 @@ def main():
     parser.add_argument('--data', nargs='*')
     parser.add_argument('--prior_dist', nargs='*')
 
-    parser.add_argument('--mode', nargs='*')
+    parser.add_argument('--var_mode', nargs='*')
 
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--batch_size', type=int, default=500)
@@ -187,7 +187,6 @@ def main():
     # TODO: needs to take into account other prior options in utils.py
     args.prior, args.prior_var = args.prior_dist
     args.prior_var = float(args.prior_var)
-    # args.prior = args.prior_dist[0]
 
     get_dataset_by_id(args)
     args.batch_size = np.int(np.round(args.sample_size/10))
@@ -195,59 +194,39 @@ def main():
 
     print(args)
 
-    args.nf_couplingpair = int(args.mode[1])
-    args.nf_hidden = int(args.mode[2])
+    args.nf_couplingpair = int(args.var_mode[1])
+    args.nf_hidden = int(args.var_mode[2])
 
-    if args.mode[0] == 'nf_gamma' or args.mode[0] == 'nf_gammatrunc':
+    if args.var_mode[0] == 'nf_gamma' or args.var_mode[0] == 'nf_gammatrunc':
 
-        args.method = args.mode[0]
+        args.method = args.var_mode[0]
         args.upper = 1 # should be input for nf_gammatrunc
-        if len(args.mode) == 3:
+        if len(args.var_mode) == 3:
             args.lmbda0 = 10
             args.k0 = 1
         else:
-            args.lmbda0 = float(args.mode[3])
-            args.k0 = float(args.mode[4])
+            args.lmbda0 = float(args.var_mode[3])
+            args.k0 = float(args.var_mode[4])
 
-    elif args.mode[0] == 'nf_gaussian':
+    elif args.var_mode[0] == 'nf_gaussian':
 
         args.method = 'nf_gaussian'
-        if len(args.mode) == 3:
+        if len(args.var_mode) == 3:
             args.nf_gaussian_mean = 0.0
             args.nf_gaussian_var = 1.0
         else:
-            args.nf_gaussian_mean = float(args.mode[3])
-            args.nf_gaussian_var = float(args.mode[4])
+            args.nf_gaussian_mean = float(args.var_mode[3])
+            args.nf_gaussian_var = float(args.var_mode[4])
 
     net, elbo_hist = train(args)
-    # print('lmbdas {}'.format(net.lmbdas))
-    # print('ks {}'.format(net.ks))
-    # print('betas {}'.format(net.betas))
-    viz = False
-    if args.H == 1 and args.dataset == 'tanh':
-        viz = True
     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
     elbo_val = elbo_loglik_val.mean() - complexity
-    print('nSn {}, elbo {} '
-          '= loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ], '
-          .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent,
-                  logprior.mean(), log_jacobians.mean()))
+    print('nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
+          .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
 
     print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    # print('validation: exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo_val, args.nSn_val, elbo_val+args.nSn_val, args.sample_size))
     print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
-    # print('true lmbda {} versus supposed lmbda {}'.format(args.trueRLCT, args.lmbda_star))
 
-        # i = 0
-        # metric = []
-        # for n in args.ns:
-        #     args.betas[0] = n
-        #     args.train_loader = args.datasets[i]
-        #     elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=10)
-        #     metric+= [elbo_loglik - complexity +args.nSns[i]]
-        #     i+=1
-        # slope, intercept, r_value, p_value, std_err = stats.linregress(np.log(args.ns), metric)
-        # print('est lmbda {} R2 {}'.format(-slope, r_value))
 
     results_dict = {'elbo': elbo,
                     'elbo_loglik': elbo_loglik,
@@ -264,22 +243,17 @@ def main():
         # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
         torch.save(results_dict, '{}/results.pt'.format(args.path))
 
-    if args.dataset == 'tanh' and args.H == 1:
+    if args.dataset == 'tanh':
 
         net.eval()
-        R = 500
         with torch.no_grad():
-
-            xis = sample_q(net, args, R=R, exact=True)  # [R, args.w_dim]
+            xis = sample_q(net, args, R=500, exact=True)  # [R, args.w_dim]
             xis = xis.to(args.device)
             thetas, log_jacobians = net(xis)
 
-        # saveimgpath = '{}_{}_{}_posterior'.format(args.data, args.prior_dist, args.mode)
-        # posterior_viz(thetas, args, saveimgpath)
-
-        saveimgpath = '{}_{}_{}_pred_dist'.format(args.data, args.prior_dist, args.mode)
-        pred_dist(thetas, args, saveimgpath)
-
+        l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
+        saveimgpath = 'output/'+('{}_'* l).format(*args.data, *args.prior_dist, *args.var_mode) + 'epoch{}_pred_dist'.format(args.epochs)
+        plot_pred_dist(thetas, args, saveimgpath)
 
 
 if __name__ == "__main__":
