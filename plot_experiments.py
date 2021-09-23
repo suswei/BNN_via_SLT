@@ -48,7 +48,7 @@ def main():
 
             ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
             method_list += ['{}_{}_{}_{}_{}'.format(sim_args['method'], sim_args['nf_couplingpair'], sim_args['nf_hidden'],
-                                                         sim_args['var_mode'][3], sim_args['var_mode'][4])] # TODO: change to var_var_mode
+                                                         sim_args['var_mode'][3], sim_args['var_mode'][4])]
             if sim_args['method'] == 'nf_gamma':
                 method_short_list += ['gamma']
             else:

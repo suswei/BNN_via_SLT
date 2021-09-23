@@ -4,7 +4,6 @@ import custom_lr_scheduler
 from dataset_factory import *
 from normalizing_flows import *
 from utils import *
-from plot_pred_dist import *
 
 
 def setup_affinecoupling(args):
@@ -177,6 +176,7 @@ def main():
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
+    parser.add_argument('--viz', action='store_true')
 
     args = parser.parse_args()
 
@@ -243,7 +243,9 @@ def main():
         # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
         torch.save(results_dict, '{}/results.pt'.format(args.path))
 
-    if args.dataset == 'tanh':
+    if args.dataset == 'tanh' and args.viz:
+
+        from plot_pred_dist import plot_pred_dist
 
         net.eval()
         with torch.no_grad():

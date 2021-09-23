@@ -1,0 +1,7 @@
+*.pyc
+
+*.png
+*.pdf
+
+*.idea/
+*pycache*
