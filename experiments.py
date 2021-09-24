@@ -102,7 +102,7 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
-              "--epochs 10 --display_interval 100 "
+              "--epochs 500 --display_interval 100 "
               "--prior_dist gaussian %s "
               "--seed %s "
               "--path %s "

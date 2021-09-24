@@ -20,8 +20,8 @@ def plot_pred_dist(thetas, args, saveimgpath):
     if args.H == 1:
         ax1.scatter(thetas[:, 0], thetas[:, 1], c='lightblue', s=20, label='drawn parameters')
         ax1.plot(args.theta_a.squeeze(dim=0), args.theta_b.squeeze(dim=0), 'r*', label='true')
-        ax1.set_xlabel(r'$\theta_1$')
-        ax1.set_ylabel(r'$\theta_2$')
+        ax1.set_xlabel(r'w_1$')
+        ax1.set_ylabel(r'$w_2$')
         ax1.legend()
 
     else:
