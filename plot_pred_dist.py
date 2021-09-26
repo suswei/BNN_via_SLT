@@ -13,32 +13,34 @@ def plot_pred_dist(thetas, args, saveimgpath):
     # f = plt.figure(figsize=(6, 4))
     # ax1 = plt.subplot2grid((1, 3), (0, 0), colspan=1)
     # ax2 = plt.subplot2grid((1, 3), (0, 1), colspan=2)
-    f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+    # f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+    f, ax2 = plt.subplots(1, 1, figsize=(8, 4))
     f.tight_layout(pad=5.0, w_pad=5.0, h_pad=5.0)
 
     # plot the drawn parameters
-    if args.H == 1:
-        ax1.scatter(thetas[:, 0], thetas[:, 1], c='lightblue', s=20, label='drawn parameters')
-        ax1.plot(args.theta_a.squeeze(dim=0), args.theta_b.squeeze(dim=0), 'r*', label='true')
-        ax1.set_xlabel(r'w_1$')
-        ax1.set_ylabel(r'$w_2$')
-        ax1.legend()
-
-    else:
-        pca = PCA(n_components=2)
-        pca_result = pca.fit_transform(thetas)
-        pca_pd = pd.DataFrame({'PC1': pca_result[:, 0], 'PC2': pca_result[:, 1]})
-        # sns.scatterplot(ax=ax1,
-        #     x="PC1", y="PC2",
-        #     palette='lightblue',
-        #     data=pca_pd,
-        #     alpha=0.3
-        # )
-        ax1.scatter(pca_result[:, 0], pca_result[:, 1], c='lightblue', s=20, label='drawn parameters')
-        ax1.set_xlabel('PC 1')
-        ax1.set_ylabel('PC 2')
-
-    ax1.set_title('drawn parameters')
+    # if args.H == 1:
+    #     ax1.scatter(thetas[:, 0], thetas[:, 1], c='lightblue', s=20, label='drawn parameters')
+    #     ax1.plot(args.theta_a.squeeze(dim=0), args.theta_b.squeeze(dim=0), 'r*', label='true')
+    #     ax1.set_xlabel(r'w_1$')
+    #     ax1.set_ylabel(r'$w_2$')
+    #     ax1.legend()
+    #
+    # else:
+    #     pca = PCA(n_components=2)
+    #     pca_result = pca.fit_transform(thetas)
+    #     pca_pd = pd.DataFrame({'PC1': pca_result[:, 0], 'PC2': pca_result[:, 1]})
+    #     # sns.scatterplot(ax=ax1,
+    #     #     x="PC1", y="PC2",
+    #     #     palette='lightblue',
+    #     #     data=pca_pd,
+    #     #     alpha=0.3
+    #     # )
+    #     ax1.scatter(pca_result[:, 0], pca_result[:, 1], c='lightblue', s=20, label='drawn parameters')
+    #     ax1.set_xlabel('PC 1')
+    #     ax1.set_ylabel('PC 2')
+    #     ax1.set_aspect('equal')
+    #
+    # ax1.set_title('drawn parameters')
 
     if args.H == 1:
         xl = -1.0

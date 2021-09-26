@@ -7,7 +7,7 @@ import pandas as pd
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-
+pd.options.display.float_format = '{:.2f}'.format
 
 # run separately for different datasets
 def main():
@@ -125,7 +125,7 @@ def main():
         pdsave = temp.groupby(['$H$', r'$\sigma^2(\varphi)$', 'method'])['$\Psi(q^*,g^*)$'].describe()
         print(pdsave)
         with open('output/{}.tex'.format(title), 'w') as tf:
-            tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['mean','std'], multirow=True))
+            tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count','mean','std'], multirow=True))
 
 
 if __name__ == "__main__":
