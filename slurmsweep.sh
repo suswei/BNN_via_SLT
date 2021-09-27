@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=1200-2399%20
+#SBATCH --array=0-479
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -37,9 +37,7 @@ mkdir -p reducedrank
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh
-module load gcc/8.3.0
-module load cuda/10.1.243
-module load foss/2020b
+module load fosscuda/2020b
 module load pytorch/1.9.0-python-3.8.6
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
 
