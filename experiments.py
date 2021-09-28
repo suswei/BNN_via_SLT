@@ -11,12 +11,15 @@ def set_sweep_config():
     sample_sizes = [5000]
     seeds = [1, 2, 3, 4, 5]
     prior_vars = [1, 100]
+
+    ####################################################################################################################
+
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    ##
+    ####################################################################################################################
     dataset = ['tanh']
-    Hs = [16, 64, 256, 1024]
+    Hs = [36, 121, 576, 1024]
     zeromeans = ['True', 'False']
 
     hyperparameter_config = {
@@ -49,9 +52,9 @@ def set_sweep_config():
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-    ##
+    ####################################################################################################################
     dataset = ['reducedrank']
-    Hs = [4, 8, 16, 32]
+    Hs = [6, 11, 24, 32]
     zeromeans = ['False']
 
     hyperparameter_config = {
@@ -61,7 +64,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'varparam0': ['0 1', '1 .001'],
+        'varparam0': ['0 1', '1 1e-3'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
         'seed': seeds,
@@ -102,7 +105,7 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
-              "--epochs 500 --display_interval 100 "
+              "--epochs 1000 --display_interval 100 "
               "--prior_dist gaussian %s "
               "--seed %s "
               "--path %s "

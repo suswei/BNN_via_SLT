@@ -48,9 +48,10 @@ def train(args):
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
-    args.lr_lmbda = args.lr*10
-    args.lr_k = args.lr*10
-    args.lr_beta = args.lr*100
+    # convergence is quite sensitive to variational parameter learning rates
+    args.lr_lmbda = args.lr*1000
+    args.lr_k = args.lr
+    args.lr_beta = args.lr*1000
 
     grouped_parameters = [
         {"params": [p for n, p in params if 'lmbdas' in n], 'lr': args.lr_lmbda},
@@ -81,6 +82,8 @@ def train(args):
             xis = xis.to(args.device)
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
+            if torch.any(torch.isnan(thetas)):
+                print('nan thetas')
 
             args.theta_lower = torch.min(thetas, dim=0).values.detach()
             args.theta_upper = torch.max(thetas, dim=0).values.detach()

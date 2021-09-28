@@ -48,6 +48,8 @@ def sample_q(resolution_network, args, R, exact=False):
         betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
         betas = torch.abs(betas)
         ks = torch.abs(resolution_network.ks.repeat(1, R)).T
+        if torch.any(torch.isnan(ks)):
+            print('sample_q: nan ks')
 
         if exact:
             shape = torch.abs(resolution_network.lmbdas)
@@ -55,16 +57,22 @@ def sample_q(resolution_network, args, R, exact=False):
             vs = m.sample(torch.Size([R])).squeeze(dim=2)
             xis = vs ** (1 / (2 * ks))
 
+            if torch.any(torch.isnan(xis)):
+                print('exact: nan xis')
+
         else:
             shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T
+            if torch.any(torch.isnan(shape)):
+                print('reparam: nan shape')
             rate = betas.repeat(1, R).T
+            if torch.any(torch.isnan(rate)):
+                print('reparam: nan rate')
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             r = torch.nn.ReLU()
             vs = r(vs)
-            if torch.any(torch.isnan(vs)):
-                print('nan xis')
-            if torch.any(torch.isnan(ks)):
-                print('nan ks')
+
+
+
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
 
         if args.method == 'nf_gammatrunc':
