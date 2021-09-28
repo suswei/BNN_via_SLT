@@ -13,7 +13,7 @@ os.system("python3 main.py --data tanh 256 1000 False --prior_dist gaussian 100 
 
 os.system("python3 main.py --data tanh 256 1000 False --prior_dist gaussian 100 -"
           "-var_mode nf_gaussian 2 16 1 1e-3 --display_interval 100 --epochs 500 --seed 1 --viz")
-#
+
 os.system("python3 plot_experiments.py --path reducedrank")
 
 os.system("python3 plot_experiments.py --path tanh")

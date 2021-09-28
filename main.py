@@ -39,7 +39,8 @@ def train(args):
     if args.method == 'nf_gaussian':
         resolution_network = RealNVP(nets, nett, masks, args.w_dim)
     elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.method == 'nf_gamma', args.lmbda0, args.k0)
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.method == 'nf_gamma',
+                                     args.lmbda0, args.k0, args.beta0)
 
     print(resolution_network)
     params = list(resolution_network.named_parameters())
@@ -207,6 +208,7 @@ def main():
         else:
             args.lmbda0 = float(args.var_mode[3])
             args.k0 = float(args.var_mode[4])
+            args.beta0 = float(args.var_mode[5])
 
     elif args.var_mode[0] == 'nf_gaussian':
 

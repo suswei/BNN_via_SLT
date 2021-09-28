@@ -9,7 +9,7 @@ def set_sweep_config():
     hyperparameter_experiments = []
 
     sample_sizes = [5000]
-    seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    seeds = [1, 2, 3, 4, 5]
     prior_vars = [1, 100]
     nf_couplingpairs = [2]
     no_hiddens = [16]
@@ -41,7 +41,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'varparam0': ['100 1', '1000 1'],
+        'varparam0': ['100 1 100', '1000 1 1000'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
         'seed': seeds,
