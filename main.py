@@ -259,7 +259,10 @@ def main():
             thetas, log_jacobians = net(xis)
 
         l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
+        if args.var_mode[0] == 'nf_gamma':
+            args.var_mode[4] = float(args.var_mode[4]).as_integer_ratio()
         saveimgpath = 'output/'+('{}_'* l).format(*args.data, *args.prior_dist, *args.var_mode) + 'epoch{}_pred_dist'.format(args.epochs)
+        print(saveimgpath)
         plot_pred_dist(thetas, args, saveimgpath)
 
 
