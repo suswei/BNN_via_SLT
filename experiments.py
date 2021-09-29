@@ -9,18 +9,17 @@ def set_sweep_config():
     hyperparameter_experiments = []
 
     sample_sizes = [5000]
-    seeds = [1, 2, 3, 4, 5]
     prior_vars = [1, 100]
 
     ####################################################################################################################
 
-    nf_couplingpairs = [2, 5]
-    no_hiddens = [16, 128]
+    nf_couplingpairs = [2]
+    no_hiddens = [16]
 
     ####################################################################################################################
     dataset = ['tanh']
     Hs = [36, 121, 576, 1024]
-    zeromeans = ['False']
+    zeromeans = ['True']
 
     hyperparameter_config = {
         'dataset': dataset,
@@ -29,10 +28,9 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'varparam0': ['5 5e-2', '5 5e-3'],
+        'varparam0': ['1 5e-2', '1 5e-3'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
-        'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -44,10 +42,9 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'varparam0': ['500 0.5 100', '5000 0.5 1000'],
+        'varparam0': ['100 0.5 100', '1000 0.5 1000'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
-        'seed': seeds,
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -107,12 +104,11 @@ def main(taskid):
               "--var_mode %s %s %s %s "
               "--epochs 1000 --display_interval 100 "
               "--prior_dist gaussian %s "
-              "--seed %s "
+              "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['method'], temp['nf_couplingpair'], temp['nf_hidden'], temp['varparam0'],
                  temp['prior_var'],
-                 temp['seed'],
                  path)
               )
 

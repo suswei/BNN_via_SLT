@@ -166,7 +166,7 @@ def main():
     # Training settings
     parser = argparse.ArgumentParser(description='?')
 
-    parser.add_argument('--seed', type=int, default=1234)
+    parser.add_argument('--seeds', nargs='*')
 
     parser.add_argument('--data', nargs='*')
     parser.add_argument('--prior_dist', nargs='*')
@@ -184,86 +184,90 @@ def main():
 
     args = parser.parse_args()
 
-    args.dataset, args.H, args.sample_size, args.zeromean = args.data
-    args.H = int(args.H)
-    args.sample_size = int(args.sample_size)
+    for seed in args.seeds:
 
-    # TODO: needs to take into account other prior options in utils.py
-    args.prior, args.prior_var = args.prior_dist
-    args.prior_var = float(args.prior_var)
+        args.seed = int(seed)
 
-    get_dataset_by_id(args)
-    args.batch_size = np.int(np.round(args.sample_size/10))
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        args.dataset, args.H, args.sample_size, args.zeromean = args.data
+        args.H = int(args.H)
+        args.sample_size = int(args.sample_size)
 
-    print(args)
+        # TODO: needs to take into account other prior options in utils.py
+        args.prior, args.prior_var = args.prior_dist
+        args.prior_var = float(args.prior_var)
 
-    args.nf_couplingpair = int(args.var_mode[1])
-    args.nf_hidden = int(args.var_mode[2])
+        get_dataset_by_id(args)
+        args.batch_size = np.int(np.round(args.sample_size/10))
+        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    if args.var_mode[0] == 'nf_gamma' or args.var_mode[0] == 'nf_gammatrunc':
+        print(args)
 
-        args.method = args.var_mode[0]
-        args.upper = 1 # should be input for nf_gammatrunc
-        if len(args.var_mode) == 3:
-            args.lmbda0 = 10
-            args.k0 = 1
-        else:
-            args.lmbda0 = float(args.var_mode[3])
-            args.k0 = float(args.var_mode[4])
-            args.beta0 = float(args.var_mode[5])
+        args.nf_couplingpair = int(args.var_mode[1])
+        args.nf_hidden = int(args.var_mode[2])
 
-    elif args.var_mode[0] == 'nf_gaussian':
+        if args.var_mode[0] == 'nf_gamma' or args.var_mode[0] == 'nf_gammatrunc':
 
-        args.method = 'nf_gaussian'
-        if len(args.var_mode) == 3:
-            args.nf_gaussian_mean = 0.0
-            args.nf_gaussian_var = 1.0
-        else:
-            args.nf_gaussian_mean = float(args.var_mode[3])
-            args.nf_gaussian_var = float(args.var_mode[4])
+            args.method = args.var_mode[0]
+            args.upper = 1 # should be input for nf_gammatrunc
+            if len(args.var_mode) == 3:
+                args.lmbda0 = 10
+                args.k0 = 1
+            else:
+                args.lmbda0 = float(args.var_mode[3])
+                args.k0 = float(args.var_mode[4])
+                args.beta0 = float(args.var_mode[5])
 
-    net, elbo_hist = train(args)
-    elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
-    elbo_val = elbo_loglik_val.mean() - complexity
-    print('nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
-          .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
+        elif args.var_mode[0] == 'nf_gaussian':
 
-    print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-    print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
+            args.method = 'nf_gaussian'
+            if len(args.var_mode) == 3:
+                args.nf_gaussian_mean = 0.0
+                args.nf_gaussian_var = 1.0
+            else:
+                args.nf_gaussian_mean = float(args.var_mode[3])
+                args.nf_gaussian_var = float(args.var_mode[4])
 
+        net, elbo_hist = train(args)
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
+        elbo_val = elbo_loglik_val.mean() - complexity
+        print('nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
+              .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
 
-    results_dict = {'elbo': elbo,
-                    'elbo_loglik': elbo_loglik,
-                    'complexity': complexity,
-                    'elbo_val': elbo_val,
-                    'elbo_loglik_val': elbo_loglik_val,
-                    'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
-                    'elbo_hist': elbo_hist}
+        print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+        print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
 
-    if args.path is not None:
-        if not os.path.exists(args.path):
-            os.makedirs(args.path)
-        torch.save(vars(args), '{}/args.pt'.format(args.path))
-        # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
-        torch.save(results_dict, '{}/results.pt'.format(args.path))
+        results_dict = {'elbo': elbo,
+                        'elbo_loglik': elbo_loglik,
+                        'complexity': complexity,
+                        'elbo_val': elbo_val,
+                        'elbo_loglik_val': elbo_loglik_val,
+                        'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
+                        'elbo_hist': elbo_hist}
 
-    if args.dataset == 'tanh' and args.viz:
+        if args.path is not None:
+            path = '{}/seed{}'.format(args.path,args.seed)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            torch.save(vars(args), '{}/args.pt'.format(path))
+            # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
+            torch.save(results_dict, '{}/results.pt'.format(path))
 
-        from plot_pred_dist import plot_pred_dist
+        if args.dataset == 'tanh' and args.viz:
 
-        net.eval()
-        with torch.no_grad():
-            xis = sample_q(net, args, R=500, exact=True)  # [R, args.w_dim]
-            xis = xis.to(args.device)
-            thetas, log_jacobians = net(xis)
+            from plot_pred_dist import plot_pred_dist
 
-        l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
-        if args.var_mode[0] == 'nf_gamma':
-            args.var_mode[4] = float(args.var_mode[4]).as_integer_ratio()
-        saveimgpath = 'output/'+('{}_'* l).format(*args.data, *args.prior_dist, *args.var_mode) + 'epoch{}_pred_dist'.format(args.epochs)
-        print(saveimgpath)
-        plot_pred_dist(thetas, args, saveimgpath)
+            net.eval()
+            with torch.no_grad():
+                xis = sample_q(net, args, R=500, exact=True)  # [R, args.w_dim]
+                xis = xis.to(args.device)
+                thetas, log_jacobians = net(xis)
+
+            l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
+            if args.var_mode[0] == 'nf_gamma':
+                args.var_mode[4] = float(args.var_mode[4]).as_integer_ratio()
+            saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode) + 'epoch{}_pred_dist'.format(args.epochs)
+            print(saveimgpath)
+            plot_pred_dist(thetas, args, saveimgpath)
 
 
 if __name__ == "__main__":
