@@ -9,25 +9,22 @@ def set_sweep_config():
     hyperparameter_experiments = []
 
     sample_sizes = [5000]
-    prior_vars = [1, 100]
-
-    ####################################################################################################################
-
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
+
     ####################################################################################################################
     dataset = ['tanh']
-    Hs = [36, 121, 576, 1024]
-    Hs = [576, 1024]
+    Hs = [121, 576, 1024]
     zeromeans = ['False']
+    prior_params = ['0 1', '0 100']
 
     hyperparameter_config = {
         'dataset': dataset,
         'H': Hs,
         'sample_size': sample_sizes,
         'zeromean': zeromeans,
-        'prior_var': prior_vars,
+        'prior_param': prior_params,
         'method': ['nf_gaussian'],
         'varparam0': ['1 1e-2'],
         'nf_couplingpair': nf_couplingpairs,
@@ -41,7 +38,41 @@ def set_sweep_config():
         'H': Hs,
         'sample_size': sample_sizes,
         'zeromean': zeromeans,
-        'prior_var': prior_vars,
+        'prior_param': prior_params,
+        'method': ['nf_gamma'],
+        'varparam0': ['100 1 100'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    ####################################################################################################################
+    dataset = ['tanh']
+    Hs = [121, 576, 1024]
+    zeromeans = ['True']
+    prior_params = ['5 1', '5 100']
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gaussian'],
+        'varparam0': ['1 1e-2'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
         'method': ['nf_gamma'],
         'varparam0': ['100 1 100'],
         'nf_couplingpair': nf_couplingpairs,
@@ -108,7 +139,7 @@ def main(taskid):
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['method'], temp['nf_couplingpair'], temp['nf_hidden'], temp['varparam0'],
-                 temp['prior_var'],
+                 temp['prior_param'],
                  path)
               )
 

@@ -26,7 +26,7 @@ def main():
     ns_list = []
     zeromean_list = []
     seed_list = []
-    priorvar_list = []
+    prior_list = []
     method_short_list = []
     method_list = []
     ev_list = []
@@ -48,7 +48,7 @@ def main():
                     ns_list += [sim_args['sample_size']]
                     zeromean_list += [sim_args['zeromean']]
                     seed_list += [sim_args['seed']]
-                    priorvar_list += [sim_args['prior_var']]
+                    prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     if sim_args['method'] == 'nf_gamma':
@@ -87,7 +87,7 @@ def main():
                         ns_list += [sim_args['sample_size']]
                         zeromean_list += [sim_args['zeromean']]
                         seed_list += [sim_args['seed']]
-                        priorvar_list += [sim_args['prior_var']]
+                        prior_list += ['({}, {})'.format(sim_args['prior_mean'], sim_args['prior_var'])]
 
                         ev_list += [results['asy_log_pDn']]
                         method_short_list += ['$-\lambda \log n + (m-1) \log \log n$']
@@ -101,7 +101,7 @@ def main():
                                'n': ns_list,
                                'zeromean': zeromean_list,
                                'seed': seed_list,
-                               r'$\sigma^2(\varphi)$': priorvar_list,
+                               r'$(\mu(\varphi), \sigma^2(\varphi))$': prior_list,
                                'method_short': method_short_list,
                                'method': method_list,
                                '$\Psi(q^*,g^*)$': ev_list,
@@ -116,25 +116,15 @@ def main():
 
     unique_ns = list(set(ns_list))
     unique_zeromean = list(set(zeromean_list))
-    unique_priorvars = list(set(priorvar_list))
 
-    # for n, prior_var, zeromean in [(n, prior_var, zeromean)
-    #                                   for n in unique_ns
-    #                                   for prior_var in unique_priorvars
-    #                                   for zeromean in unique_zeromean]:
 
-    for n, zeromean in [(n, zeromean)
-                                   for n in unique_ns
-                                   for zeromean in unique_zeromean]:
-
-        # temp = summary_pd.loc[(summary_pd['n'] == n) & (summary_pd['prior_var'] == prior_var) & (summary_pd['zeromean'] == zeromean)]
-        # title = '{}_n{}_zeromean{}_priorvar{}'.format(args.path, n, zeromean, prior_var)
+    for n, zeromean in [(n, zeromean) for n in unique_ns for zeromean in unique_zeromean]:
 
         temp = summary_pd.loc[(summary_pd['n'] == n)  & (summary_pd['zeromean'] == zeromean)]
         title = '{}_n{}_zeromean{}'.format(args.path, n, zeromean)
 
         print(title)
-        pdsave = temp.groupby(['$H$', r'$\sigma^2(\varphi)$', 'method'])['$\Psi(q^*,g^*)$'].describe()
+        pdsave = temp.groupby(['$H$', r'$(\mu(\varphi), \sigma^2(\varphi))$', 'method'])['$\Psi(q^*,g^*)$'].describe()
         print(pdsave)
         with open('output/{}.tex'.format(title), 'w') as tf:
             tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count','mean','std'], multirow=True))

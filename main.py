@@ -193,7 +193,8 @@ def main():
         args.sample_size = int(args.sample_size)
 
         # TODO: needs to take into account other prior options in utils.py
-        args.prior, args.prior_var = args.prior_dist
+        args.prior, args.prior_mean, args.prior_var = args.prior_dist
+        args.prior_mean = float(args.prior_mean)
         args.prior_var = float(args.prior_var)
 
         get_dataset_by_id(args)
