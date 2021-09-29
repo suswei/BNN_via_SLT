@@ -82,38 +82,60 @@ def set_sweep_config():
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     ####################################################################################################################
-    # dataset = ['reducedrank']
-    # Hs = [6, 11, 24, 32]
-    # Hs = [24, 32]
-    # zeromeans = ['False']
-    #
-    # hyperparameter_config = {
-    #     'dataset': dataset,
-    #     'H': Hs,
-    #     'sample_size': sample_sizes,
-    #     'zeromean': zeromeans,
-    #     'prior_var': prior_vars,
-    #     'method': ['nf_gaussian'],
-    #     'varparam0': ['1 1e-2'],
-    #     'nf_couplingpair': nf_couplingpairs,
-    #     'nf_hidden': no_hiddens,
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-    #
-    # hyperparameter_config = {
-    #     'dataset': dataset,
-    #     'H': Hs,
-    #     'sample_size': sample_sizes,
-    #     'zeromean': zeromeans,
-    #     'prior_var': prior_vars,
-    #     'method': ['nf_gamma'],
-    #     'varparam0': ['100 1 100'],
-    #     'nf_couplingpair': nf_couplingpairs,
-    #     'nf_hidden': no_hiddens,
-    # }
-    # keys, values = zip(*hyperparameter_config.items())
-    # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+    dataset = ['tanh']
+    Hs = [121, 576, 1024]
+    zeromeans = ['True']
+    prior_params = ['5 1', '5 100']
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gamma'],
+        'varparam0': ['100 1.25 100'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+
+    ###################################################################################################################
+    dataset = ['reducedrank']
+    Hs = [6, 11, 24, 32]
+    Hs = [11, 24, 32]
+    zeromeans = ['False']
+    prior_params = ['5 1', '5 100']
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gaussian'],
+        'varparam0': ['1 1e-2'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gamma'],
+        'varparam0': ['100 1 100', '100 0.25 100', '100 1.25 100'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     return hyperparameter_experiments
 
