@@ -19,7 +19,8 @@ def set_sweep_config():
     ####################################################################################################################
     dataset = ['tanh']
     Hs = [36, 121, 576, 1024]
-    zeromeans = ['True']
+    Hs = [576, 1024]
+    zeromeans = ['False']
 
     hyperparameter_config = {
         'dataset': dataset,
@@ -28,7 +29,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gaussian'],
-        'varparam0': ['1 5e-2', '1 5e-3'],
+        'varparam0': ['1 1e-2'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -42,7 +43,7 @@ def set_sweep_config():
         'zeromean': zeromeans,
         'prior_var': prior_vars,
         'method': ['nf_gamma'],
-        'varparam0': ['100 0.5 100', '1000 0.5 1000'],
+        'varparam0': ['100 1 100'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -52,6 +53,7 @@ def set_sweep_config():
     ####################################################################################################################
     # dataset = ['reducedrank']
     # Hs = [6, 11, 24, 32]
+    # Hs = [24, 32]
     # zeromeans = ['False']
     #
     # hyperparameter_config = {
@@ -61,10 +63,9 @@ def set_sweep_config():
     #     'zeromean': zeromeans,
     #     'prior_var': prior_vars,
     #     'method': ['nf_gaussian'],
-    #     'varparam0': ['0 1', '1 1e-3'],
+    #     'varparam0': ['1 1e-2'],
     #     'nf_couplingpair': nf_couplingpairs,
     #     'nf_hidden': no_hiddens,
-    #     'seed': seeds,
     # }
     # keys, values = zip(*hyperparameter_config.items())
     # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -76,10 +77,9 @@ def set_sweep_config():
     #     'zeromean': zeromeans,
     #     'prior_var': prior_vars,
     #     'method': ['nf_gamma'],
-    #     'varparam0': ['100 1', '1000 1'],
+    #     'varparam0': ['100 1 100'],
     #     'nf_couplingpair': nf_couplingpairs,
     #     'nf_hidden': no_hiddens,
-    #     'seed': seeds,
     # }
     # keys, values = zip(*hyperparameter_config.items())
     # hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]

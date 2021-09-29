@@ -49,9 +49,9 @@ def train(args):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
     # convergence is quite sensitive to variational parameter learning rates
-    args.lr_lmbda = args.lr*1000
+    args.lr_lmbda = args.lr*100
     args.lr_k = args.lr
-    args.lr_beta = args.lr*1000
+    args.lr_beta = args.lr*100
 
     grouped_parameters = [
         {"params": [p for n, p in params if 'lmbdas' in n], 'lr': args.lr_lmbda},

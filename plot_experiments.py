@@ -2,6 +2,7 @@ import seaborn as sns
 import torch
 from matplotlib import pyplot as plt
 import argparse
+import os
 
 import pandas as pd
 pd.set_option('display.max_rows', 500)
@@ -34,60 +35,66 @@ def main():
     for taskid in range(tasks):
 
         path = '{}/taskid{}/'.format(args.path, taskid)
-        try:
+        for root, subdirectories, files in os.walk(path):
+            for subdirectory in subdirectories:
+                current_path = os.path.join(root, subdirectory)
+                try:
 
-            results = torch.load('{}/results.pt'.format(path),  map_location=torch.device('cpu'))
-            sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
+                    results = torch.load('{}/results.pt'.format(current_path),  map_location=torch.device('cpu'))
+                    sim_args = torch.load('{}/args.pt'.format(current_path), map_location=torch.device('cpu'))
 
-            dataset_list += [sim_args['dataset']]
-            Hs_list += [sim_args['H']]
-            ns_list += [sim_args['sample_size']]
-            zeromean_list += [sim_args['zeromean']]
-            seed_list += [sim_args['seed']]
-            priorvar_list += [sim_args['prior_var']]
+                    dataset_list += [sim_args['dataset']]
+                    Hs_list += [sim_args['H']]
+                    ns_list += [sim_args['sample_size']]
+                    zeromean_list += [sim_args['zeromean']]
+                    seed_list += [sim_args['seed']]
+                    priorvar_list += [sim_args['prior_var']]
 
-            ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-            if sim_args['method'] == 'nf_gamma':
-                method_str = 'nf\_gamma'
-            elif sim_args['method'] == 'nf_gaussian':
-                method_str = 'nf\_gaussian'
+                    ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+                    if sim_args['method'] == 'nf_gamma':
+                        method_str = 'nf\_gamma'
+                    elif sim_args['method'] == 'nf_gaussian':
+                        method_str = 'nf\_gaussian'
 
-            if sim_args['method'] == 'nf_gamma':
-                method_short_list += ['gamma']
-                method_list += [
-                    '{}\_{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
-                                                    sim_args['var_mode'][3], sim_args['var_mode'][4],
-                                                    sim_args['var_mode'][5])]
-            else:
-                method_short_list += ['gaussian']
-                method_list += [
-                    '{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
-                                                    sim_args['var_mode'][3], sim_args['var_mode'][4])]
-        except:
-            print('missing taskid {}'.format(taskid))
+                    if sim_args['method'] == 'nf_gamma':
+                        method_short_list += ['gamma']
+                        method_list += [
+                            '{}\_{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
+                                                            sim_args['var_mode'][3], sim_args['var_mode'][4],
+                                                            sim_args['var_mode'][5])]
+                    else:
+                        method_short_list += ['gaussian']
+                        method_list += [
+                            '{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
+                                                            sim_args['var_mode'][3], sim_args['var_mode'][4])]
+                except:
+                    print('missing taskid {}'.format(taskid))
 
     for taskid in range(tasks):
 
         path = '{}/taskid{}/'.format(args.path, taskid)
-        try:
+        for root, subdirectories, files in os.walk(path):
+            for subdirectory in subdirectories:
+                current_path = os.path.join(root, subdirectory)
+                try:
 
-            results = torch.load('{}/results.pt'.format(path),  map_location=torch.device('cpu'))
-            sim_args = torch.load('{}/args.pt'.format(path), map_location=torch.device('cpu'))
+                    results = torch.load('{}/results.pt'.format(current_path),  map_location=torch.device('cpu'))
+                    sim_args = torch.load('{}/args.pt'.format(current_path), map_location=torch.device('cpu'))
 
-            if sim_args['dataset'] == 'reducedrank' or sim_args['zeromean'] == 'True':
-                dataset_list += [sim_args['dataset']]
-                Hs_list += [sim_args['H']]
-                ns_list += [sim_args['sample_size']]
-                zeromean_list += [sim_args['zeromean']]
-                seed_list += [sim_args['seed']]
-                priorvar_list += [sim_args['prior_var']]
+                    if sim_args['dataset'] == 'reducedrank' or sim_args['zeromean'] == 'True':
+                        dataset_list += [sim_args['dataset']]
+                        Hs_list += [sim_args['H']]
+                        ns_list += [sim_args['sample_size']]
+                        zeromean_list += [sim_args['zeromean']]
+                        seed_list += [sim_args['seed']]
+                        priorvar_list += [sim_args['prior_var']]
 
-                ev_list += [results['asy_log_pDn']]
-                method_short_list += ['$-\lambda \log n + (m-1) \log \log n$']
-                method_list += ['$-\lambda \log n + (m-1) \log \log n$']
+                        ev_list += [results['asy_log_pDn']]
+                        method_short_list += ['$-\lambda \log n + (m-1) \log \log n$']
+                        method_list += ['$-\lambda \log n + (m-1) \log \log n$']
 
-        except:
-            print('missing taskid {}'.format(taskid))
+                except:
+                    print('missing taskid {}'.format(taskid))
 
     summary_pd = pd.DataFrame({'dataset': dataset_list,
                                '$H$': Hs_list,
