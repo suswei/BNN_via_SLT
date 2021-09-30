@@ -216,7 +216,7 @@ def get_dataset_by_id(args):
         print('Not a valid dataset name. See options in dataset-factory')
 
 
-def get_lmbda(Hs, dataset):
+def get_lmbda_dim(Hs, dataset):
     """
 
     :param Hs: list of hidden units values
@@ -225,17 +225,20 @@ def get_lmbda(Hs, dataset):
     """
 
     trueRLCT = []
+    dim = []
     for H in Hs:
         if dataset == 'reducedrank':
             output_dim = H
             input_dim = output_dim + 3
             trueRLCT += [(output_dim * H - H ** 2 + input_dim * H) / 2]  # rank r = H
+            dim += [input_dim * H + output_dim * H]
 
         elif dataset=='tanh':
             max_integer = int(math.sqrt(H))
             trueRLCT += [(H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)]
+            dim += [2*H]
 
-    return trueRLCT
+    return trueRLCT, dim
 
 
 def loglik(theta, data, target, args):

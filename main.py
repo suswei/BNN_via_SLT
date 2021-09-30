@@ -39,7 +39,7 @@ def train(args):
     if args.method == 'nf_gaussian':
         resolution_network = RealNVP(nets, nett, masks, args.w_dim)
     elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.method == 'nf_gamma',
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.grad_flag,
                                      args.lmbda0, args.k0, args.beta0)
 
     print(resolution_network)
@@ -177,6 +177,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
+    parser.add_argument('--grad_flag', type=int, default=False)
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
