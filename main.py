@@ -177,7 +177,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
-    parser.add_argument('--grad_flag', type=int, default=False)
+    parser.add_argument('--grad_flag', type=str, default='False')
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)

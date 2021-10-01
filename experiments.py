@@ -15,8 +15,8 @@ def set_sweep_config():
     tanh_Hs = [576, 1024]
     rr_Hs = [24, 32]
 
-    gaussian_varparam0 = ['0 1', '1 1e-2']
-    gamma_varparam0 = ['100 0.5 100', '10 1 100', '10 1 1000', '500 1 100', '500 1 1000']
+    gaussian_varparam0 = ['1 1e-2', '0.1 0.001', '5 5e-2', '0 1']
+    gamma_varparam0 = ['100 1 100', '10 1 100', '500 1 100']
 
     ####################################################################################################################
     dataset = ['tanh']
@@ -31,6 +31,7 @@ def set_sweep_config():
         'prior_param': prior_params,
         'method': ['nf_gaussian'],
         'varparam0': gaussian_varparam0,
+        'grad_flag': ['False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -45,7 +46,7 @@ def set_sweep_config():
         'prior_param': prior_params,
         'method': ['nf_gamma'],
         'varparam0': gamma_varparam0,
-        'grad_flag': [True, False],
+        'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -65,6 +66,7 @@ def set_sweep_config():
         'prior_param': prior_params,
         'method': ['nf_gaussian'],
         'varparam0': gaussian_varparam0,
+        'grad_flag': ['False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -79,7 +81,7 @@ def set_sweep_config():
         'prior_param': prior_params,
         'method': ['nf_gamma'],
         'varparam0': gamma_varparam0,
-        'grad_flag': [True, False],
+        'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -99,6 +101,7 @@ def set_sweep_config():
         'prior_param': prior_params,
         'method': ['nf_gaussian'],
         'varparam0': gaussian_varparam0,
+        'grad_flag': ['False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -113,7 +116,7 @@ def set_sweep_config():
         'prior_param': prior_params,
         'method': ['nf_gamma'],
         'varparam0': gamma_varparam0,
-        'grad_flag': [True, False],
+        'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -138,12 +141,14 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
+              "--grad_flag %s "
               "--epochs 2000 --display_interval 2000 "
               "--prior_dist gaussian %s "
               "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['method'], temp['nf_couplingpair'], temp['nf_hidden'], temp['varparam0'],
+                 temp['grad_flag'],
                  temp['prior_param'],
                  path)
               )
