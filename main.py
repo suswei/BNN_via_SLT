@@ -271,6 +271,22 @@ def main():
             print(saveimgpath)
             plot_pred_dist(thetas, args, saveimgpath)
 
+            # TOD0: shouldn't hard code, pass in from dataset_factory
+            if args.zeromean:
+                w0_mean = 5
+                w0_var = args.prior_var
+            else:
+                w0_mean = 0
+                w0_var = 1
+
+            if args.dataset == 'tanh':
+                with open('{}.tex'.format(saveimgpath), 'w') as file:
+                    file.write('The model of interest is the tanh network with hidden units $H={}$. '
+                               'The data is generated according to $p_0(y | x, w) = p(y | x, w_0)$ where $w_0 \sim N({}, {}I_d)$. '
+                               'The prior is taken to be $N({}, {} I_d)$. '
+                               'The predictive distributions resulting from different variational approximations trained on a dataset of size $n={}$ are displayed.'
+                               .format(args.H, w0_mean, w0_var, args.prior_mean, args.prior_var, args.sample_size))
+                    # file.write('$H=${}'.format(args.H))
 
 if __name__ == "__main__":
     main()
