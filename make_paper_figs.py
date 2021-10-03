@@ -27,15 +27,15 @@ os.system("python3 plot_experiments.py --path tanh")
 
 ########################################################################################################################
 
-# os.system("python3 main.py --data tanh 121 1000 True --prior_dist gaussian 0 100 "
-#           "--var_mode nf_gamma 2 16 100 1 100 --display_interval 100 --epochs 10 --seed 1 --viz")
+# os.system("python3 main.py --data tanh 576 1000 True --prior_dist gaussian 5 1 "
+#           "--var_mode nf_gamma 2 16 500 5 100 True --display_interval 100 --epochs 1000 --seed 1 --viz")
 #
-# os.system("python3 main.py --data tanh 121 1000 True --prior_dist gaussian 100 "
-#           "--var_mode nf_gaussian 2 16 1 1e-2 --display_interval 100 --epochs 1000 --seed 1 --viz")
-#
-# os.system("python3 main.py --data tanh 121 1000 False --prior_dist gaussian 100 "
-#           "--var_mode nf_gamma 2 16 100 1 100 --display_interval 100 --epochs 1000 --seed 1 --viz")
-#
-# os.system("python3 main.py --data tanh 121 1000 False --prior_dist gaussian 100 "
-#           "--var_mode nf_gaussian 2 16 1 1e-2 --display_interval 100 --epochs 1000 --seed 1 --viz")
+# os.system("python3 main.py --data tanh 576 1000 True --prior_dist gaussian 5 1 "
+#           "--var_mode nf_gaussian 2 16 5 5e-2 --display_interval 100 --epochs 1000 --seed 1 --viz")
+
+os.system("python3 main.py --data tanh 576 5000 False --prior_dist gaussian 0 1 "
+          "--var_mode nf_gamma 2 16 100 5 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
+
+os.system("python3 main.py --data tanh 576 5000 False --prior_dist gaussian 0 1 "
+          "--var_mode nf_gaussian 2 16 1 1e-2 --display_interval 100 --epochs 2000 --seed 1 --viz")
 

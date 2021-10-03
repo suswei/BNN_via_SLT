@@ -58,14 +58,18 @@ def main():
 
                     if sim_args['method'] == 'nf_gamma':
                         method_short_list += ['gamma']
+                        # method_list += [
+                        #     '{}\_{}\_{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
+                        #                                     sim_args['var_mode'][3], sim_args['var_mode'][4],
+                        #                                     sim_args['var_mode'][5], sim_args['grad_flag'])]
                         method_list += [
-                            '{}\_{}\_{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
+                            '{}\_{}\_{}\_{}\_{}'.format(method_str,
                                                             sim_args['var_mode'][3], sim_args['var_mode'][4],
                                                             sim_args['var_mode'][5], sim_args['grad_flag'])]
                     else:
                         method_short_list += ['gaussian']
                         method_list += [
-                            '{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
+                            '{}\_{}\_{}'.format(method_str,
                                                             sim_args['var_mode'][3], sim_args['var_mode'][4])]
                 except:
                     print('missing taskid {}'.format(taskid))

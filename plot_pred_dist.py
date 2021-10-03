@@ -46,7 +46,7 @@ def plot_pred_dist(thetas, args, saveimgpath):
         xl = -1.0
         xu = 1.0
     else:
-        xl = 0.25
+        xl = 0.5
         xu = 1.0
     tempx = torch.arange(xl, xu, .01)
     predictions = torch.empty(size=(thetas.shape[0], tempx.shape[0]))
