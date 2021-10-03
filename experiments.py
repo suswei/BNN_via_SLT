@@ -15,10 +15,11 @@ def set_sweep_config():
     tanh_Hs = [576, 1024]
     rr_Hs = [24, 32]
 
+
+    ####################################################################################################################
     gaussian_varparam0 = ['1 1e-2', '0.1 0.001', '5 5e-2', '0 1']
     gamma_varparam0 = ['100 1 100', '10 1 100', '500 1 100']
 
-    ####################################################################################################################
     dataset = ['tanh']
     zeromeans = ['False']
     prior_params = ['0 1', '0 100']
@@ -107,6 +108,68 @@ def set_sweep_config():
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': rr_Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gamma'],
+        'varparam0': gamma_varparam0,
+        'grad_flag': ['True', 'False'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    ####################################################################################################################
+    gamma_varparam0 = ['100 5 100', '10 5 100', '500 5 100']
+
+    dataset = ['tanh']
+    zeromeans = ['False']
+    prior_params = ['0 1', '0 100']
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': tanh_Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gamma'],
+        'varparam0': gamma_varparam0,
+        'grad_flag': ['True', 'False'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    ####################################################################################################################
+    dataset = ['tanh']
+    zeromeans = ['True']
+    prior_params = ['5 1', '5 100']
+
+    hyperparameter_config = {
+        'dataset': dataset,
+        'H': tanh_Hs,
+        'sample_size': sample_sizes,
+        'zeromean': zeromeans,
+        'prior_param': prior_params,
+        'method': ['nf_gamma'],
+        'varparam0': gamma_varparam0,
+        'grad_flag': ['True', 'False'],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    ###################################################################################################################
+    dataset = ['reducedrank']
+    zeromeans = ['False']
+    prior_params = ['5 1', '5 100']
 
     hyperparameter_config = {
         'dataset': dataset,

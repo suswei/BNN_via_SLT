@@ -62,12 +62,15 @@ def get_dataset_by_id(args):
             theta_b = torch.zeros(1, args.H)
 
         else:
-            if args.prior == 'gaussian':
-                theta_a = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
-                theta_b = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
-            else:
-                theta_a = torch.FloatTensor(1, args.H).uniform_(0)
-                theta_b = torch.FloatTensor(1, args.H).uniform_(0)
+            theta_a = 5*torch.ones(1, args.H)
+            theta_b = 5*torch.ones(1, args.H)
+            #
+            # if args.prior == 'gaussian':
+            #     theta_a = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
+            #     theta_b = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
+            # else:
+            #     theta_a = torch.FloatTensor(1, args.H).uniform_(0)
+            #     theta_b = torch.FloatTensor(1, args.H).uniform_(0)
             mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X.T)).T
 
         args.theta_a = theta_a
