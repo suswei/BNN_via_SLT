@@ -247,7 +247,7 @@ def main():
                         'elbo_hist': elbo_hist}
 
         if args.path is not None:
-            path = '{}/seed{}'.format(args.path,args.seed)
+            path = '{}/seed{}'.format(args.path, args.seed)
             if not os.path.exists(path):
                 os.makedirs(path)
             torch.save(vars(args), '{}/args.pt'.format(path))
@@ -272,7 +272,7 @@ def main():
             plot_pred_dist(thetas, args, saveimgpath)
 
             # TOD0: shouldn't hard code, pass in from dataset_factory
-            if args.zeromean:
+            if args.zeromean=='True':
                 w0 = 0
             else:
                 w0 = 5
