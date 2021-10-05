@@ -114,7 +114,7 @@ def main():
                                'method_short': method_short_list,
                                'method': method_list,
                                '$\Psi(q^*,g^*)$': ev_list,
-                               r'$\lambda/\beta$': lbratio_list
+                               r'$\lambda_0/\beta_0=\mu_0$': lbratio_list
                                })
     ####################################################################################################################
 
@@ -133,7 +133,7 @@ def main():
         title = '{}_n{}_zeromean{}'.format(args.path, n, zeromean)
 
         print(title)
-        pdsave = temp.groupby(['$H$', r'$(\mu(\varphi), \sigma^2(\varphi))$', r'$\lambda/\beta$', 'method'])['$\Psi(q^*,g^*)$'].describe()
+        pdsave = temp.groupby(['$H$', r'$(\mu(\varphi), \sigma^2(\varphi))$', r'$\lambda_0/\beta_0=\mu_0$', 'method'])['$\Psi(q^*,g^*)$'].describe()
         print(pdsave)
         with open('output/{}.tex'.format(title), 'w') as tf:
             tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count','mean','std'], multirow=True))
