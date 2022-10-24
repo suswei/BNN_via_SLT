@@ -168,18 +168,19 @@ def main():
         args.nf_couplingpair = int(args.var_mode[1])
         args.nf_hidden = int(args.var_mode[2])
 
-        if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
-
-            args.upper = 1 # should be input for gengammatrunc
-
-        elif args.base_dist == 'gaussian':
-
-            if len(args.var_mode) == 3:
-                args.nf_gaussian_mean = 0.0
-                args.nf_gaussian_var = 1.0
-            else:
-                args.nf_gaussian_mean = float(args.var_mode[3])
-                args.nf_gaussian_var = float(args.var_mode[4])
+        args.upper = 1
+        # if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
+        #
+        #     args.upper = 1 # should be input for gengammatrunc
+        #
+        # elif args.base_dist == 'gaussian':
+        #
+        #     if len(args.var_mode) == 3:
+        #         args.nf_gaussian_mean = 0.0
+        #         args.nf_gaussian_var = 1.0
+        #     else:
+        #         args.nf_gaussian_mean = float(args.var_mode[3])
+        #         args.nf_gaussian_var = float(args.var_mode[4])
 
         net, elbo_hist = train(args)
         elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
@@ -215,14 +216,12 @@ def main():
                 thetas, log_jacobians = net(xis)
 
             l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
-            if args.base_dist == 'gengamma':
-                args.var_mode[4] = float(args.var_mode[4]).as_integer_ratio()
             saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag) + 'epoch{}_pred_dist'.format(args.epochs)
             print(saveimgpath)
             plot_pred_dist(thetas, args, saveimgpath)
 
             # TOD0: shouldn't hard code, pass in from dataset_factory
-            if args.zeromean=='True':
+            if args.zeromean:
                 w0 = 0
             else:
                 w0 = 5

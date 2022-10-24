@@ -43,8 +43,8 @@ class RealNVP(nn.Module):
         self.ks = torch.nn.Parameter(torch.ones(w_dim, 1), requires_grad=grad_flag)
         self.betas = torch.nn.Parameter(torch.ones(w_dim-1, 1)*w_dim/2, requires_grad=grad_flag)
 
-        self.mus = torch.nn.Parameter(torch.zeros(w_dim, 1), requires_grad=grad_flag)
-        self.logs = torch.nn.Parameter(torch.zeros(w_dim, 1), requires_grad=grad_flag)
+        self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
+        self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
 
         self.s, self.t, self.masks = setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim)
 
@@ -96,8 +96,7 @@ class RealNVP(nn.Module):
 
         elif base_dist == 'gaussian':
 
-            xis = torch.normal(args.nf_gaussian_mean, np.sqrt(args.nf_gaussian_var), size=(R, self.w_dim)).to(
-                self.device)
+            xis = MultivariateNormal(self.mu, torch.diag(torch.exp(self.log_sigma))).sample(torch.Size([R]))
 
         xis = xis.to(self.device)
 

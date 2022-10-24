@@ -1,7 +1,5 @@
 import torch
 import numpy as np
-from torch.distributions.normal import Normal
-from torch.distributions.gamma import Gamma
 import torch.distributions as D
 
 
@@ -39,54 +37,6 @@ def log_prior(args, thetas):
         # return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
         return torch.zeros(1)
 
-
-def sample_q(resolution_network, args, R):
-
-    if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
-
-        betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
-        betas = torch.abs(betas)
-        ks = torch.abs(resolution_network.ks.repeat(1, R)).T
-
-        shape = torch.abs(resolution_network.lmbdas)
-        m = Gamma(shape, betas)
-        vs = m.rsample(torch.Size([R])).squeeze(dim=2)
-        xis = vs ** (1 / (2 * ks))
-
-        if args.base_dist == 'gengammatrunc':
-            xis = xis[torch.all(xis <= args.upper, dim=1), :]
-            if xis.shape[0] == 0:
-                print('no xis')
-
-    elif args.base_dist == 'gaussian':
-
-        xis = torch.normal(args.nf_gaussian_mean, np.sqrt(args.nf_gaussian_var), size=(R, args.w_dim)).to(args.device)
-
-    return xis
-
-
-# def q_entropy_sample(args, xis, betas):
-#     """
-#
-#     :param args:
-#     :param xis: R by w_dim
-#     :return: estimate of (scalar) E_q log q: 1/R \sum_{i=1}^R log q(xi_i)
-#     """
-#
-#     if args.base_dist == 'gaussian':
-#
-#         q_rv = Normal(0, 1)
-#         return q_rv.log_prob(xis).sum(dim=1).mean()
-#
-#     elif args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
-#
-#         R = xis.shape[0]
-#         hs = args.hs.repeat(1,R).T
-#         betas = betas.repeat(1,R).T
-#         ks = args.ks.repeat(1,R).T
-#         return (hs*torch.log(xis)-betas*(xis**(2*ks))).mean(dim=0).sum() - qj_gengamma_lognorm(args.hs, args.ks, args.betas, args).sum()
-
-
 # q_j(\xi_j) \propto \xi_j^{h_j} \exp(-\beta_j \xi_j^{2k_j})
 # E_{q_j} \log q_j = \frac{h_j}{2k_j} ( \psi(\lambda_j) - \log \beta_j ) - \lambda_j - \log Z_j
 def Eqj_logqj(resolution_network, args):
@@ -107,6 +57,7 @@ def Eqj_logqj(resolution_network, args):
 
     elif args.base_dist == 'gaussian':
 
+        # TODO: generalize to diagonal covariance
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * args.nf_gaussian_var)
 
 
