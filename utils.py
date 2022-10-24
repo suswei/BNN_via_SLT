@@ -42,7 +42,7 @@ def log_prior(args, thetas):
 
 def sample_q(resolution_network, args, R):
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+    if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
 
         betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
         betas = torch.abs(betas)
@@ -53,12 +53,12 @@ def sample_q(resolution_network, args, R):
         vs = m.rsample(torch.Size([R])).squeeze(dim=2)
         xis = vs ** (1 / (2 * ks))
 
-        if args.method == 'nf_gammatrunc':
+        if args.base_dist == 'gengammatrunc':
             xis = xis[torch.all(xis <= args.upper, dim=1), :]
             if xis.shape[0] == 0:
                 print('no xis')
 
-    elif args.method == 'nf_gaussian':
+    elif args.base_dist == 'gaussian':
 
         xis = torch.normal(args.nf_gaussian_mean, np.sqrt(args.nf_gaussian_var), size=(R, args.w_dim)).to(args.device)
 
@@ -73,12 +73,12 @@ def sample_q(resolution_network, args, R):
 #     :return: estimate of (scalar) E_q log q: 1/R \sum_{i=1}^R log q(xi_i)
 #     """
 #
-#     if args.method == 'nf_gaussian':
+#     if args.base_dist == 'gaussian':
 #
 #         q_rv = Normal(0, 1)
 #         return q_rv.log_prob(xis).sum(dim=1).mean()
 #
-#     elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+#     elif args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
 #
 #         R = xis.shape[0]
 #         hs = args.hs.repeat(1,R).T
@@ -91,21 +91,21 @@ def sample_q(resolution_network, args, R):
 # E_{q_j} \log q_j = \frac{h_j}{2k_j} ( \psi(\lambda_j) - \log \beta_j ) - \lambda_j - \log Z_j
 def Eqj_logqj(resolution_network, args):
 
-    if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
+    if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
 
         betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
         betas = torch.abs(betas)
         ks = torch.abs(resolution_network.ks)
         lmbdas = torch.abs(resolution_network.lmbdas)
 
-        if args.method=='nf_gammatrunc':
+        if args.base_dist=='gengammatrunc':
             logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=True, b=args.upper)
         else:
             logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None)
 
         return (lmbdas - 1 / (2 * ks))*(torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ
 
-    elif args.method == 'nf_gaussian':
+    elif args.base_dist == 'gaussian':
 
         return -args.w_dim / 2 * np.log(2 * np.pi * np.e * args.nf_gaussian_var)
 

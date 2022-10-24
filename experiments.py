@@ -15,21 +15,15 @@ def set_sweep_config():
     tanh_Hs = [576, 1024]
     rr_Hs = [24, 32]
 
-
     ####################################################################################################################
-
-    dataset = ['tanh']
-    zeromeans = ['True']
-    prior_params = ['0 1']
-
     hyperparameter_config = {
-        'dataset': dataset,
+        'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
-        'zeromean': zeromeans,
-        'prior_param': prior_params,
-        'method': ['nf_gaussian', 'nf_gammatrunc'],
-        'grad_flag': ['True'],
+        'zeromean': [True],
+        'prior_param': ['0 1'],
+        'base_dist': ['gengammatrunc', 'gaussian'],
+        'grad_flag': [True, False],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -37,32 +31,14 @@ def set_sweep_config():
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     ###############################################################################
-    dataset = ['reducedrank']
-    zeromeans = ['True']
-    prior_params = ['0 1']
-
     hyperparameter_config = {
-        'dataset': dataset,
+        'dataset': ['reducedrank'],
         'H': rr_Hs,
         'sample_size': sample_sizes,
-        'zeromean': zeromeans,
-        'prior_param': prior_params,
-        'method': ['nf_gaussian','nf_gammatrunc'],
-        'grad_flag': ['True'],
-        'nf_couplingpair': nf_couplingpairs,
-        'nf_hidden': no_hiddens,
-    }
-    keys, values = zip(*hyperparameter_config.items())
-    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-    hyperparameter_config = {
-        'dataset': dataset,
-        'H': rr_Hs,
-        'sample_size': sample_sizes,
-        'zeromean': zeromeans,
-        'prior_param': prior_params,
-        'method': ['nf_gamma'],
-        'grad_flag': ['True'],
+        'zeromean': [True],
+        'prior_param': ['0 1'],
+        'base_dist': ['gengammatrunc', 'gaussian'],
+        'grad_flag': [True, False],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -89,13 +65,13 @@ def main(taskid):
               "--var_mode %s %s %s "
               "--grad_flag %s "
               "--epochs 200 --display_interval 10 "
-              "--prior_dist gaussian %s "
+              # "--prior_dist gaussian %s "
               "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
-                 temp['method'], temp['nf_couplingpair'], temp['nf_hidden'],
+                 temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'],
                  temp['grad_flag'],
-                 temp['prior_param'],
+                 # temp['prior_param'],
                  path)
               )
 

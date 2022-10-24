@@ -28,14 +28,14 @@ os.system("python3 plot_experiments.py --path tanh")
 ########################################################################################################################
 
 os.system("python3 main.py --data tanh 576 5000 True --prior_dist gaussian 5 100 "
-          "--var_mode nf_gamma 2 16 10 1 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
+          "--var_mode gengamma 2 16 10 1 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
 
 os.system("python3 main.py --data tanh 576 5000 True --prior_dist gaussian 5 100 "
-          "--var_mode nf_gaussian 2 16 1e-1 1e-3 --display_interval 100 --epochs 2000 --seed 1 --viz")
+          "--var_mode gaussian 2 16 1e-1 1e-3 --display_interval 100 --epochs 2000 --seed 1 --viz")
 
 os.system("python3 main.py --data tanh 576 5000 False --prior_dist gaussian 0 100 "
-          "--var_mode nf_gamma 2 16 500 5 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
+          "--var_mode gengamma 2 16 500 5 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
 
 os.system("python3 main.py --data tanh 576 5000 False --prior_dist gaussian 0 100 "
-          "--var_mode nf_gaussian 2 16 5 5e-2 --display_interval 100 --epochs 2000 --seed 1 --viz")
+          "--var_mode gaussian 2 16 5 5e-2 --display_interval 100 --epochs 2000 --seed 1 --viz")
 

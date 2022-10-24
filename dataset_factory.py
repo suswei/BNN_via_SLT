@@ -31,7 +31,7 @@ def get_dataset_by_id(args):
         # training
         m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
         X = m.sample(torch.Size([args.sample_size]))
-        if args.zeromean == 'True':
+        if args.zeromean:
             theta_a = torch.zeros(1, args.H)
             theta_b = torch.zeros(1, args.H)
             mean = torch.zeros(args.sample_size, 1)
@@ -52,7 +52,7 @@ def get_dataset_by_id(args):
 
         # validation
         X_val = m.sample(torch.Size([args.sample_size]))
-        if args.zeromean == 'True':
+        if args.zeromean:
             mean = torch.zeros(args.sample_size, 1)
         else:
             mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X_val.T)).T

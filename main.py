@@ -1,45 +1,15 @@
 import os
 import argparse
-import custom_lr_scheduler
 from dataset_factory import *
 from normalizing_flows import *
 from utils import *
 
 
-def setup_affinecoupling(args):
-
-    nets = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.w_dim), nn.Tanh())
-
-    nett = lambda: nn.Sequential(nn.Linear(args.w_dim, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.nf_hidden), nn.LeakyReLU(),
-                                 nn.Linear(args.nf_hidden, args.w_dim))
-
-    for layer in range(args.nf_couplingpair):
-        ones = np.ones(args.w_dim)
-        ones[np.random.choice(args.w_dim, args.w_dim // 2)] = 0
-        half_mask = torch.cat((torch.from_numpy(ones.astype(np.float32)).unsqueeze(dim=0),
-                               torch.from_numpy((1 - ones).astype(np.float32)).unsqueeze(dim=0)))
-
-        if layer == 0:
-            masks = half_mask
-        else:
-            masks = torch.cat((masks, half_mask))
-
-    return nets, nett, masks
-
-
 def train(args):
 
-    nets, nett, masks = setup_affinecoupling(args)
-    resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.grad_flag)
-
+    resolution_network = RealNVP(args.nf_couplingpair, args.nf_hidden, args.w_dim, args.sample_size, args.device, args.grad_flag)
     print(resolution_network)
     params = list(resolution_network.named_parameters())
-
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
 
@@ -58,7 +28,6 @@ def train(args):
     resolution_network.to(args.device)
 
     optimizer = torch.optim.Adam(grouped_parameters, lr=args.lr)
-    scheduler = custom_lr_scheduler.CustomReduceLROnPlateau(optimizer)
     torch.autograd.set_detect_anomaly(True)
 
     elbo_hist = []
@@ -73,8 +42,7 @@ def train(args):
             resolution_network.train()
             optimizer.zero_grad()
 
-            xis = sample_q(resolution_network, args, args.trainR)  # [R, args.w_dim]
-            xis = xis.to(args.device)
+            xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
 
             thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
             if torch.any(torch.isnan(thetas)):
@@ -97,35 +65,25 @@ def train(args):
 
             evalR = 100
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=evalR, exact=True)
-            print('epoch {}: loss {}, nSn {}, (R = {}) exact elbo {} '
+                = evaluate(resolution_network, args, R=evalR)
+            print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
                   '= loglik {} (loglik_val {}) - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
                   .format(epoch, loss, args.nSn, evalR,
                           elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
-
-        # scheduler.step(running_loss)
-        #
-        # if scheduler.has_convergence_been_reached():
-        #     print('INFO: Converence has been reached. Stopping iterations.')
-        #     break
-
     return resolution_network, elbo_hist
 
 
-def evaluate(resolution_network, args, R, exact):
+def evaluate(resolution_network, args, R):
 
     resolution_network.eval()
 
     with torch.no_grad():
 
-        xis = sample_q(resolution_network, args, R)  # [R, args.w_dim]
-        xis = xis.to(args.device)
-
+        xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)# [R, args.w_dim]
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
-
 
         print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
         # print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
@@ -161,20 +119,26 @@ def main():
     # Training settings
     parser = argparse.ArgumentParser(description='?')
 
-    parser.add_argument('--seeds', nargs='*')
+    parser.add_argument('--seeds', nargs='*', default=[1])
 
-    parser.add_argument('--data', nargs='*')
-    parser.add_argument('--prior_dist', nargs='*')
+    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000, True],
+                        help='[0]: tanh or rr '
+                             '[1]: H '
+                             '[2]: sample size '
+                             '[3]: zeromean')
 
-    parser.add_argument('--var_mode', nargs='*', help='[0]: nf_gamma or nf_gammatrunc,'
-                                                      '[1]: nf_couplingpair,'
-                                                      '[2]: nf_hidden')
+    parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
-    parser.add_argument('--epochs', type=int, default=2000)
-    parser.add_argument('--batch_size', type=int, default=500)
+    parser.add_argument('--var_mode', nargs='*', default=['gengammatrunc', 2, 16],
+                        help='[0]: gengamma or gengammatrunc or gaussian'
+                             '[1]: nf_couplingpair'
+                             '[2]: nf_hidden')
+
+    parser.add_argument('--epochs', type=int, default=200)
+    parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
-    parser.add_argument('--grad_flag', type=str, default='True')
+    parser.add_argument('--grad_flag', type=bool, default=True)
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -196,22 +160,20 @@ def main():
         args.prior_var = float(args.prior_var)
 
         get_dataset_by_id(args)
-        args.batch_size = np.int(np.round(args.sample_size/10))
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         print(args)
 
+        args.base_dist = args.var_mode[0]
         args.nf_couplingpair = int(args.var_mode[1])
         args.nf_hidden = int(args.var_mode[2])
 
-        if args.var_mode[0] == 'nf_gamma' or args.var_mode[0] == 'nf_gammatrunc':
+        if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
 
-            args.method = args.var_mode[0]
-            args.upper = 1 # should be input for nf_gammatrunc
+            args.upper = 1 # should be input for gengammatrunc
 
-        elif args.var_mode[0] == 'nf_gaussian':
+        elif args.base_dist == 'gaussian':
 
-            args.method = 'nf_gaussian'
             if len(args.var_mode) == 3:
                 args.nf_gaussian_mean = 0.0
                 args.nf_gaussian_var = 1.0
@@ -220,14 +182,11 @@ def main():
                 args.nf_gaussian_var = float(args.var_mode[4])
 
         net, elbo_hist = train(args)
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100, exact=True)
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
         elbo_val = elbo_loglik_val.mean() - complexity
         print('nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
-
-        print('betas {}'.format(net.betas))
-
-        print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+        print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
 
         results_dict = {'elbo': elbo,
@@ -252,12 +211,11 @@ def main():
 
             net.eval()
             with torch.no_grad():
-                xis = sample_q(net, args, R=500)  # [R, args.w_dim]
-                xis = xis.to(args.device)
+                xis = net.sample_xis(500, args.base_dist, upper=args.upper)  # [R, args.w_dim]
                 thetas, log_jacobians = net(xis)
 
             l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
-            if args.var_mode[0] == 'nf_gamma':
+            if args.base_dist == 'gengamma':
                 args.var_mode[4] = float(args.var_mode[4]).as_integer_ratio()
             saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag) + 'epoch{}_pred_dist'.format(args.epochs)
             print(saveimgpath)

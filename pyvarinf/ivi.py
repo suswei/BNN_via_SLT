@@ -386,7 +386,7 @@ class ISample(nn.Module):
     Sample is a decorator that wraps a variational model, sample
     a model from the current parameter distribution and make the
     model usable as any other pytorch model. The sample can be
-    redrawn using the draw() method. Draw needs to be called
+    redrawn using the draw() base_dist. Draw needs to be called
     once before the model can be used.
 
     :args var_model: Variational model from which the sample models

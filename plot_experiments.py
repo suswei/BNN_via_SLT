@@ -52,12 +52,12 @@ def main():
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
 
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                    if sim_args['method'] == 'nf_gamma':
+                    if sim_args['base_dist'] == 'gengamma':
                         method_str = 'nf\_gamma'
-                    elif sim_args['method'] == 'nf_gaussian':
+                    elif sim_args['base_dist'] == 'gaussian':
                         method_str = 'nf\_gaussian'
 
-                    if sim_args['method'] == 'nf_gamma':
+                    if sim_args['base_dist'] == 'gengamma':
                         method_short_list += ['gamma']
                         # method_list += [
                         #     '{}\_{}\_{}\_{}\_{}\_{}\_{}'.format(method_str, sim_args['nf_couplingpair'], sim_args['nf_hidden'],
@@ -112,7 +112,7 @@ def main():
                                'seed': seed_list,
                                r'$(\mu(\varphi), \sigma^2(\varphi))$': prior_list,
                                'method_short': method_short_list,
-                               'method': method_list,
+                               'base_dist': method_list,
                                '$\Psi(q^*,g^*)$': ev_list,
                                r'$\lambda_0/\beta_0=\mu_0$': lbratio_list
                                })
@@ -133,7 +133,7 @@ def main():
         title = '{}_n{}_zeromean{}'.format(args.path, n, zeromean)
 
         print(title)
-        pdsave = temp.groupby(['$H$', r'$(\mu(\varphi), \sigma^2(\varphi))$', r'$\lambda_0/\beta_0=\mu_0$', 'method'])['$\Psi(q^*,g^*)$'].describe()
+        pdsave = temp.groupby(['$H$', r'$(\mu(\varphi), \sigma^2(\varphi))$', r'$\lambda_0/\beta_0=\mu_0$', 'base_dist'])['$\Psi(q^*,g^*)$'].describe()
         print(pdsave)
         with open('output/{}.tex'.format(title), 'w') as tf:
             tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count','mean','std'], multirow=True))
