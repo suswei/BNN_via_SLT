@@ -12,8 +12,8 @@ def set_sweep_config():
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    tanh_Hs = [20, 40]
-    rr_Hs = [2, 4]
+    tanh_Hs = [576, 1024]
+    rr_Hs = [24, 32]
 
 
     ####################################################################################################################
@@ -88,7 +88,7 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s "
               "--grad_flag %s "
-              "--epochs 2000 --display_interval 10 "
+              "--epochs 200 --display_interval 10 "
               "--prior_dist gaussian %s "
               "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "

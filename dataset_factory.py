@@ -9,30 +9,6 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 import numpy as np
 
 
-class tanh_network(nn.Module):
-    def __init__(self, input_dim=1, output_dim=1, H=1):
-        super(tanh_network, self).__init__()
-        self.fc1 = nn.Linear(input_dim, H, bias=False)
-        self.fc2 = nn.Linear(H, output_dim, bias=False)
-
-    def forward(self, x):
-        x = torch.tanh(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-
-class reducedrank(nn.Module):
-    def __init__(self, input_dim, output_dim, H):
-        super(reducedrank, self).__init__()
-        self.fc1 = nn.Linear(input_dim, H, bias=False)
-        self.fc2 = nn.Linear(H, output_dim, bias=False)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.fc2(x)
-        return x
-
-
 def get_dataset_by_id(args):
 
     torch.manual_seed(args.seed)
@@ -44,7 +20,6 @@ def get_dataset_by_id(args):
     if args.dataset == 'tanh':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
-        # args.model = tanh_network(H=args.H)
         args.w_dim = 2 * args.H
         max_integer = int(math.sqrt(args.H))
         args.trueRLCT = (args.H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
@@ -57,20 +32,12 @@ def get_dataset_by_id(args):
         m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
         X = m.sample(torch.Size([args.sample_size]))
         if args.zeromean == 'True':
-            mean = torch.zeros(args.sample_size, 1)
             theta_a = torch.zeros(1, args.H)
             theta_b = torch.zeros(1, args.H)
-
+            mean = torch.zeros(args.sample_size, 1)
         else:
             theta_a = 5*torch.ones(1, args.H)
             theta_b = 5*torch.ones(1, args.H)
-            #
-            # if args.prior == 'gaussian':
-            #     theta_a = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
-            #     theta_b = torch.FloatTensor(1, args.H).normal_(mean=5, std=args.prior_var**(1/2))
-            # else:
-            #     theta_a = torch.FloatTensor(1, args.H).uniform_(0)
-            #     theta_b = torch.FloatTensor(1, args.H).uniform_(0)
             mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X.T)).T
 
         args.theta_a = theta_a
@@ -94,26 +61,9 @@ def get_dataset_by_id(args):
         args.nSn_val = -y_rv.log_prob(y_val).sum()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 
-        # create smaller datasets
-        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
-              int(round(np.exp(7))) * 32]
-        # args.datasets = []
-        # args.ns = ns
-        # args.nSns = []
-        # for n in ns:
-        #     X = m.sample(torch.Size([n]))
-        #     y_rv = Normal(0.0, 1)
-        #     y = y_rv.sample(torch.Size([n, 1]))
-        #     args.nSns += [- y_rv.log_prob(y).sum()]
-        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        # args.ns += [args.sample_size]
-        # args.nSns += [args.nSn]
-        # args.datasets += [args.train_loader]
-
     elif args.dataset == 'tanh_general':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
-        # args.model = tanh_network(H=args.H)
         args.w_dim = 3 * args.H
         max_integer = int(math.sqrt(args.H))
         args.trueRLCT = args.H/2
@@ -141,23 +91,6 @@ def get_dataset_by_id(args):
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
         args.nSn_val = -y_rv.log_prob(y_val).sum()
 
-        # create smaller datasets
-        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
-              int(round(np.exp(7))) * 32]
-        # args.datasets = []
-        # args.ns = ns
-        # args.nSns = []
-        # for n in ns:
-        #     X = m.sample(torch.Size([n]))
-        #     y_rv = Normal(0.0, 1)
-        #     y = y_rv.sample(torch.Size([n, 1]))
-        #     args.nSns += [- y_rv.log_prob(y).sum()]
-        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        # args.ns += [args.sample_size]
-        # args.nSns += [args.nSn]
-        # args.datasets += [args.train_loader]
-
-
     # multivariate input x, Gaussian
     # multivariate output y (dim = args.H) is normal with variance 1
     # and mean BAx
@@ -170,7 +103,6 @@ def get_dataset_by_id(args):
             1)  # input_dim * H
         args.b_params = torch.eye(args.output_dim)
 
-        # args.model = reducedrank(input_dim=args.input_dim, output_dim=args.output_dim, H=args.H)
         args.w_dim = (args.input_dim + args.output_dim) * args.H
         if args.w_dim % 2 != 0:
             print('Warning: the NF employed requires args.w_dim be even')
@@ -196,24 +128,6 @@ def get_dataset_by_id(args):
         y_val = y_rv.sample()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
         args.nSn_val = -y_rv.log_prob(y_val).sum()
-
-        # create smaller datasets
-        # ns = get_ns(args.sample_size)
-        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
-              int(round(np.exp(7))) * 32]
-        # args.datasets = []
-        # args.ns = ns
-        # args.nSns = []
-        # for n in ns:
-        #     X = m.sample(torch.Size([n]))
-        #     mean = torch.matmul(torch.matmul(X, args.a_params), args.b_params)
-        #     y_rv = MultivariateNormal(mean, torch.eye(args.output_dim))
-        #     y = y_rv.sample()
-        #     args.nSns += [- y_rv.log_prob(y).sum()]
-        #     args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
-        # args.ns += [args.sample_size]
-        # args.nSns += [args.nSn]
-        # args.datasets += [args.train_loader]
 
     else:
         print('Not a valid dataset name. See options in dataset-factory')
@@ -247,11 +161,10 @@ def get_lmbda_dim(Hs, dataset):
 def loglik(theta, data, target, args):
     """
 
-    :param theta: $R$ samples of theta
+    :param theta: R samples of theta
     :param data:
     :param target:
     :param args:
-    :param R:
     :return: R by batch_size log probability matrix, 1/b \sum_{i=1}^b \log p(y_i|x_i,theta_1), ... , 1/b \sum_{i=1}^b \log p(y_i|x_i,theta_R)
     """
 

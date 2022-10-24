@@ -35,11 +35,7 @@ def setup_affinecoupling(args):
 def train(args):
 
     nets, nett, masks = setup_affinecoupling(args)
-
-    if args.method == 'nf_gaussian':
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim)
-    elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.grad_flag)
+    resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.grad_flag)
 
     print(resolution_network)
     params = list(resolution_network.named_parameters())
@@ -125,7 +121,7 @@ def evaluate(resolution_network, args, R, exact):
 
     with torch.no_grad():
 
-        xis = sample_q(resolution_network, args, R, exact=exact)  # [R, args.w_dim]
+        xis = sample_q(resolution_network, args, R)  # [R, args.w_dim]
         xis = xis.to(args.device)
 
         thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
@@ -256,7 +252,7 @@ def main():
 
             net.eval()
             with torch.no_grad():
-                xis = sample_q(net, args, R=500, exact=True)  # [R, args.w_dim]
+                xis = sample_q(net, args, R=500)  # [R, args.w_dim]
                 xis = xis.to(args.device)
                 thetas, log_jacobians = net(xis)
 

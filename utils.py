@@ -6,7 +6,6 @@ import torch.distributions as D
 
 
 # TODO: implement mixture prior, log uniform prior, horseshoe prior
-# evaluate log varphi(theta), returns vector
 def log_prior(args, thetas):
     """
 
@@ -41,49 +40,27 @@ def log_prior(args, thetas):
         return torch.zeros(1)
 
 
-def sample_q(resolution_network, args, R, exact=True):
+def sample_q(resolution_network, args, R):
 
     if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
 
         betas = torch.cat((args.sample_size * torch.ones(1, 1).to(args.device), resolution_network.betas))
         betas = torch.abs(betas)
         ks = torch.abs(resolution_network.ks.repeat(1, R)).T
-        if torch.any(torch.isnan(ks)):
-            print('sample_q: nan ks')
 
-        if exact:
-            shape = torch.abs(resolution_network.lmbdas)
-            m = Gamma(shape, betas)
-            vs = m.rsample(torch.Size([R])).squeeze(dim=2)
-            xis = vs ** (1 / (2 * ks))
-
-            if torch.any(torch.isnan(xis)):
-                print('exact: nan xis')
-
-        else:
-            shape = torch.abs(resolution_network.lmbdas.repeat(1, R)).T
-            if torch.any(torch.isnan(shape)):
-                print('reparam: nan shape')
-            rate = betas.repeat(1, R).T
-            if torch.any(torch.isnan(rate)):
-                print('reparam: nan rate')
-            vs = gamma_icdf(shape=shape, rate=rate, args=args)
-            r = torch.nn.ReLU()
-            vs = r(vs)
-            xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
+        shape = torch.abs(resolution_network.lmbdas)
+        m = Gamma(shape, betas)
+        vs = m.rsample(torch.Size([R])).squeeze(dim=2)
+        xis = vs ** (1 / (2 * ks))
 
         if args.method == 'nf_gammatrunc':
-            xis = xis[torch.all(xis <= args.upper, dim=1),:]
+            xis = xis[torch.all(xis <= args.upper, dim=1), :]
             if xis.shape[0] == 0:
                 print('no xis')
 
     elif args.method == 'nf_gaussian':
-        # xis = torch.FloatTensor(R, args.w_dim).normal_(mean=0, std=1)
+
         xis = torch.normal(args.nf_gaussian_mean, np.sqrt(args.nf_gaussian_var), size=(R, args.w_dim)).to(args.device)
-        # m = Gamma(args.lmbdas[0], args.betas[0])
-        # vs = m.sample(torch.Size([R]))
-        # xis_beg = vs ** (1 / (2 * args.ks[0].repeat(1, R).T))
-        # xis = torch.cat((xis_beg, xis_end),dim=1)
 
     return xis
 
@@ -123,13 +100,10 @@ def Eqj_logqj(resolution_network, args):
 
         if args.method=='nf_gammatrunc':
             logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=True, b=args.upper)
-
         else:
             logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None)
 
         return (lmbdas - 1 / (2 * ks))*(torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ
-        # return -torch.lgamma(lmbdas) + torch.log(betas)/(2*ks) + torch.log(2*ks) \
-        #        - lmbdas + (lmbdas - 1/(2*ks))*torch.digamma(lmbdas)
 
     elif args.method == 'nf_gaussian':
 
@@ -140,8 +114,6 @@ def Eqj_logqj(resolution_network, args):
 def qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None):
 
     logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
-    print(torch.sum(logZ))
-    print(torch.sum(torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))))
     # if trunc:
     #     # TODO: torch.igamma: The backward pass with respect to first argument is not yet supported.
     #     return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
@@ -149,30 +121,6 @@ def qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None):
     #     return logZ
 
     return logZ
-
-# generate gamma(shape,rate) through inverse CDF
-
-def gamma_icdf(shape, rate, args):
-# only implementing large shape case
-
-    R = rate.shape[0]
-
-    # small_shape_regime = shape < 4
-    #
-    # u = torch.rand(R, args.w_dim).to(args.device)
-    # # u = torch.FloatTensor(R, args.w_dim).uniform_(0).to(args.device)
-    # g = torch.exp(torch.lgamma(shape*small_shape_regime + (~small_shape_regime)))
-    # num = (u * shape * g) ** (1 / shape)
-    # small_shape = num/rate
-
-    z = torch.normal(0, 1, size=(R, args.w_dim)).to(args.device)
-    # z = torch.Tensor(R, args.w_dim).normal_(mean=0, std=1).to(args.device)
-    large_shape = (shape + torch.sqrt(shape) * z) / rate
-
-    # vs = small_shape_regime*small_shape + (~small_shape_regime)*large_shape
-    vs = large_shape
-
-    return vs
 
 
 
