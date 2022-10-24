@@ -32,16 +32,16 @@ def get_dataset_by_id(args):
         m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
         X = m.sample(torch.Size([args.sample_size]))
         if args.zeromean:
-            theta_a = torch.zeros(1, args.H)
-            theta_b = torch.zeros(1, args.H)
+            w_a = torch.zeros(1, args.H)
+            w_b = torch.zeros(1, args.H)
             mean = torch.zeros(args.sample_size, 1)
         else:
-            theta_a = 5*torch.ones(1, args.H)
-            theta_b = 5*torch.ones(1, args.H)
-            mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X.T)).T
+            w_a = 5*torch.ones(1, args.H)
+            w_b = 5*torch.ones(1, args.H)
+            mean = torch.matmul(w_a, torch.tanh(w_b.T * X.T)).T
 
-        args.theta_a = theta_a
-        args.theta_b = theta_b
+        args.w_a = w_a
+        args.w_b = w_b
 
         y_rv = Normal(mean, 1)
         y = y_rv.sample()
@@ -55,7 +55,7 @@ def get_dataset_by_id(args):
         if args.zeromean:
             mean = torch.zeros(args.sample_size, 1)
         else:
-            mean = torch.matmul(theta_a, torch.tanh(theta_b.T * X_val.T)).T
+            mean = torch.matmul(w_a, torch.tanh(w_b.T * X_val.T)).T
         y_rv = Normal(mean, 1)
         y_val = y_rv.sample()
         args.nSn_val = -y_rv.log_prob(y_val).sum()
@@ -158,26 +158,26 @@ def get_lmbda_dim(Hs, dataset):
     return trueRLCT, dim
 
 
-def loglik(theta, data, target, args):
+def loglik(w, data, target, args):
     """
 
-    :param theta: R samples of theta
+    :param w: R samples of w
     :param data:
     :param target:
     :param args:
-    :return: R by batch_size log probability matrix, 1/b \sum_{i=1}^b \log p(y_i|x_i,theta_1), ... , 1/b \sum_{i=1}^b \log p(y_i|x_i,theta_R)
+    :return: R by batch_size log probability matrix, 1/b \sum_{i=1}^b \log p(y_i|x_i,w_1), ... , 1/b \sum_{i=1}^b \log p(y_i|x_i,w_R)
     """
 
     if args.dataset == 'reducedrank':
 
         a_dim = args.a_params.shape[0] * args.a_params.shape[1]
-        R = theta.shape[0]
+        R = w.shape[0]
         logprob = torch.empty(R, data.shape[0])
         for r in range(R):
-            theta_a = theta[r, 0:a_dim].reshape(args.a_params.shape[0], args.a_params.shape[1])
-            theta_b = theta[r, a_dim:].reshape(args.b_params.shape[0], args.b_params.shape[1])
+            w_a = w[r, 0:a_dim].reshape(args.a_params.shape[0], args.a_params.shape[1])
+            w_b = w[r, a_dim:].reshape(args.b_params.shape[0], args.b_params.shape[1])
 
-            mean = torch.matmul(torch.matmul(data, theta_a), theta_b)
+            mean = torch.matmul(torch.matmul(data, w_a), w_b)
             mean = mean.to(args.device)
 
             y_rv = MultivariateNormal(mean, torch.eye(args.output_dim).to(args.device))
@@ -186,31 +186,31 @@ def loglik(theta, data, target, args):
         means = []
     elif args.dataset == 'tanh':
 
-        R = theta.shape[0]
+        R = w.shape[0]
         B = data.shape[0]
 
-        theta_a = theta[:, 0:args.H]  # R by H
-        theta_b = theta[:, args.H:]  # R by H
+        w_a = w[:, 0:args.H]  # R by H
+        w_b = w[:, args.H:]  # R by H
         means = torch.empty(R, B)
         for r in range(R):
             # 1 by B
-            means[r,] = torch.matmul(theta_a[r,].unsqueeze(dim=1).T, torch.tanh(theta_b[r,].unsqueeze(dim=1) * data.T))
+            means[r,] = torch.matmul(w_a[r,].unsqueeze(dim=1).T, torch.tanh(w_b[r,].unsqueeze(dim=1) * data.T))
         means = means.to(args.device)
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(args.device))
-        logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
+        logprob = y_rv.log_prob(target.repeat(1, w.shape[0]).T.unsqueeze(dim=2))
 
     elif args.dataset == 'tanh_general':
-        R = theta.shape[0]
+        R = w.shape[0]
         B = data.shape[0]
 
-        theta_a = theta[:, 0:args.H]  # R by H
-        theta_b = theta[:, args.H:2*args.H]  # R by H
-        theta_c = theta[:,2*args.H:]
+        w_a = w[:, 0:args.H]  # R by H
+        w_b = w[:, args.H:2*args.H]  # R by H
+        w_c = w[:,2*args.H:]
         means = torch.empty(R, B)
         for r in range(R):
             # 1 by B
-            means[r,] = torch.matmul(theta_a[r,].unsqueeze(dim=1).T, torch.tanh(theta_b[r,].unsqueeze(dim=1) * data.T+theta_c[r,].unsqueeze(dim=1)))
+            means[r,] = torch.matmul(w_a[r,].unsqueeze(dim=1).T, torch.tanh(w_b[r,].unsqueeze(dim=1) * data.T+w_c[r,].unsqueeze(dim=1)))
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(args.device))
-        logprob = y_rv.log_prob(target.repeat(1, theta.shape[0]).T.unsqueeze(dim=2))
+        logprob = y_rv.log_prob(target.repeat(1, w.shape[0]).T.unsqueeze(dim=2))
 
     return logprob, means  # R by B

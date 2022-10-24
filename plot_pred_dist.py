@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 import pandas as pd
 
 
-def plot_pred_dist(thetas, args, saveimgpath):
+def plot_pred_dist(ws, args, saveimgpath):
 
     # f = plt.figure(figsize=(6, 4))
     # ax1 = plt.subplot2grid((1, 3), (0, 0), colspan=1)
@@ -19,7 +19,7 @@ def plot_pred_dist(thetas, args, saveimgpath):
 
     # plot the drawn parameters
     # if args.H == 1:
-    #     ax1.scatter(thetas[:, 0], thetas[:, 1], c='lightblue', s=20, label='drawn parameters')
+    #     ax1.scatter(ws[:, 0], ws[:, 1], c='lightblue', s=20, label='drawn parameters')
     #     ax1.plot(args.theta_a.squeeze(dim=0), args.theta_b.squeeze(dim=0), 'r*', label='true')
     #     ax1.set_xlabel(r'w_1$')
     #     ax1.set_ylabel(r'$w_2$')
@@ -27,7 +27,7 @@ def plot_pred_dist(thetas, args, saveimgpath):
     #
     # else:
     #     pca = PCA(n_components=2)
-    #     pca_result = pca.fit_transform(thetas)
+    #     pca_result = pca.fit_transform(ws)
     #     pca_pd = pd.DataFrame({'PC1': pca_result[:, 0], 'PC2': pca_result[:, 1]})
     #     # sns.scatterplot(ax=ax1,
     #     #     x="PC1", y="PC2",
@@ -49,10 +49,10 @@ def plot_pred_dist(thetas, args, saveimgpath):
         xl = 0.5
         xu = 1.0
     tempx = torch.arange(xl, xu, .01)
-    predictions = torch.empty(size=(thetas.shape[0], tempx.shape[0]))
+    predictions = torch.empty(size=(ws.shape[0], tempx.shape[0]))
     i = 0
-    for theta in thetas:
-        ll, mean = loglik(theta.unsqueeze(dim=0), tempx.unsqueeze(dim=1), tempx.unsqueeze(dim=1), args)
+    for w in ws:
+        ll, mean = loglik(w.unsqueeze(dim=0), tempx.unsqueeze(dim=1), tempx.unsqueeze(dim=1), args)
         y_rv = Normal(mean, 1)
         y = y_rv.sample()
         predictions[i] = y

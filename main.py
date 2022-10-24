@@ -44,15 +44,15 @@ def train(args):
 
             xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
 
-            thetas, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
-            if torch.any(torch.isnan(thetas)):
-                print('nan thetas')
+            ws, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
+            if torch.any(torch.isnan(ws)):
+                print('nan ws')
 
-            args.theta_lower = torch.min(thetas, dim=0).values.detach()
-            args.theta_upper = torch.max(thetas, dim=0).values.detach()
+            args.theta_lower = torch.min(ws, dim=0).values.detach()
+            args.theta_upper = torch.max(ws, dim=0).values.detach()
 
-            loglik_elbo_vec, _ = loglik(thetas, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
-            complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, thetas).mean() - log_jacobians.mean()  # q_entropy no optimization
+            loglik_elbo_vec, _ = loglik(ws, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
+            complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
 
             running_loss += -elbo.item()
@@ -83,24 +83,24 @@ def evaluate(resolution_network, args, R):
     with torch.no_grad():
 
         xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)# [R, args.w_dim]
-        thetas, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
+        ws, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
 
-        print('thetas min {} max {}'.format(thetas.min(), thetas.max()))
+        print('ws min {} max {}'.format(ws.min(), ws.max()))
         # print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
         print('xis min {} max {}'.format(xis.min(), xis.max()))
 
-        args.theta_lower = torch.min(thetas, dim=0).values.detach()
-        args.theta_upper = torch.max(thetas, dim=0).values.detach()
+        args.theta_lower = torch.min(ws, dim=0).values.detach()
+        args.theta_upper = torch.max(ws, dim=0).values.detach()
 
         args.xi_upper = torch.max(xis, dim=0).values.detach()
 
         ent = Eqj_logqj(resolution_network, args).sum()
-        complexity = ent - log_prior(args, thetas).mean() - log_jacobians.mean()
+        complexity = ent - log_prior(args, ws).mean() - log_jacobians.mean()
 
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
-            temp, _ = loglik(thetas, data, target, args)
+            temp, _ = loglik(ws, data, target, args)
             temp = temp.sum(dim=1)
             elbo_loglik += temp
 
@@ -108,9 +108,9 @@ def evaluate(resolution_network, args, R):
 
         elbo_loglik_val = np.array([0.0])
         # for batch_idx, (data, target) in enumerate(args.val_loader):
-        #     elbo_loglik_val += loglik(thetas, data, target, args).sum(dim=1)
+        #     elbo_loglik_val += loglik(ws, data, target, args).sum(dim=1)
 
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, thetas).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -213,12 +213,12 @@ def main():
             net.eval()
             with torch.no_grad():
                 xis = net.sample_xis(500, args.base_dist, upper=args.upper)  # [R, args.w_dim]
-                thetas, log_jacobians = net(xis)
+                ws, log_jacobians = net(xis)
 
             l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
             saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag) + 'epoch{}_pred_dist'.format(args.epochs)
             print(saveimgpath)
-            plot_pred_dist(thetas, args, saveimgpath)
+            plot_pred_dist(ws, args, saveimgpath)
 
             # TOD0: shouldn't hard code, pass in from dataset_factory
             if args.zeromean:

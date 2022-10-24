@@ -4,11 +4,11 @@ import torch.distributions as D
 
 
 # TODO: implement mixture prior, log uniform prior, horseshoe prior
-def log_prior(args, thetas):
+def log_prior(args, ws):
     """
 
     :param args:
-    :param thetas: [R, args.w_dim]
+    :param ws: [R, args.w_dim]
     :return: returns log varphi(theta_1), ..., log varphi(theta_R)
     """
 
@@ -16,12 +16,12 @@ def log_prior(args, thetas):
 
         return - args.w_dim/2*np.log(2*np.pi) \
                - (1/2)*args.w_dim*np.log(args.prior_var) \
-               - torch.diag(torch.matmul(thetas-args.prior_mean, (thetas-args.prior_mean).T))/(2*args.prior_var)
+               - torch.diag(torch.matmul(ws-args.prior_mean, (ws-args.prior_mean).T))/(2*args.prior_var)
 
     elif args.prior == 'logunif':
 
         a,b = 0.1,5
-        prob = (thetas*np.log(b/a))**(-1)
+        prob = (ws*np.log(b/a))**(-1)
         return torch.log(prob)
 
     elif args.prior == 'gmm':
@@ -30,7 +30,7 @@ def log_prior(args, thetas):
         mix = D.Categorical(torch.Tensor([0.5, 0.5]))
         comp = D.Independent(D.Normal(torch.zeros(2, args.w_dim), torch.cat((1e-2*torch.ones(1,args.w_dim),torch.ones(1,args.w_dim)),0)), 1)
         gmm = D.MixtureSameFamily(mix, comp)
-        return gmm.log_prob(thetas)
+        return gmm.log_prob(ws)
 
     elif args.prior == 'unif':
 

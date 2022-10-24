@@ -29,7 +29,7 @@ def train_pyvarinf(args):
 
 def loglik_pyvarinf(var_model, train_loader):
     sample = pyvarinf.Sample(var_model=var_model)
-    sample.draw()  # var_model(data) predicts with a new theta drawn from q
+    sample.draw()  # var_model(data) predicts with a new w drawn from q
     logprob = 0
     for batch_idx, (data, target) in enumerate(train_loader):
         output = var_model(data)
