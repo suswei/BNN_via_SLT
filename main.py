@@ -39,8 +39,7 @@ def train(args):
     if args.method == 'nf_gaussian':
         resolution_network = RealNVP(nets, nett, masks, args.w_dim)
     elif args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
-        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.grad_flag,
-                                     args.lmbda0, args.k0, args.beta0)
+        resolution_network = RealNVP(nets, nett, masks, args.w_dim, args.grad_flag)
 
     print(resolution_network)
     params = list(resolution_network.named_parameters())
@@ -100,7 +99,7 @@ def train(args):
 
         if epoch % args.display_interval == 0:
 
-            evalR = 10
+            evalR = 100
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=evalR, exact=True)
             print('epoch {}: loss {}, nSn {}, (R = {}) exact elbo {} '
@@ -171,13 +170,15 @@ def main():
     parser.add_argument('--data', nargs='*')
     parser.add_argument('--prior_dist', nargs='*')
 
-    parser.add_argument('--var_mode', nargs='*')
+    parser.add_argument('--var_mode', nargs='*', help='[0]: nf_gamma or nf_gammatrunc,'
+                                                      '[1]: nf_couplingpair,'
+                                                      '[2]: nf_hidden')
 
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--batch_size', type=int, default=500)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
-    parser.add_argument('--grad_flag', type=str, default='False')
+    parser.add_argument('--grad_flag', type=str, default='True')
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -211,13 +212,6 @@ def main():
 
             args.method = args.var_mode[0]
             args.upper = 1 # should be input for nf_gammatrunc
-            if len(args.var_mode) == 3:
-                args.lmbda0 = 10
-                args.k0 = 1
-            else:
-                args.lmbda0 = float(args.var_mode[3])
-                args.k0 = float(args.var_mode[4])
-                args.beta0 = float(args.var_mode[5])
 
         elif args.var_mode[0] == 'nf_gaussian':
 
@@ -234,6 +228,8 @@ def main():
         elbo_val = elbo_loglik_val.mean() - complexity
         print('nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
+
+        print('betas {}'.format(net.betas))
 
         print('exact elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))

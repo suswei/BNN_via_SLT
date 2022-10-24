@@ -41,7 +41,7 @@ def log_prior(args, thetas):
         return torch.zeros(1)
 
 
-def sample_q(resolution_network, args, R, exact=False):
+def sample_q(resolution_network, args, R, exact=True):
 
     if args.method == 'nf_gamma' or args.method == 'nf_gammatrunc':
 
@@ -54,7 +54,7 @@ def sample_q(resolution_network, args, R, exact=False):
         if exact:
             shape = torch.abs(resolution_network.lmbdas)
             m = Gamma(shape, betas)
-            vs = m.sample(torch.Size([R])).squeeze(dim=2)
+            vs = m.rsample(torch.Size([R])).squeeze(dim=2)
             xis = vs ** (1 / (2 * ks))
 
             if torch.any(torch.isnan(xis)):
@@ -70,14 +70,11 @@ def sample_q(resolution_network, args, R, exact=False):
             vs = gamma_icdf(shape=shape, rate=rate, args=args)
             r = torch.nn.ReLU()
             vs = r(vs)
-
-
-
             xis = vs ** (1 / (2 * ks)) # xis R by args.w_dim
 
         if args.method == 'nf_gammatrunc':
             xis = xis[torch.all(xis <= args.upper, dim=1),:]
-            if len(xis.size()) == 0:
+            if xis.shape[0] == 0:
                 print('no xis')
 
     elif args.method == 'nf_gaussian':
@@ -143,13 +140,15 @@ def Eqj_logqj(resolution_network, args):
 def qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None):
 
     logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
+    print(torch.sum(logZ))
+    print(torch.sum(torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))))
+    # if trunc:
+    #     # TODO: torch.igamma: The backward pass with respect to first argument is not yet supported.
+    #     return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
+    # else:
+    #     return logZ
 
-    if trunc:
-        # torch.igamma: The backward pass with respect to first argument is not yet supported.
-        return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
-    else:
-        return logZ
-
+    return logZ
 
 # generate gamma(shape,rate) through inverse CDF
 
