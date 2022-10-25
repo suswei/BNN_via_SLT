@@ -7,8 +7,7 @@ from utils import *
 
 def train(args):
 
-    resolution_network = RealNVP(args.nf_couplingpair, args.nf_hidden, args.w_dim, args.sample_size, args.device, args.grad_flag)
-    print(resolution_network)
+    resolution_network = RealNVP(args.nf_couplingpair, args.nf_hidden, args.w_dim, args.sample_size, args.device, args.grad_flag=='True')
     params = list(resolution_network.named_parameters())
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n
@@ -138,7 +137,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
-    parser.add_argument('--grad_flag', type=bool)
+    parser.add_argument('--grad_flag', type=str, default='True')
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -217,7 +216,7 @@ def main():
                 ws, log_jacobians = net(xis)
 
             l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
-            saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag) + 'epoch{}_pred_dist'.format(args.epochs)
+            saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag=='True') + 'epoch{}_pred_dist'.format(args.epochs)
             print(saveimgpath)
             plot_pred_dist(ws, args, saveimgpath)
 

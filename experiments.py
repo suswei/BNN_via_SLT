@@ -12,8 +12,8 @@ def set_sweep_config():
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    tanh_Hs = [16, 25]
-    rr_Hs = [24, 32]
+    tanh_Hs = [16, 576]
+    rr_Hs = [2, 24]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -23,7 +23,7 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengammatrunc', 'gaussian'],
-        'grad_flag': [True, False],
+        'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -38,7 +38,7 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengammatrunc', 'gaussian'],
-        'grad_flag': [True, False],
+        'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -65,7 +65,7 @@ def main(taskid):
               "--var_mode %s %s %s "
               "--grad_flag %s "
               "--epochs 200 --display_interval 200 "
-              "--seeds 1 "
+              "--seeds 1 2 3 4 5 6  7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'],
