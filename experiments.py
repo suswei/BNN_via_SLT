@@ -12,7 +12,7 @@ def set_sweep_config():
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    tanh_Hs = [576, 1024]
+    tanh_Hs = [16, 25]
     rr_Hs = [24, 32]
 
     ####################################################################################################################
@@ -64,14 +64,12 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s "
               "--grad_flag %s "
-              "--epochs 200 --display_interval 10 "
-              # "--prior_dist gaussian %s "
-              "--seeds 1 2 3 4 5 6 7 8 9 10 "
+              "--epochs 200 --display_interval 200 "
+              "--seeds 1 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'],
                  temp['grad_flag'],
-                 # temp['prior_param'],
                  path)
               )
 

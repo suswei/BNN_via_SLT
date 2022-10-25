@@ -48,24 +48,23 @@ def Eqj_logqj(resolution_network, args):
         ks = torch.abs(resolution_network.ks)
         lmbdas = torch.abs(resolution_network.lmbdas)
 
-        if args.base_dist=='gengammatrunc':
-            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=True, b=args.upper)
+        if args.base_dist == 'gengammatrunc':
+            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, b=args.upper)
         else:
-            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None)
+            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, b=None)
 
         return (lmbdas - 1 / (2 * ks))*(torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ
 
     elif args.base_dist == 'gaussian':
 
-        # TODO: generalize to diagonal covariance
-        return -args.w_dim / 2 * np.log(2 * np.pi * np.e * args.nf_gaussian_var)
+        return -1 / 2 * torch.log(2 * np.pi * torch.exp(resolution_network.log_sigma)**2 ) - 1/2
 
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
-def qj_gengamma_lognorm(lmbdas, ks, betas, trunc=False, b=None):
+def qj_gengamma_lognorm(lmbdas, ks, betas, b=None):
 
     logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
-    # if trunc:
+    # if b is not None:
     #     # TODO: torch.igamma: The backward pass with respect to first argument is not yet supported.
     #     return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
     # else:

@@ -40,9 +40,6 @@ def get_dataset_by_id(args):
             w_b = 5*torch.ones(1, args.H)
             mean = torch.matmul(w_a, torch.tanh(w_b.T * X.T)).T
 
-        args.w_a = w_a
-        args.w_b = w_b
-
         y_rv = Normal(mean, 1)
         y = y_rv.sample()
         args.nSn = -y_rv.log_prob(y).sum()
