@@ -17,8 +17,8 @@ def train(args):
     args.lr_k = args.lr*10
     args.lr_beta = args.lr*100
 
-    args.lr_mu = args.lr
-    args.lr_log_sigma = args.lr
+    args.lr_mu = args.lr*100
+    args.lr_log_sigma = args.lr*100
 
     grouped_parameters = [
         {"params": [p for n, p in params if 'lmbdas' in n], 'lr': args.lr_lmbda},
@@ -153,7 +153,6 @@ def main():
         args.prior_var = float(args.prior_var)
 
         print(args)
-
 
         X_all, y_all = get_dataset_by_id(args)
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
