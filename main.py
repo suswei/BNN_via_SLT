@@ -10,17 +10,22 @@ def train(args):
     resolution_network = RealNVP(args.nf_couplingpair, args.nf_hidden, args.w_dim, args.sample_size, args.device, args.grad_flag=='True')
     params = list(resolution_network.named_parameters())
     def is_varparam(n):
-        return 'lmbdas' in n or 'ks' in n or 'betas' in n
+        return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
 
     # convergence is quite sensitive to variational parameter learning rates
     args.lr_lmbda = args.lr*100
-    args.lr_k = args.lr
+    args.lr_k = args.lr*10
     args.lr_beta = args.lr*100
+
+    args.lr_mu = args.lr
+    args.lr_log_sigma = args.lr
 
     grouped_parameters = [
         {"params": [p for n, p in params if 'lmbdas' in n], 'lr': args.lr_lmbda},
         {"params": [p for n, p in params if 'ks' in n], 'lr': args.lr_k},
         {"params": [p for n, p in params if 'betas' in n], 'lr': args.lr_beta},
+        {"params": [p for n, p in params if 'mu' in n], 'lr': args.lr_mu},
+        {"params": [p for n, p in params if 'log_sigma' in n], 'lr': args.lr_log_sigma},
         {"params": [p for n, p in params if not is_varparam(n)], 'lr': args.lr},
     ]
 
@@ -47,9 +52,6 @@ def train(args):
             if torch.any(torch.isnan(ws)):
                 print('nan ws')
 
-            args.theta_lower = torch.min(ws, dim=0).values.detach()
-            args.theta_upper = torch.max(ws, dim=0).values.detach()
-
             loglik_elbo_vec, _ = loglik(ws, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
@@ -62,13 +64,15 @@ def train(args):
 
         if epoch % args.display_interval == 0:
 
-            evalR = 100
-            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
+            evalR = 10
+            #TODO: why is every coordinate getting same update?
+            print(resolution_network.log_sigma)
+            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians \
                 = evaluate(resolution_network, args, R=evalR)
             print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
-                  '= loglik {} (loglik_val {}) - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
+                  '= loglik {} - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
                   .format(epoch, loss, args.nSn, evalR,
-                          elbo, elbo_loglik.mean(), elbo_loglik_val.mean(),
+                          elbo, elbo_loglik.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             elbo_hist.append(elbo)
 
@@ -88,11 +92,6 @@ def evaluate(resolution_network, args, R):
         # print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
         print('xis min {} max {}'.format(xis.min(), xis.max()))
 
-        args.theta_lower = torch.min(ws, dim=0).values.detach()
-        args.theta_upper = torch.max(ws, dim=0).values.detach()
-
-        args.xi_upper = torch.max(xis, dim=0).values.detach()
-
         ent = Eqj_logqj(resolution_network, args).sum()
         complexity = ent - log_prior(args, ws).mean() - log_jacobians.mean()
 
@@ -105,11 +104,8 @@ def evaluate(resolution_network, args, R):
 
         elbo = elbo_loglik.mean() - complexity
 
-        elbo_loglik_val = np.array([0.0])
-        # for batch_idx, (data, target) in enumerate(args.val_loader):
-        #     elbo_loglik_val += loglik(ws, data, target, args).sum(dim=1)
 
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -133,13 +129,13 @@ def main():
                              '[1]: nf_couplingpair'
                              '[2]: nf_hidden')
 
-    parser.add_argument('--epochs', type=int, default=200)
+    parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--batch_size', type=int, default=100)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--trainR', type=int, default=5)
     parser.add_argument('--grad_flag', type=str, default='True')
 
-    parser.add_argument('--display_interval', type=int, default=100)
+    parser.add_argument('--display_interval', type=int, default=10)
     parser.add_argument('--path', type=str)
     parser.add_argument('--viz', action='store_true')
 
@@ -183,18 +179,16 @@ def main():
         #         args.nf_gaussian_var = float(args.var_mode[4])
 
         net, elbo_hist = train(args)
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=100)
-        elbo_val = elbo_loglik_val.mean() - complexity
-        print('nSn {}, elbo {} = loglik {} (loglik_val {}) - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
-              .format(args.nSn, elbo, elbo_loglik.mean(), elbo_loglik_val.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
+        evalR = 1000
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians = evaluate(net, args, R=evalR)
+        print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
+              .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
 
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
-                        'elbo_val': elbo_val,
-                        'elbo_loglik_val': elbo_loglik_val,
                         'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
                         'elbo_hist': elbo_hist}
 

@@ -8,12 +8,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [5000]
+    sample_sizes = [500, 1000, 5000]
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    tanh_Hs = [16, 576]
-    rr_Hs = [2, 24]
+    tanh_Hs = [4, 16, 576, 1024]
+    rr_Hs = [2, 4, 24, 32]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -64,7 +64,7 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s "
               "--grad_flag %s "
-              "--epochs 200 --display_interval 200 "
+              "--epochs 2000 --display_interval 200 "
               "--seeds 1 2 3 4 5 6  7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
