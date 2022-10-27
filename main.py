@@ -65,8 +65,6 @@ def train(args):
         if epoch % args.display_interval == 0:
 
             evalR = 10
-            #TODO: why is every coordinate getting same update?
-            print(resolution_network.log_sigma)
             elbo, elbo_loglik, complexity, ent, logprior, log_jacobians \
                 = evaluate(resolution_network, args, R=evalR)
             print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
@@ -157,7 +155,7 @@ def main():
         print(args)
 
 
-        get_dataset_by_id(args)
+        X_all, y_all = get_dataset_by_id(args)
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         args.base_dist = args.var_mode[0]
@@ -212,7 +210,7 @@ def main():
             l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
             saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag=='True') + 'epoch{}_pred_dist'.format(args.epochs)
             print(saveimgpath)
-            plot_pred_dist(ws, args, saveimgpath)
+            plot_pred_dist(ws, X_all, y_all, args, saveimgpath)
 
             # TOD0: shouldn't hard code, pass in from dataset_factory
             if args.zeromean:

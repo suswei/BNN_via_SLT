@@ -43,8 +43,6 @@ def get_dataset_by_id(args):
         y_rv = Normal(mean, 1)
         y = y_rv.sample()
         args.nSn = -y_rv.log_prob(y).sum()
-        args.X = X
-        args.y = y
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
         # validation
@@ -128,6 +126,8 @@ def get_dataset_by_id(args):
 
     else:
         print('Not a valid dataset name. See options in dataset-factory')
+
+    return X, y
 
 
 def get_lmbda_dim(Hs, dataset):

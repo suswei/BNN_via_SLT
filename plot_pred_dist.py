@@ -4,11 +4,10 @@ from torch.distributions.normal import Normal
 from dataset_factory import loglik
 from matplotlib import pyplot as plt
 import seaborn as sns
-from sklearn.decomposition import PCA
 import pandas as pd
 
 
-def plot_pred_dist(ws, args, saveimgpath):
+def plot_pred_dist(ws, X, y, args, saveimgpath):
 
     # f = plt.figure(figsize=(6, 4))
     # ax1 = plt.subplot2grid((1, 3), (0, 0), colspan=1)
@@ -67,7 +66,7 @@ def plot_pred_dist(ws, args, saveimgpath):
     ll, true_mean = loglik(torch.hstack((args.theta_a, args.theta_b)), tempx.unsqueeze(dim=1), tempx.unsqueeze(dim=1), args)
     ax2.plot(tempx, true_mean.squeeze(dim=0), 'r-', linewidth=1, label='truth')
     # also show the original data points
-    ax2.plot(args.X[args.X >= xl ], args.y[args.X >= xl ], 'ko', markersize=1, label='data points')
+    ax2.plot(X[X >= xl ], y[X >= xl ], 'ko', markersize=1, label='data points')
     ax2.set_xlim(xl, xu)
     ax2.set_xlabel('$x$')
     ax2.set_ylabel('$y$')
