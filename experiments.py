@@ -64,8 +64,8 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s "
               "--grad_flag %s "
-              "--epochs 1000 --display_interval 100 "
-              "--seeds 1 2 3 4 5 6 7 8 9 10"
+              "--epochs 500 --display_interval 100 "
+              "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'],
