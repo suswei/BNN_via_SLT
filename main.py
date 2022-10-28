@@ -7,7 +7,9 @@ from utils import *
 
 def train(args):
 
-    resolution_network = RealNVP(args.nf_couplingpair, args.nf_hidden, args.w_dim, args.sample_size, args.device, args.grad_flag=='True')
+    resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
+                                 args.w_dim, args.sample_size, args.device,
+                                 args.grad_flag == 'True')
     params = list(resolution_network.named_parameters())
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
@@ -123,17 +125,17 @@ def main():
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
     parser.add_argument('--var_mode', nargs='*', default=['gengammatrunc', 2, 16],
-                        help='[0]: gengamma or gengammatrunc or gaussian'
+                        help='[0]: gengamma or gengammatrunc or gaussian_std or gaussian_match'
                              '[1]: nf_couplingpair'
                              '[2]: nf_hidden')
 
-    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--trainR', type=int, default=5)
     parser.add_argument('--grad_flag', type=str, default='True')
 
-    parser.add_argument('--display_interval', type=int, default=10)
+    parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
     parser.add_argument('--viz', action='store_true')
 
@@ -187,7 +189,7 @@ def main():
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
                         'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
-                        'elbo_hist': elbo_hist}
+                        'elbo_hist': elbo_hist} #TODO: hook up elbo hist to tensorboard
 
         if args.path is not None:
             path = '{}/seed{}'.format(args.path, args.seed)

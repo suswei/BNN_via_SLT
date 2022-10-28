@@ -36,15 +36,29 @@ def setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim):
 
 # https://github.com/senya-ashukha/real-nvp-pytorch/blob/master/real-nvp-pytorch.ipynb
 class RealNVP(nn.Module):
-    def __init__(self, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag=True):
+    def __init__(self, base_dist, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag=True):
         super(RealNVP, self).__init__()
 
         self.lmbdas = torch.nn.Parameter(torch.cat((torch.ones(1, 1), torch.ones(w_dim-1, 1))), requires_grad=grad_flag)
         self.ks = torch.nn.Parameter(torch.ones(w_dim, 1), requires_grad=grad_flag)
         self.betas = torch.nn.Parameter(torch.ones(w_dim-1, 1)*w_dim/2, requires_grad=grad_flag)
 
-        self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
-        self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim,1), requires_grad=grad_flag)
+        if base_dist == 'gaussian_match':
+            lmbdas = torch.cat((torch.ones(1, 1), torch.ones(w_dim-1, 1)))
+            ks = torch.ones(w_dim, 1)
+            betas = torch.cat((torch.ones(1, 1)*sample_size, torch.ones(w_dim-1, 1)))
+
+            gengamma_d = 2*ks*lmbdas
+            gengamma_a = betas**(-1/(2*ks))
+            gengamma_p = 2*betas
+            gengamma_mean = gengamma_a*torch.exp(torch.lgamma((gengamma_d+1)/gengamma_p) - torch.lgamma(gengamma_d/gengamma_p))
+            term1 = torch.exp(torch.lgamma((gengamma_d+2)/gengamma_p) - torch.lgamma(gengamma_d/gengamma_p))
+            gengamma_var = (gengamma_a**2)*(term1 - gengamma_mean**2)
+            self.mu = torch.nn.Parameter(gengamma_mean.squeeze(dim=1), requires_grad=grad_flag)
+            self.log_sigma = torch.nn.Parameter(torch.log(gengamma_var**(1/2)), requires_grad=grad_flag)
+        elif base_dist == 'gaussian_std':
+            self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
+            self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim,1), requires_grad=grad_flag)
 
         self.s, self.t, self.masks = setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim)
 
@@ -94,7 +108,7 @@ class RealNVP(nn.Module):
                 if xis.shape[0] == 0:
                     print('no xis')
 
-        elif base_dist == 'gaussian':
+        elif base_dist == 'gaussian_match' or base_dist == 'gaussian_std':
 
             xis = MultivariateNormal(self.mu, torch.diag(torch.exp(self.log_sigma.squeeze(dim=1))**2)).rsample(torch.Size([R]))
 
