@@ -31,7 +31,7 @@ def train(args):
 
     resolution_network.to(args.device)
 
-    optimizer = torch.optim.Adam(grouped_parameters, lr=args.lr)
+    optimizer = torch.optim.Adam(grouped_parameters, lr=args.lr) #TODO: does lr argument do anything?
     torch.autograd.set_detect_anomaly(True)
 
     elbo_hist = []

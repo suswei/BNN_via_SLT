@@ -57,15 +57,16 @@ def Eqj_logqj(resolution_network, args):
 
     elif args.base_dist == 'gaussian':
 
-        return -1 / 2 * torch.log(2 * np.pi * torch.exp(resolution_network.log_sigma)**2 ) - 1/2
+        return -1 / 2 * torch.log(2 * np.pi * torch.exp(resolution_network.log_sigma)**2) - 1/2
 
 
 # normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
 def qj_gengamma_lognorm(lmbdas, ks, betas, b=None):
 
     logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
+    # TODO: torch.igamma: The backward pass with respect to first argument is not yet supported. should there be a warning in the meantime?
+    # TODO: what if we free lmbdas and take advantage of igamma having backward pass wrt second argument?
     # if b is not None:
-    #     # TODO: torch.igamma: The backward pass with respect to first argument is not yet supported. should there be a warning in the meantime?
     #     return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
     # else:
     #     return logZ
