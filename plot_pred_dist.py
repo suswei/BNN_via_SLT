@@ -3,9 +3,6 @@ import numpy as np
 from torch.distributions.normal import Normal
 from dataset_factory import loglik
 from matplotlib import pyplot as plt
-import seaborn as sns
-import pandas as pd
-
 
 def plot_pred_dist(ws, X, y, args, saveimgpath):
 
