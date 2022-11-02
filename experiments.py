@@ -61,15 +61,13 @@ def main(taskid):
     #     os.makedirs(path)
 
     os.system("python3 main.py "
-              "--data %s %s %s %s "
-              "--var_mode %s %s %s "
-              "--grad_flag %s "
+              "--data %s %s %s 100 %s "
+              "--var_mode %s %s %s %s "
               "--epochs 2000 --display_interval 100 "
               "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
-                 temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'],
-                 temp['grad_flag'],
+                 temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'],
                  path)
               )
 

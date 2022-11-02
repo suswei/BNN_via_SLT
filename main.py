@@ -3,13 +3,14 @@ import argparse
 from dataset_factory import *
 from normalizing_flows import *
 from utils import *
+from torch.utils.tensorboard import SummaryWriter
 
 
-def train(args):
+def train(args, writer):
 
     resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
                                  args.w_dim, args.sample_size, args.device,
-                                 args.grad_flag == 'True')
+                                 args.grad_flag)
     params = list(resolution_network.named_parameters())
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
@@ -36,7 +37,6 @@ def train(args):
     optimizer = torch.optim.Adam(grouped_parameters)
     torch.autograd.set_detect_anomaly(True)
 
-    elbo_hist = []
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
@@ -74,9 +74,9 @@ def train(args):
                   .format(epoch, loss, args.nSn, evalR,
                           elbo, elbo_loglik.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
-            elbo_hist.append(elbo)
+            writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
 
-    return resolution_network, elbo_hist
+    return resolution_network
 
 
 def evaluate(resolution_network, args, R):
@@ -104,7 +104,6 @@ def evaluate(resolution_network, args, R):
 
         elbo = elbo_loglik.mean() - complexity
 
-
         return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean()
 
 
@@ -116,24 +115,24 @@ def main():
 
     parser.add_argument('--seeds', nargs='*', default=[1])
 
-    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000, True],
+    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000, 100, True],
                         help='[0]: tanh or rr '
                              '[1]: H '
                              '[2]: sample size '
-                             '[3]: zeromean')
+                             '[3]: batch size'
+                             '[4]: zeromean')
 
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
-    parser.add_argument('--var_mode', nargs='*', default=['gengammatrunc', 2, 16],
+    parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, "True"],
                         help='[0]: gengamma or gengammatrunc or gaussian_std or gaussian_match'
                              '[1]: nf_couplingpair'
-                             '[2]: nf_hidden')
+                             '[2]: nf_hidden '
+                             '[3]: grad_flag')
 
     parser.add_argument('--epochs', type=int, default=500)
-    parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--trainR', type=int, default=5)
-    parser.add_argument('--grad_flag', type=str, default='True')
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -141,33 +140,43 @@ def main():
 
     args = parser.parse_args()
 
+    # parse args.data
+    args.dataset, args.H, args.sample_size, args.batch_size, args.zeromean = args.data
+    args.H = int(args.H)
+    args.sample_size = int(args.sample_size)
+    args.batch_size = int(args.batch_size)
+
+    # parse args.prior_dist
+    # TODO: needs to take into account other prior options in utils.py
+    args.prior, args.prior_mean, args.prior_var = args.prior_dist
+    args.prior_mean = float(args.prior_mean)
+    args.prior_var = float(args.prior_var)
+
+    # parse args.var_mode
+    args.base_dist = args.var_mode[0]
+    args.nf_couplingpair = int(args.var_mode[1])
+    args.nf_hidden = int(args.var_mode[2])
+    args.grad_flag = args.var_mode[3] == 'True'
+
+    print(args)
+
     for seed in args.seeds:
 
         args.seed = int(seed)
 
-        args.dataset, args.H, args.sample_size, args.zeromean = args.data
-        args.H = int(args.H)
-        args.sample_size = int(args.sample_size)
-
-        # TODO: needs to take into account other prior options in utils.py
-        args.prior, args.prior_mean, args.prior_var = args.prior_dist
-        args.prior_mean = float(args.prior_mean)
-        args.prior_var = float(args.prior_var)
-
-        print(args)
+        args_str = '{}_{}_seed{}'.format(args.data, args.var_mode, args.seed)
+        writer = SummaryWriter('tensorboard/{}'.format(args_str))
 
         X_all, y_all = get_dataset_by_id(args)
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-        args.base_dist = args.var_mode[0]
-        args.nf_couplingpair = int(args.var_mode[1])
-        args.nf_hidden = int(args.var_mode[2])
-
         args.upper = 1
 
-        net, elbo_hist = train(args)
+        net = train(args, writer)
+
         evalR = 1000
         elbo, elbo_loglik, complexity, ent, logprior, log_jacobians = evaluate(net, args, R=evalR)
+        writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
+
         print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
@@ -176,8 +185,7 @@ def main():
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
-                        'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size)),
-                        'elbo_hist': elbo_hist} #TODO: hook up elbo hist to tensorboard
+                        'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))}
 
         if args.path is not None:
             path = '{}/seed{}'.format(args.path, args.seed)
@@ -197,7 +205,7 @@ def main():
                 ws, log_jacobians = net(xis)
 
             l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
-            saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag=='True') + 'epoch{}_pred_dist'.format(args.epochs)
+            saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag) + 'epoch{}_pred_dist'.format(args.epochs)
             print(saveimgpath)
             plot_pred_dist(ws, X_all, y_all, args, saveimgpath)
 
