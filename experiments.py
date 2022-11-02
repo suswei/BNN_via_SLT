@@ -8,12 +8,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [500, 1000]
+    sample_sizes = [500]
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    tanh_Hs = [16, 100, 576, 1024]
-    rr_Hs = [4, 10, 24, 32]
+    tanh_Hs = [16, 100, 576]
+    rr_Hs = [4, 10, 24]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -22,7 +22,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengammatrunc', 'gaussian_std', 'gaussian_match'],
+        'base_dist': ['gengamma', 'gengammatrunc', 'gaussian_std', 'gaussian_match'],
         'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
@@ -37,7 +37,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengammatrunc', 'gaussian_std', 'gaussian_match'],
+        'base_dist': ['gengamma', 'gengammatrunc', 'gaussian_std', 'gaussian_match'],
         'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
@@ -64,7 +64,7 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s "
               "--grad_flag %s "
-              "--epochs 500 --display_interval 100 "
+              "--epochs 2000 --display_interval 100 "
               "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],

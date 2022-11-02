@@ -66,10 +66,10 @@ def qj_gengamma_lognorm(lmbdas, ks, betas, b=None):
     logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
     # TODO: torch.igamma: The backward pass with respect to first argument is not yet supported. should there be a warning in the meantime?
     # TODO: what if we free lmbdas and take advantage of igamma having backward pass wrt second argument?
-    # if b is not None:
-    #     return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
-    # else:
-    #     return logZ
+    if b is not None:
+        return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks))))
+    else:
+        return logZ
 
     return logZ
 

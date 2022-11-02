@@ -33,7 +33,7 @@ def train(args):
 
     resolution_network.to(args.device)
 
-    optimizer = torch.optim.Adam(grouped_parameters, lr=args.lr) #TODO: does lr argument do anything?
+    optimizer = torch.optim.Adam(grouped_parameters)
     torch.autograd.set_detect_anomaly(True)
 
     elbo_hist = []
@@ -164,18 +164,6 @@ def main():
         args.nf_hidden = int(args.var_mode[2])
 
         args.upper = 1
-        # if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
-        #
-        #     args.upper = 1 # should be input for gengammatrunc
-        #
-        # elif args.base_dist == 'gaussian':
-        #
-        #     if len(args.var_mode) == 3:
-        #         args.nf_gaussian_mean = 0.0
-        #         args.nf_gaussian_var = 1.0
-        #     else:
-        #         args.nf_gaussian_mean = float(args.var_mode[3])
-        #         args.nf_gaussian_var = float(args.var_mode[4])
 
         net, elbo_hist = train(args)
         evalR = 1000
