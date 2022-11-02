@@ -41,10 +41,10 @@ class RealNVP(nn.Module):
 
         lmbdas = torch.cat((torch.ones(1, 1), torch.ones(w_dim - 1, 1)))
         ks = torch.ones(w_dim, 1)
-        betas_rest = torch.ones(w_dim - 1, 1)
+        betas_rest = torch.ones(w_dim - 1, 1)*w_dim/2
         betas = torch.cat((torch.ones(1, 1) * sample_size, betas_rest))
 
-        self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=False)
+        self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=base_dist!='gengammatrunc')
         self.ks = torch.nn.Parameter(ks, requires_grad=grad_flag)
         self.betas = torch.nn.Parameter(betas_rest, requires_grad=grad_flag)
 

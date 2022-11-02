@@ -12,8 +12,8 @@ def set_sweep_config():
     nf_couplingpairs = [2]
     no_hiddens = [16]
 
-    tanh_Hs = [16, 100, 576]
-    rr_Hs = [4, 10, 24]
+    tanh_Hs = [100, 576]
+    rr_Hs = [10, 24]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -22,7 +22,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gengammatrunc', 'gaussian_std', 'gaussian_match'],
+        'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
         'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
@@ -37,7 +37,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gengammatrunc', 'gaussian_std', 'gaussian_match'],
+        'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
         'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
@@ -54,12 +54,12 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    # if not os.path.exists(path):
-        # os.makedirs(path)
-
     torch.save(hyperparameter_experiments, '{}/hyp.pt'.format(temp['dataset']))
 
     path = '{}/taskid{}/'.format(temp['dataset'], taskid)
+    # if not os.path.exists(path):
+    #     os.makedirs(path)
+
     os.system("python3 main.py "
               "--data %s %s %s %s "
               "--var_mode %s %s %s "
