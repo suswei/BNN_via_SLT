@@ -63,7 +63,7 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s 100 %s "
               "--var_mode %s %s %s %s "
-              "--epochs 2000 --display_interval 100 "
+              "--epochs 500 --display_interval 100 "
               "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],

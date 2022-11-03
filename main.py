@@ -15,7 +15,7 @@ def train(args, writer):
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
 
-    # convergence is quite sensitive to variational parameter learning rates
+    # TODO: convergence is quite sensitive to source distribution learning rates
     args.lr_lmbda = args.lr*100
     args.lr_k = args.lr*10
     args.lr_beta = args.lr*100
@@ -67,14 +67,15 @@ def train(args, writer):
         if epoch % args.display_interval == 0:
 
             evalR = 10
-            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians \
+            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, predloglik \
                 = evaluate(resolution_network, args, R=evalR)
-            print('epoch {}: loss {}, nSn {}, (R = {}) elbo {} '
+            print('epoch {}: predloglik {}, loss {}, nSn {}, (R = {}) elbo {} '
                   '= loglik {} - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
-                  .format(epoch, loss, args.nSn, evalR,
+                  .format(epoch, predloglik, loss, args.nSn, evalR,
                           elbo, elbo_loglik.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
+            writer.add_scalar('predloglik', predloglik.detach().cpu().numpy(), epoch)
 
     return resolution_network
 
@@ -102,9 +103,16 @@ def evaluate(resolution_network, args, R):
             temp = temp.sum(dim=1)
             elbo_loglik += temp
 
+        elbo_loglik_val = 0.0
+        for batch_idx, (data, target) in enumerate(args.val_loader):
+            data, target = data.to(args.device), target.to(args.device)
+            temp, _ = loglik(ws, data, target, args)
+            temp = temp.sum(dim=1)
+            elbo_loglik_val += temp
+
         elbo = elbo_loglik.mean() - complexity
 
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -167,15 +175,16 @@ def main():
         args_str = '{}_{}_seed{}'.format(args.data, args.var_mode, args.seed)
         writer = SummaryWriter('tensorboard/{}'.format(args_str))
 
-        X_all, y_all = get_dataset_by_id(args)
+        X_all, y_all, X_val, y_val = get_dataset_by_id(args)
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         args.upper = 1
 
         net = train(args, writer)
 
         evalR = 1000
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians = evaluate(net, args, R=evalR)
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, predloglik = evaluate(net, args, R=evalR)
         writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
+        writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
 
         print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))

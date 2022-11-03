@@ -127,7 +127,7 @@ def get_dataset_by_id(args):
     else:
         print('Not a valid dataset name. See options in dataset-factory')
 
-    return X, y
+    return X, y, X_val, y_val
 
 
 def get_lmbda_dim(Hs, dataset):
