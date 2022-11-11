@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="short_2_4nf"
+#SBATCH --job-name="optallbetas"
 #SBATCH -p gpgpu
 #SBATCH --gres=gpu:p100:1
 #SBATCH --qos=gpgpuresplat
@@ -12,7 +12,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-7
+#SBATCH --array=0-63
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

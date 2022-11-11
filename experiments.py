@@ -8,12 +8,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [500]
+    sample_sizes = [500, 5000]
     nf_couplingpairs = [2]
-    no_hiddens = [4]
+    no_hiddens = [4, 16]
 
-    tanh_Hs = [100]
-    rr_Hs = [10]
+    tanh_Hs = [16, 576]
+    rr_Hs = [4, 24]
 
     ####################################################################################################################
     hyperparameter_config = {

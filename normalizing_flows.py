@@ -46,7 +46,7 @@ class RealNVP(nn.Module):
 
         self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=base_dist!='gengammatrunc')
         self.ks = torch.nn.Parameter(ks, requires_grad=grad_flag)
-        self.betas = torch.nn.Parameter(betas_rest, requires_grad=grad_flag)
+        self.betas = torch.nn.Parameter(betas, requires_grad=grad_flag)
 
         if base_dist == 'gaussian_match':
 
@@ -102,7 +102,7 @@ class RealNVP(nn.Module):
 
         if base_dist == 'gengamma' or base_dist == 'gengammatrunc':
 
-            betas = torch.abs(torch.cat((self.sample_size * torch.ones(1, 1).to(self.device), self.betas)))
+            betas = torch.abs(self.betas)
             ks = torch.abs(self.ks.repeat(1, R)).T
             lmbdas = torch.abs(self.lmbdas)
 
