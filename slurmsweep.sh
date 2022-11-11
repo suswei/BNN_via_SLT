@@ -39,6 +39,7 @@ mkdir -p reducedrank
 source /usr/local/module/spartan_new.sh
 module load fosscuda/2020b
 module load pytorch/1.9.0-python-3.8.6
+module load tensorboard
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
 
 # python3 in spartan command line
