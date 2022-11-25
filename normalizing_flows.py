@@ -39,14 +39,17 @@ class RealNVP(nn.Module):
     def __init__(self, base_dist, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag=True):
         super(RealNVP, self).__init__()
 
-        lmbdas = torch.cat((torch.ones(1, 1), torch.ones(w_dim - 1, 1)))
+        lmbda_1 = torch.ones(1, 1)
+        lmbda_rest = torch.ones(w_dim - 1, 1)
+        lmbdas = torch.cat((lmbda_1, lmbda_rest))
         ks = torch.ones(w_dim, 1)
         betas_rest = torch.ones(w_dim - 1, 1)*w_dim/2
         betas = torch.cat((torch.ones(1, 1) * sample_size, betas_rest))
 
-        self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=base_dist!='gengammatrunc')
-        self.ks = torch.nn.Parameter(ks, requires_grad=grad_flag)
-        self.betas = torch.nn.Parameter(betas, requires_grad=grad_flag)
+        self.lmbda_1 = torch.nn.Parameter(lmbda_1, requires_grad=True)
+        self.lmbdas = torch.cat((self.lmbda_1, lmbda_rest))
+        self.ks = torch.nn.Parameter(ks, requires_grad=False)
+        self.betas = torch.nn.Parameter(betas, requires_grad=False)
 
         if base_dist == 'gaussian_match':
 

@@ -56,6 +56,26 @@ def get_dataset_by_id(args):
         args.nSn_val = -y_rv.log_prob(y_val).sum()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
 
+        # create smaller datasets
+        ns = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
+        args.datasets = []
+        args.Xs = []
+        args.Ys = []
+        args.ns = ns
+        args.nSns = []
+        for n in ns:
+            X = m.sample(torch.Size([n]))
+            y_rv = Normal(0.0, 1)
+            y = y_rv.sample(torch.Size([n, 1]))
+            args.Xs += [X]
+            args.Ys += [y]
+            args.nSns += [- y_rv.log_prob(y).sum()]
+            args.datasets += [torch.utils.data.DataLoader(TensorDataset(X, y))]
+        args.ns += [args.sample_size]
+        args.nSns += [args.nSn]
+        args.datasets += [args.train_loader]
+
     elif args.dataset == 'tanh_general':  # "Resolution of Singularities ... for Layered Neural Network" Aoyagi and Watanabe
 
         # model
@@ -123,6 +143,7 @@ def get_dataset_by_id(args):
         y_val = y_rv.sample()
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
         args.nSn_val = -y_rv.log_prob(y_val).sum()
+
 
     else:
         print('Not a valid dataset name. See options in dataset-factory')
@@ -195,6 +216,7 @@ def loglik(w, data, target, args):
         means = means.to(args.device)
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(args.device))
         logprob = y_rv.log_prob(target.repeat(1, w.shape[0]).T.unsqueeze(dim=2))
+
 
     elif args.dataset == 'tanh_general':
         R = w.shape[0]

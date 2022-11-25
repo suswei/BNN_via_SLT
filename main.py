@@ -41,28 +41,34 @@ def train(args, writer):
 
         running_loss = 0.0
 
-        for batch_idx, (data, target) in enumerate(args.train_loader):
+        resolution_network.train()
+        optimizer.zero_grad()
 
-            data, target = data.to(args.device), target.to(args.device)
+        xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
+        ws, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
+        if torch.any(torch.isnan(ws)):
+            print('nan ws')
 
-            resolution_network.train()
-            optimizer.zero_grad()
+        n_counter = 0
+        elbo = torch.zeros(len(args.ns))
+        for i in range(0,len(args.ns)):
 
-            xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
-
-            ws, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
-            if torch.any(torch.isnan(ws)):
-                print('nan ws')
+            data, target = args.Xs[i].to(args.device), args.Ys[i].to(args.device) # hook up to loader
 
             loglik_elbo_vec, _ = loglik(ws, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
-            elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
+            elbo[n_counter] = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
 
-            running_loss += -elbo.item()
+        # elbo plus nSn should have negative lambda slope against log n
+        logns = torch.log(args.ns)
+        elbo_adj = elbo + args.nSns
+        hat_lambda = torch.sum((logns - logns.mean())*(elbo_adj - elbo_adj.mean()))/torch.sum((logns-logns.mean())**2)
+        intercept = elbo_adj.mean() - hat_lambda*logns.mean()
+        hat_elbo_adj = intercept + hat_lambda*logns
 
-            loss = -elbo
-            loss.backward()
-            optimizer.step()
+        loss = torch.mean((elbo_adj - hat_elbo_adj)**2)
+        loss.backward()
+        optimizer.step()
 
         if epoch % args.display_interval == 0:
 
