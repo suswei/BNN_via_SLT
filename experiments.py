@@ -2,18 +2,20 @@ import sys
 import os
 import itertools
 import torch
+import numpy as np
 
 
 def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [500, 5000]
+    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
+              int(round(np.exp(7))) * 32]
     nf_couplingpairs = [2]
-    no_hiddens = [4, 16]
+    no_hiddens = [4]
 
-    tanh_Hs = [16, 576]
-    rr_Hs = [4, 24]
+    tanh_Hs = [16]
+    rr_Hs = [4]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -22,7 +24,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std'],
+        'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
         'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
@@ -37,7 +39,7 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std'],
+        'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
         'grad_flag': ['True', 'False'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
@@ -61,10 +63,10 @@ def main(taskid):
     #     os.makedirs(path)
 
     os.system("python3 main.py "
-              "--data %s %s %s 100 %s "
+              "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
               "--epochs 1000 --display_interval 100 "
-              "--seeds 1 2 3 4 5 "
+              "--seeds 1 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'],

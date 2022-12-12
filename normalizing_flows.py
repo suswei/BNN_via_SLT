@@ -35,6 +35,7 @@ def setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim):
 
 
 # https://github.com/senya-ashukha/real-nvp-pytorch/blob/master/real-nvp-pytorch.ipynb
+#TODO: it woudl be nice to implement simpler NFs such as planar flows
 class RealNVP(nn.Module):
     def __init__(self, base_dist, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag=True):
         super(RealNVP, self).__init__()

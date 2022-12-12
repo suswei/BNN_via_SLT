@@ -123,12 +123,12 @@ def main():
 
     parser.add_argument('--seeds', nargs='*', default=[1])
 
-    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000, 100, True],
+    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000, True],
                         help='[0]: tanh or rr '
                              '[1]: H '
                              '[2]: sample size '
-                             '[3]: batch size'
-                             '[4]: zeromean')
+                             # '[3]: batch size'
+                             '[3]: zeromean')
 
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
@@ -149,10 +149,11 @@ def main():
     args = parser.parse_args()
 
     # parse args.data
-    args.dataset, args.H, args.sample_size, args.batch_size, args.zeromean = args.data
+    # args.dataset, args.H, args.sample_size, args.batch_size, args.zeromean = args.data
+    args.dataset, args.H, args.sample_size, args.zeromean = args.data
     args.H = int(args.H)
     args.sample_size = int(args.sample_size)
-    args.batch_size = int(args.batch_size)
+    args.batch_size = args.sample_size #TODO: taking away batch size as hyperparameter
 
     # parse args.prior_dist
     # TODO: needs to take into account other prior options in utils.py
@@ -194,6 +195,7 @@ def main():
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
+                        'predloglik': predloglik.mean(),
                         'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))}
 
         if args.path is not None:
