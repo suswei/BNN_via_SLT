@@ -1,6 +1,7 @@
 import torch
 import argparse
 import os
+import numpy as np
 
 import pandas as pd
 pd.set_option('display.max_rows', 500)
@@ -8,6 +9,7 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 pd.options.display.float_format = '{:.2f}'.format
 
+import matplotlib.pyplot as plt
 
 # run separately for different datasets
 def main():
@@ -42,7 +44,7 @@ def main():
 
                     dataset_list += [sim_args['dataset']]
                     Hs_list += [sim_args['H']]
-                    ns_list += [sim_args['sample_size']]
+                    ns_list += [np.log(sim_args['sample_size'])]
                     seed_list += [sim_args['seed']]
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
                     method_list += ['{}\_{}'.format(sim_args['base_dist'], sim_args['grad_flag'])]
@@ -86,7 +88,7 @@ def main():
 
     summary_pd = pd.DataFrame({'dataset': dataset_list,
                                '$H$': Hs_list,
-                               '$n$': ns_list,
+                               '$\log n$': ns_list,
                                'seed': seed_list,
                                'method': method_list,
                                'elbo+$nS_n$': ev_list,
@@ -103,7 +105,7 @@ def main():
     # 
     # for n in unique_ns:
     # 
-    #     temp = summary_pd.loc[(summary_pd['$n$'] == n)]
+    #     temp = summary_pd.loc[(summary_pd['$\log n$'] == n)]
     #     title = '{}_n{}'.format(args.path, n)
     # 
     #     print(title)
@@ -112,14 +114,22 @@ def main():
     #     with open('output/{}.tex'.format(title), 'w') as tf:
     #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
 
-    if not os.path.exists('output'):
-        os.makedirs('output')
+    # if not os.path.exists('output'):
+    #     os.makedirs('output')
+    #
+    # for metric in ['elbo+$nS_n$', 'predloglik']:
+    #     pdsave = summary_pd.groupby(['$\log n$', '$H$', 'method'])[metric].describe()
+    #     print(pdsave)
+    #     with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
+    #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
 
-    for metric in ['elbo+$nS_n$', 'predloglik']:
-        pdsave = summary_pd.groupby(['$n$', '$H$', 'method'])[metric].describe()
-        print(pdsave)
-        with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
-            tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
+    unique_Hs = list(set(Hs_list))
+    for H in unique_Hs:
+        temp = summary_pd.loc[(summary_pd['$H$'] == H)]
+        temp.set_index('$\log n$', inplace=True)
+        temp.groupby('method')['elbo+$nS_n$'].plot(legend=True,style='o-')
+        plt.show()
+        plt.title('H={}'.format(H))
 
 
 if __name__ == "__main__":

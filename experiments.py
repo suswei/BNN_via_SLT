@@ -27,7 +27,7 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': ['all', 'first', 'none'],
+        'grad_flag': ['all', 'none'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -42,7 +42,7 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': ['all', 'first', 'none'],
+        'grad_flag': ['all', 'none'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -67,7 +67,7 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
               "--epochs 200 --display_interval 100 "
-              "--seeds 1 2 3 4 5 "
+              "--seeds 1 2 3 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'],
