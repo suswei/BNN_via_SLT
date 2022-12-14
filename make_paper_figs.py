@@ -21,9 +21,9 @@ with open('output/rr_summary.tex', 'w') as tf:
 
 ########################################################################################################################
 
-os.system("python3 plot_experiments.py --path reducedrank")
+os.system("python3 experiments_to_df.py --path reducedrank")
 
-os.system("python3 plot_experiments.py --path tanh")
+os.system("python3 experiments_to_df.py --path tanh")
 
 ########################################################################################################################
 

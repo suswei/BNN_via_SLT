@@ -61,6 +61,7 @@ class RealNVP(nn.Module):
                 self.betas = torch.nn.Parameter(betas, requires_grad=True)
 
             elif grad_flag == 'first':
+                # TODO: check mu1 and log_sigma1 are updating
 
                 self.lmbda1 = torch.nn.Parameter(lmbda1, requires_grad=True)
                 self.k1 = torch.nn.Parameter(k1, requires_grad=True)
@@ -93,6 +94,7 @@ class RealNVP(nn.Module):
                 self.log_sigma = torch.nn.Parameter(gengamma_logsigma.squeeze(dim=1), requires_grad=True)
             elif grad_flag == 'first':
 
+                # TODO: check mu1 and log_sigma1 are updating
                 self.mu1 = torch.nn.Parameter(gengamma_mean[0], requires_grad=True)
                 self.log_sigma1 = torch.nn.Parameter(gengamma_logsigma[0], requires_grad=True)
 
@@ -111,6 +113,8 @@ class RealNVP(nn.Module):
                 self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=True)
 
             elif grad_flag == 'first':
+
+                # TODO: check mu1 and log_sigma1 are updating
 
                 self.mu1 = torch.nn.Parameter(torch.zeros(1), requires_grad=True)
                 self.log_sigma1 = torch.nn.Parameter(torch.zeros(1), requires_grad=True)

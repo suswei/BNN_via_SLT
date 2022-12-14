@@ -109,6 +109,7 @@ def evaluate(resolution_network, args, R):
             temp, _ = loglik(ws, data, target, args)
             temp = temp.sum(dim=1)
             elbo_loglik_val += temp
+            # TODO: is RMSE interesting to look at?
 
         elbo = elbo_loglik.mean() - complexity
 
