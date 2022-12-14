@@ -43,6 +43,7 @@ def Eqj_logqj(resolution_network, args):
 
     if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
 
+        # TODO: anything better than absolute value here?
         betas = torch.abs(resolution_network.betas)
         ks = torch.abs(resolution_network.ks)
         lmbdas = torch.abs(resolution_network.lmbdas)

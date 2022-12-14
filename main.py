@@ -132,7 +132,7 @@ def main():
 
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
-    parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, "True"],
+    parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, "all"],
                         help='[0]: gengamma or gengammatrunc or gaussian_std or gaussian_match'
                              '[1]: nf_couplingpair'
                              '[2]: nf_hidden '
@@ -165,7 +165,7 @@ def main():
     args.base_dist = args.var_mode[0]
     args.nf_couplingpair = int(args.var_mode[1])
     args.nf_hidden = int(args.var_mode[2])
-    args.grad_flag = args.var_mode[3] == 'True'
+    args.grad_flag = str(args.var_mode[3])
 
     print(args)
 

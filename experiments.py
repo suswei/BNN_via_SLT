@@ -25,7 +25,7 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': ['True', 'False'],
+        'grad_flag': ['all', 'first', 'none'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -40,7 +40,7 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': ['True', 'False'],
+        'grad_flag': ['all', 'first', 'none'],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
