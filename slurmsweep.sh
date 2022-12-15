@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="optallbetas"
-#SBATCH -p gpgpu
-#SBATCH --gres=gpu:p100:1
-#SBATCH --qos=gpgpuresplat
+#SBATCH --job-name="lr"
+#SBATCH --partition=gpu-a100
+#SBATCH --nodes=1
+
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+
+# Number of GPUs requested per node:
+#SBATCH --gres=gpu:1
 
 #SBATCH --mem=5G
 
@@ -12,7 +17,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-63
+#SBATCH --array=0-191
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
