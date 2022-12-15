@@ -46,9 +46,9 @@ def get_dataset_by_id(args):
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
         # validation
-        X_val = m.sample(torch.Size([args.sample_size]))
+        X_val = m.sample(torch.Size([1000]))
         if args.zeromean=='True':
-            mean = torch.zeros(args.sample_size, 1)
+            mean = torch.zeros(1000, 1)
         else:
             mean = torch.matmul(w_a, torch.tanh(w_b.T * X_val.T)).T
         y_rv = Normal(mean, 1)
@@ -79,10 +79,10 @@ def get_dataset_by_id(args):
         args.train_loader = torch.utils.data.DataLoader(TensorDataset(X, y), batch_size=args.batch_size, shuffle=True)
 
         # validation
-        X_val = m.sample(torch.Size([args.sample_size]))
+        X_val = m.sample(torch.Size([1000]))
         mean = 0.0
         y_rv = Normal(mean, 1)
-        y_val = y_rv.sample(torch.Size([args.sample_size, 1]))
+        y_val = y_rv.sample(torch.Size([1000, 1]))
         args.val_loader = torch.utils.data.DataLoader(TensorDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
         args.nSn_val = -y_rv.log_prob(y_val).sum()
 

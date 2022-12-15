@@ -11,7 +11,7 @@ pd.options.display.float_format = '{:.2f}'.format
 
 import matplotlib.pyplot as plt
 
-# run separately for different datasets
+
 def main():
 
     parser = argparse.ArgumentParser(description='puts experimental results into a pandas data frame')
@@ -94,10 +94,10 @@ def main():
                                'elbo+$nS_n$': ev_list,
                                'predloglik': predloglik_list
                                })
-
+    summary_pd['predloglik'] = summary_pd['predloglik'].astype(float)
     # summary_pd = summary_pd.drop_duplicates()
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['elbo+$nS_n$']>=-1e+6] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['elbo+$nS_n$']>=-1e+3] # remove instances where convergence was clearly not reached
 
     ####################################################################################################################
 
@@ -124,12 +124,17 @@ def main():
     #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
 
     unique_Hs = list(set(Hs_list))
+
     for H in unique_Hs:
         temp = summary_pd.loc[(summary_pd['$H$'] == H)]
+        print(temp)
         temp.set_index('$\log n$', inplace=True)
-        temp.groupby('method')['elbo+$nS_n$'].plot(legend=True,style='o-')
-        plt.show()
-        plt.title('H={}'.format(H))
+
+        for metric in ['predloglik', 'elbo+$nS_n$']:
+            temp.groupby('method')[metric].plot(legend=True, style='o-')
+            plt.title('H={}'.format(H))
+            plt.ylabel('{}'.format(metric))
+            plt.show()
 
 
 if __name__ == "__main__":
