@@ -106,8 +106,8 @@ def evaluate(resolution_network, args, R):
         elbo_loglik_val = 0.0
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
-            temp, _ = loglik(ws, data, target, args)
-            temp = temp.sum(dim=1)
+            temp, _ = loglik(ws, data, target, args) # temp.shape = [number of ws, sample size of data]
+            temp = temp.mean(dim=1)
             elbo_loglik_val += temp
             # TODO: is RMSE interesting to look at?
 
@@ -133,10 +133,10 @@ def main():
 
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
-    parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, "all"],
+    parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, True],
                         help='[0]: gengamma or gengammatrunc or gaussian_std or gaussian_match'
                              '[1]: nf_couplingpair'
-                             '[2]: nf_hidden '
+                             '[2]: nf_hidden'
                              '[3]: grad_flag')
 
     parser.add_argument('--epochs', type=int, default=500)
@@ -166,7 +166,7 @@ def main():
     args.base_dist = args.var_mode[0]
     args.nf_couplingpair = int(args.var_mode[1])
     args.nf_hidden = int(args.var_mode[2])
-    args.grad_flag = str(args.var_mode[3])
+    args.grad_flag = args.var_mode[3] == 'True'
 
     print(args)
 

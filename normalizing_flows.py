@@ -37,7 +37,7 @@ def setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim):
 # https://github.com/senya-ashukha/real-nvp-pytorch/blob/master/real-nvp-pytorch.ipynb
 #TODO: it woudl be nice to implement simpler NFs such as planar flows
 class RealNVP(nn.Module):
-    def __init__(self, base_dist, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag='all'):
+    def __init__(self, base_dist, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag=True):
         super(RealNVP, self).__init__()
 
         # initialization of lmbda, k, beta in generalized gamma base distribution
@@ -54,28 +54,11 @@ class RealNVP(nn.Module):
         betas = torch.cat((beta1, betas_rest))
 
         if base_dist == 'gengamma':
-            if grad_flag == 'all':
 
-                self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=True)
-                self.ks = torch.nn.Parameter(ks, requires_grad=True)
-                self.betas = torch.nn.Parameter(betas, requires_grad=True)
+            self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=grad_flag)
+            self.ks = torch.nn.Parameter(ks, requires_grad=grad_flag)
+            self.betas = torch.nn.Parameter(betas, requires_grad=grad_flag)
 
-            elif grad_flag == 'first':
-                # TODO: not updating
-
-                self.lmbda1 = torch.nn.Parameter(lmbda1, requires_grad=True)
-                self.k1 = torch.nn.Parameter(k1, requires_grad=True)
-                self.beta1 = torch.nn.Parameter(beta1, requires_grad=True)
-
-                self.lmbdas = torch.cat((self.lmbda1, lmbdas_rest))
-                self.ks = torch.cat((self.k1, ks_rest))
-                self.betas = torch.cat((self.beta1, betas_rest))
-
-            elif grad_flag == 'none':
-
-                self.lmbdas = torch.nn.Parameter(lmbdas, requires_grad=False)
-                self.ks = torch.nn.Parameter(ks, requires_grad=False)
-                self.betas = torch.nn.Parameter(betas, requires_grad=False)
 
         if base_dist == 'gaussian_match':
 
@@ -89,42 +72,13 @@ class RealNVP(nn.Module):
             gengamma_var = (gengamma_a**2)*(term1 - gengamma_mean**2)
             gengamma_logsigma = torch.log(gengamma_var**(1/2))
 
-            if grad_flag == 'all':
-                self.mu = torch.nn.Parameter(gengamma_mean.squeeze(dim=1), requires_grad=True)
-                self.log_sigma = torch.nn.Parameter(gengamma_logsigma.squeeze(dim=1), requires_grad=True)
-            elif grad_flag == 'first':
-
-                # TODO: not updating
-                self.mu1 = torch.nn.Parameter(gengamma_mean[0], requires_grad=True)
-                self.log_sigma1 = torch.nn.Parameter(gengamma_logsigma[0], requires_grad=True)
-
-                self.mu = torch.cat((self.mu1, gengamma_mean[1:, 0]))
-                self.log_sigma = torch.cat((self.log_sigma1, gengamma_logsigma[1:, 0]))
-
-            elif grad_flag == 'none':
-                self.mu = torch.nn.Parameter(gengamma_mean.squeeze(dim=1), requires_grad=False)
-                self.log_sigma = torch.nn.Parameter(gengamma_logsigma.squeeze(dim=1), requires_grad=False)
+            self.mu = torch.nn.Parameter(gengamma_mean.squeeze(dim=1), requires_grad=grad_flag)
+            self.log_sigma = torch.nn.Parameter(gengamma_logsigma.squeeze(dim=1), requires_grad=grad_flag)
 
         elif base_dist == 'gaussian_std':
 
-            if grad_flag == 'all':
-
-                self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=True)
-                self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=True)
-
-            elif grad_flag == 'first':
-
-                # TODO: not updating
-                self.mu1 = torch.nn.Parameter(torch.zeros(1), requires_grad=True)
-                self.log_sigma1 = torch.nn.Parameter(torch.zeros(1), requires_grad=True)
-
-                self.mu = torch.cat((self.mu1, torch.zeros(w_dim-1)))
-                self.log_sigma = torch.cat((self.log_sigma1, torch.zeros(w_dim-1)))
-
-            elif grad_flag == 'none':
-
-                self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=False)
-                self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=False)
+            self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
+            self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
 
         self.s, self.t, self.masks = setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim)
 

@@ -7,7 +7,8 @@ import pandas as pd
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-pd.options.display.float_format = '{:.2f}'.format
+# pd.options.display.float_format = '{:.2f}'.format
+pd.set_option("display.precision", 4)
 
 import matplotlib.pyplot as plt
 
@@ -27,6 +28,7 @@ def main():
     seed_list = []
     prior_list = []
     method_list = []
+    lr_list = []
     ev_list = []
     predloglik_list = []
 
@@ -48,6 +50,7 @@ def main():
                     seed_list += [sim_args['seed']]
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
                     method_list += ['{}\_{}'.format(sim_args['base_dist'], sim_args['grad_flag'])]
+                    lr_list += [sim_args['lr']]
 
                     # evaluation metrics
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
@@ -91,13 +94,16 @@ def main():
                                '$\log n$': ns_list,
                                'seed': seed_list,
                                'method': method_list,
+                               'lr': lr_list,
                                'elbo+$nS_n$': ev_list,
                                'predloglik': predloglik_list
                                })
+
     summary_pd['predloglik'] = summary_pd['predloglik'].astype(float)
+
     # summary_pd = summary_pd.drop_duplicates()
     summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['elbo+$nS_n$']>=-1e+3] # remove instances where convergence was clearly not reached
+    summary_pd = summary_pd.loc[summary_pd['elbo+$nS_n$'] >= -1e+4] # remove instances where convergence was clearly not reached
 
     ####################################################################################################################
 
@@ -117,9 +123,9 @@ def main():
     # if not os.path.exists('output'):
     #     os.makedirs('output')
     #
-    # for metric in ['elbo+$nS_n$', 'predloglik']:
-    #     pdsave = summary_pd.groupby(['$\log n$', '$H$', 'method'])[metric].describe()
-    #     print(pdsave)
+    for metric in ['elbo+$nS_n$', 'predloglik']:
+        pdsave = summary_pd.groupby(['$\log n$', '$H$', 'method','lr'])[metric].describe()
+        print(pdsave)
     #     with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
     #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
 
@@ -131,10 +137,14 @@ def main():
         temp.set_index('$\log n$', inplace=True)
 
         for metric in ['predloglik', 'elbo+$nS_n$']:
+            # fig, ax = plt.subplots()
             temp.groupby('method')[metric].plot(legend=True, style='o-')
             plt.title('H={}'.format(H))
             plt.ylabel('{}'.format(metric))
             plt.show()
+            # for key, group in temp.groupby('method'):
+            #     group.plot('$\log n$', metric, label=key, ax=ax)
+            # plt.show()
 
 
 if __name__ == "__main__":

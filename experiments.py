@@ -14,10 +14,8 @@ def set_sweep_config():
     nf_couplingpairs = [2]
     no_hiddens = [4]
 
-    tanh_Hs = [15]
-    rr_Hs = [4]
-
-    # TODO: experiment does not currently look at learning rate
+    tanh_Hs = [15, 99]
+    rr_Hs = [4, 10]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -27,7 +25,8 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': ['all', 'none'],
+        'grad_flag': [True, False],
+        'lr': [0.001, 0.0001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -42,7 +41,8 @@ def set_sweep_config():
         'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': ['all', 'none'],
+        'grad_flag': [True, False],
+        'lr': [0.001, 0.0001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -66,11 +66,12 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
-              "--epochs 200 --display_interval 100 "
-              "--seeds 1 2 3 "
+              "--lr %s "
+              "--epochs 1000 --display_interval 100 "
+              "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
-                 temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'],
+                 temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],
                  path)
               )
 
