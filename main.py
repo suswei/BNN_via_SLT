@@ -3,10 +3,9 @@ import argparse
 from dataset_factory import *
 from normalizing_flows import *
 from utils import *
-from torch.utils.tensorboard import SummaryWriter
 
 
-def train(args, writer):
+def train(args, writer=None):
 
     resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
                                  args.w_dim, args.sample_size, args.device,
@@ -74,8 +73,9 @@ def train(args, writer):
                   .format(epoch, predloglik, loss, args.nSn, evalR,
                           elbo, elbo_loglik.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
-            writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
-            writer.add_scalar('predloglik', predloglik.detach().cpu().numpy(), epoch)
+            if args.tensorboard:
+                writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
+                writer.add_scalar('predloglik', predloglik.detach().cpu().numpy(), epoch)
 
     return resolution_network
 
@@ -146,6 +146,7 @@ def main():
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
     parser.add_argument('--viz', action='store_true')
+    parser.add_argument('--tensorboard', action='store_true')
 
     args = parser.parse_args()
 
@@ -175,7 +176,11 @@ def main():
         args.seed = int(seed)
 
         args_str = '{}_{}_seed{}'.format(args.data, args.var_mode, args.seed)
-        writer = SummaryWriter('tensorboard/{}'.format(args_str))
+        if args.tensorboard:
+            from torch.utils.tensorboard import SummaryWriter
+            writer = SummaryWriter('tensorboard/{}'.format(args_str))
+        else:
+            writer=None
 
         X_all, y_all, X_val, y_val = get_dataset_by_id(args)
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -185,8 +190,9 @@ def main():
 
         evalR = 1000
         elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, predloglik = evaluate(net, args, R=evalR)
-        writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
-        writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
+        if args.tensorboard:
+            writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
+            writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
 
         print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
