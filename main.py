@@ -1,7 +1,7 @@
 import os
 import argparse
 from dataset_factory import *
-from normalizing_flows import *
+from q_model import *
 from utils import *
 
 
