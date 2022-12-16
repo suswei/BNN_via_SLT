@@ -21,7 +21,6 @@ def set_sweep_config():
         'dataset': ['tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
-        'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std'],
         'grad_flag': [False],
@@ -37,7 +36,6 @@ def set_sweep_config():
         'dataset': ['reducedrank'],
         'H': rr_Hs,
         'sample_size': sample_sizes,
-        'zeromean': [True],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std'],
         'grad_flag': [False],
@@ -63,14 +61,14 @@ def main(taskid):
     torch.save(hyperparameter_experiments, '{}/hyp.pt'.format(temp['dataset']))
 
     os.system("python3 main.py "
-              "--data %s %s %s %s "
+              "--data %s %s %s "
               "--var_mode %s %s %s %s "
               "--lr %s "
               "--epochs 2000 " #TODO: need to make sure we are training to convergence
               "--display_interval 100 "
               "--seeds 1 2 3 4 5 "
               "--path %s "
-              % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],
+              % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],
                  path)
               )

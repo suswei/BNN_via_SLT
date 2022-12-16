@@ -1,15 +1,14 @@
 import os
 import argparse
-from dataset_factory import *
 from q_model import *
+from p_model import *
 from utils import *
 
 
 def train(args, writer=None):
 
     resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
-                                 args.w_dim, args.sample_size, args.device,
-                                 args.grad_flag)
+                                 args.w_dim, args.sample_size, args.device, args.grad_flag)
     params = list(resolution_network.named_parameters())
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
@@ -53,7 +52,7 @@ def train(args, writer=None):
             if torch.any(torch.isnan(ws)):
                 print('nan ws')
 
-            loglik_elbo_vec, _ = loglik(ws, data, target, args)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
+            loglik_elbo_vec = args.P.loglik(data, target, ws)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
 
@@ -99,14 +98,14 @@ def evaluate(resolution_network, args, R):
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
-            temp, _ = loglik(ws, data, target, args)
+            temp = args.P.loglik(data, target, ws)
             temp = temp.sum(dim=1)
             elbo_loglik += temp
 
         elbo_loglik_val = 0.0
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
-            temp, _ = loglik(ws, data, target, args) # temp.shape = [number of ws, sample size of data]
+            temp = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
             temp = temp.mean(dim=1)
             elbo_loglik_val += temp
             # TODO: is RMSE interesting to look at?
@@ -124,12 +123,11 @@ def main():
 
     parser.add_argument('--seeds', nargs='*', default=[1])
 
-    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000, True],
+    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000],
                         help='[0]: tanh or rr '
                              '[1]: H '
-                             '[2]: sample size '
+                             '[2]: sample size ')
                              # '[3]: batch size'
-                             '[3]: zeromean')
 
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
@@ -151,8 +149,7 @@ def main():
     args = parser.parse_args()
 
     # parse args.data
-    # args.dataset, args.H, args.sample_size, args.batch_size, args.zeromean = args.data
-    args.dataset, args.H, args.sample_size, args.zeromean = args.data
+    args.dataset, args.H, args.sample_size = args.data
     args.H = int(args.H)
     args.sample_size = int(args.sample_size)
     args.batch_size = args.sample_size #TODO: taking away batch size as hyperparameter
@@ -169,11 +166,15 @@ def main():
     args.nf_hidden = int(args.var_mode[2])
     args.grad_flag = args.var_mode[3] == 'True'
 
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     print(args)
 
     for seed in args.seeds:
 
         args.seed = int(seed)
+        torch.manual_seed(args.seed)
+        np.random.seed(args.seed)
 
         args_str = '{}_{}_seed{}'.format(args.data, args.var_mode, args.seed)
         if args.tensorboard:
@@ -182,8 +183,10 @@ def main():
         else:
             writer=None
 
-        X_all, y_all, X_val, y_val = get_dataset_by_id(args)
-        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        args.P = load_P(args.dataset, args.H, args.device)
+        args.train_loader, args.nSn = args.P.load_data(args.sample_size, args.sample_size)
+        args.val_loader, _ = args.P.load_data(1000, 1000)
+        args.w_dim = args.P.w_dim
         args.upper = 1
 
         net = train(args, writer)
@@ -197,13 +200,13 @@ def main():
         print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-        print('-lambda log n + (m-1) log log n: {}'.format(-args.trueRLCT*np.log(args.sample_size) + (args.truem-1.0)*np.log(np.log(args.sample_size))))
+        print('-lambda log n + (m-1) log log n: {}'.format(-args.P.trueRLCT*np.log(args.sample_size) + (args.P.truem-1.0)*np.log(np.log(args.sample_size))))
 
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
                         'predloglik': predloglik.mean(),
-                        'asy_log_pDn': -args.trueRLCT * np.log(args.sample_size) + (args.truem - 1.0) * np.log(np.log(args.sample_size))}
+                        'asy_log_pDn': -args.P.trueRLCT * np.log(args.sample_size) + (args.P.truem - 1.0) * np.log(np.log(args.sample_size))}
 
         if args.path is not None:
             path = '{}/seed{}'.format(args.path, args.seed)
@@ -212,35 +215,6 @@ def main():
             torch.save(vars(args), '{}/args.pt'.format(path))
             # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
             torch.save(results_dict, '{}/results.pt'.format(path))
-
-        if args.dataset == 'tanh' and args.viz:
-
-            from plot_pred_dist import plot_pred_dist
-
-            net.eval()
-            with torch.no_grad():
-                xis = net.sample_xis(500, args.base_dist, upper=args.upper)  # [R, args.w_dim]
-                ws, log_jacobians = net(xis)
-
-            l = len(args.data) + len(args.prior_dist) + len(args.var_mode)
-            saveimgpath = 'output/'+('{}_'*l).format(*args.data, *args.prior_dist, *args.var_mode, args.grad_flag) + 'epoch{}_pred_dist'.format(args.epochs)
-            print(saveimgpath)
-            plot_pred_dist(ws, X_all, y_all, args, saveimgpath)
-
-            # TOD0: shouldn't hard code, pass in from dataset_factory
-            if args.zeromean:
-                w0 = 0
-            else:
-                w0 = 5
-
-            if args.dataset == 'tanh':
-                with open('{}.tex'.format(saveimgpath), 'w') as file:
-                    file.write('The model of interest is the tanh network with hidden units $H={}$. '
-                               'The data is generated according to $p_0(y | x, w) = p(y | x, w_0)$ where $w_0 = {}$. '
-                               'The prior is taken to be $N({}, {} I_d)$. '
-                               'The predictive distributions resulting from different variational approximations trained on a dataset of size $n={}$ are displayed.'
-                               .format(args.H, w0, args.prior_mean, args.prior_var, args.sample_size))
-                    # file.write('$H=${}'.format(args.H))
 
 
 if __name__ == "__main__":
