@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="lr"
+#SBATCH --job-name="nograd"
 #SBATCH --partition=gpu-a100
 #SBATCH --nodes=1
 
@@ -46,7 +46,3 @@ module load fosscuda/2020b
 module load pytorch/1.10.0-python-3.8.6
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
 
-# python3 in spartan command line
-# Python 3.8.5
-# import torch; print(torch.__version__)
-# 1.8.0.dev20201218

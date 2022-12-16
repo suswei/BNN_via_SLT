@@ -9,13 +9,12 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(6))) * 32,
-              int(round(np.exp(7))) * 32]
-    nf_couplingpairs = [2]
-    no_hiddens = [4]
+    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32]
+    nf_couplingpairs = [2, 4]
+    no_hiddens = [4, 16]
 
-    tanh_Hs = [15, 99]
-    rr_Hs = [4, 10]
+    tanh_Hs = [15, 99, 255]
+    rr_Hs = [4, 10, 16]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -24,9 +23,9 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': [True, False],
-        'lr': [0.001, 0.0001],
+        'base_dist': ['gengamma', 'gaussian_std'],
+        'grad_flag': [False],
+        'lr': [0.001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -40,9 +39,9 @@ def set_sweep_config():
         'sample_size': sample_sizes,
         'zeromean': [True],
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std', 'gaussian_match'],
-        'grad_flag': [True, False],
-        'lr': [0.001, 0.0001],
+        'base_dist': ['gengamma', 'gaussian_std'],
+        'grad_flag': [False],
+        'lr': [0.001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -67,7 +66,8 @@ def main(taskid):
               "--data %s %s %s %s "
               "--var_mode %s %s %s %s "
               "--lr %s "
-              "--epochs 1000 --display_interval 100 "
+              "--epochs 2000 " #TODO: need to make sure we are training to convergence
+              "--display_interval 100 "
               "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'], temp['zeromean'],

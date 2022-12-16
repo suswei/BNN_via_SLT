@@ -4,6 +4,7 @@ from torch.distributions.normal import Normal
 from dataset_factory import loglik
 from matplotlib import pyplot as plt
 
+#TODO: this function is a mess. might need to pull 1D tanh regression example as a demo
 def plot_pred_dist(ws, X, y, args, saveimgpath):
 
     # f = plt.figure(figsize=(6, 4))
@@ -60,7 +61,7 @@ def plot_pred_dist(ws, X, y, args, saveimgpath):
         tempx, percentiles[0, :], percentiles[1, :], color="lightblue", label='90% band'
     )
 
-    ll, true_mean = loglik(torch.hstack((args.theta_a, args.theta_b)), tempx.unsqueeze(dim=1), tempx.unsqueeze(dim=1), args)
+    ll, true_mean = loglik(torch.hstack((args.w_a, args.w_b)), tempx.unsqueeze(dim=1), tempx.unsqueeze(dim=1), args)
     ax2.plot(tempx, true_mean.squeeze(dim=0), 'r-', linewidth=1, label='truth')
     # also show the original data points
     ax2.plot(X[X >= xl ], y[X >= xl ], 'ko', markersize=1, label='data points')

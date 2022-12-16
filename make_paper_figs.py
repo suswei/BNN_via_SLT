@@ -27,15 +27,9 @@ os.system("python3 experiments_to_df.py --path tanh")
 
 ########################################################################################################################
 
-os.system("python3 main.py --data tanh 576 5000 True --prior_dist gaussian 5 100 "
-          "--var_mode gengamma 2 16 10 1 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
+os.system("python3 main.py --data tanh 15 1500 True --prior_dist gaussian 0 100 "
+          "--var_mode gengamma 2 16 False --display_interval 100 --epochs 100 --seed 1 --viz")
 
-os.system("python3 main.py --data tanh 576 5000 True --prior_dist gaussian 5 100 "
-          "--var_mode gaussian 2 16 1e-1 1e-3 --display_interval 100 --epochs 2000 --seed 1 --viz")
-
-os.system("python3 main.py --data tanh 576 5000 False --prior_dist gaussian 0 100 "
-          "--var_mode gengamma 2 16 500 5 100 True --display_interval 100 --epochs 2000 --seed 1 --viz")
-
-os.system("python3 main.py --data tanh 576 5000 False --prior_dist gaussian 0 100 "
-          "--var_mode gaussian 2 16 5 5e-2 --display_interval 100 --epochs 2000 --seed 1 --viz")
+os.system("python3 main.py --data tanh 15 1500 True --prior_dist gaussian 0 100 "
+          "--var_mode gaussian_std 2 16 False --display_interval 100 --epochs 2000 --seed 1 --viz")
 

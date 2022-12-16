@@ -29,6 +29,8 @@ def main():
     prior_list = []
     method_list = []
     lr_list = []
+
+    asy_list = []
     ev_list = []
     predloglik_list = []
 
@@ -49,45 +51,16 @@ def main():
                     ns_list += [np.log(sim_args['sample_size'])]
                     seed_list += [sim_args['seed']]
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
-                    method_list += ['{}\_{}'.format(sim_args['base_dist'], sim_args['grad_flag'])]
+                    method_list += ['{}\_{}\_{}\_{}'.format(sim_args['base_dist'], sim_args['nf_couplingpair'], sim_args['nf_hidden'], sim_args['grad_flag'])]
                     lr_list += [sim_args['lr']]
 
                     # evaluation metrics
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                     predloglik_list += [results['predloglik'].detach().numpy()]
+                    asy_list += [results['asy_log_pDn']]
 
                 except:
                     print('missing taskid {}'.format(taskid))
-
-    ####################################################################################################################
-
-    # for taskid in range(tasks):
-    #
-    #     path = '{}/taskid{}/'.format(args.path, taskid)
-    #     for root, subdirectories, files in os.walk(path):
-    #         for subdirectory in subdirectories:
-    #             current_path = os.path.join(root, subdirectory)
-    #             try:
-    #
-    #                 results = torch.load('{}/results.pt'.format(current_path),  map_location=torch.device('cpu'))
-    #                 sim_args = torch.load('{}/args.pt'.format(current_path), map_location=torch.device('cpu'))
-    #
-    #                 dataset_list += [sim_args['dataset']]
-    #                 Hs_list += [sim_args['H']]
-    #                 ns_list += [sim_args['sample_size']]
-    #                 seed_list += [sim_args['seed']]
-    #                 prior_list += ['({}, {})'.format(sim_args['prior_mean'], sim_args['prior_var'])]
-    #
-    #                 method_list += ['$-\lambda \log n + (m-1) \log \log n$']
-    #
-    #                 ev_list += [results['asy_log_pDn']]
-    #                 predloglik_list += [results['predloglik'].detach().numpy()]
-    #
-    #
-    #             except:
-    #                 print('missing taskid {}'.format(taskid))
-
-    ####################################################################################################################
 
     summary_pd = pd.DataFrame({'dataset': dataset_list,
                                '$H$': Hs_list,
@@ -95,15 +68,13 @@ def main():
                                'seed': seed_list,
                                'method': method_list,
                                'lr': lr_list,
+                               '$-\lambda \log n$': asy_list,
                                'elbo+$nS_n$': ev_list,
-                               'predloglik': predloglik_list
+                               'predloglik': predloglik_list,
                                })
 
     summary_pd['predloglik'] = summary_pd['predloglik'].astype(float)
 
-    # summary_pd = summary_pd.drop_duplicates()
-    summary_pd = summary_pd.dropna()
-    summary_pd = summary_pd.loc[summary_pd['elbo+$nS_n$'] >= -1e+4] # remove instances where convergence was clearly not reached
 
     ####################################################################################################################
 
@@ -133,13 +104,12 @@ def main():
 
     for H in unique_Hs:
         temp = summary_pd.loc[(summary_pd['$H$'] == H)]
-        print(temp)
         temp.set_index('$\log n$', inplace=True)
 
         for metric in ['predloglik', 'elbo+$nS_n$']:
             # fig, ax = plt.subplots()
             temp.groupby('method')[metric].plot(legend=True, style='o-')
-            plt.title('H={}'.format(H))
+            plt.title('{} H={}'.format(args.path, H))
             plt.ylabel('{}'.format(metric))
             plt.show()
             # for key, group in temp.groupby('method'):
