@@ -47,5 +47,6 @@ class OneLayerTanh():
             means[l,] = torch.matmul(z_a[l,].unsqueeze(dim=1).T, torch.tanh(z_b[l,].unsqueeze(dim=1) * x.T))
         means = means.to(self.device)
         y_rv = MultivariateNormal(means.unsqueeze(dim=2), torch.eye(1).to(self.device))
-        log_p = y_rv.log_prob(y.repeat(1, w.shape[0]).T.unsqueeze(dim=2))
+        log_p = y_rv.log_prob(y)
+
         return log_p
