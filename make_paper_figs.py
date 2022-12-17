@@ -1,5 +1,5 @@
 import os
-from dataset_factory import get_lmbda_dim
+from utils import get_lmbda_dim
 from experiments import set_sweep_config
 import pandas as pd
 

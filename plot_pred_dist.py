@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 from torch.distributions.normal import Normal
-from dataset_factory import loglik
 from matplotlib import pyplot as plt
 
 #TODO: this function is a mess. might need to pull 1D tanh regression example as a demo
