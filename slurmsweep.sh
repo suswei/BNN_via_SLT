@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="nograd"
+#SBATCH --job-name="ffrelu"
 #SBATCH --partition=gpu-a100
 #SBATCH --nodes=1
 
@@ -17,7 +17,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-191
+#SBATCH --array=192-287
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -39,6 +39,7 @@ fi
 # Run the job from the directory where it was launched (default)
 mkdir -p tanh
 mkdir -p reducedrank
+mkdir -p ffrelu
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh

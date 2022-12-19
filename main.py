@@ -138,7 +138,7 @@ def main():
                              '[3]: grad_flag')
 
     parser.add_argument('--epochs', type=int, default=500)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
 
     parser.add_argument('--display_interval', type=int, default=100)
@@ -200,13 +200,17 @@ def main():
         print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-        print('-lambda log n + (m-1) log log n: {}'.format(-args.P.trueRLCT*np.log(args.sample_size) + (args.P.truem-1.0)*np.log(np.log(args.sample_size))))
-
+        if args.P.trueRLCT is not None:
+            asy_log_pDn = -args.P.trueRLCT*np.log(args.sample_size) + (args.P.truem-1.0)*np.log(np.log(args.sample_size))
+            print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))
+        else:
+            asy_log_pDn = - args.P.w_dim/2 * np.log(args.sample_size)
+            print('-d/2 log n: {}'.format(asy_log_pDn))
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
                         'predloglik': predloglik.mean(),
-                        'asy_log_pDn': -args.P.trueRLCT * np.log(args.sample_size) + (args.P.truem - 1.0) * np.log(np.log(args.sample_size))}
+                        'asy_log_pDn': asy_log_pDn}
 
         if args.path is not None:
             path = '{}/seed{}'.format(args.path, args.seed)

@@ -1,9 +1,11 @@
 import torch
+import torch.distributions as ttd
 from torch.distributions.uniform import Uniform
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.normal import Normal
 from torch.utils.data import TensorDataset
-
+from torch import nn
+from torch.nn.functional import relu
 
 def load_P(model, H, device):
 
@@ -11,6 +13,8 @@ def load_P(model, H, device):
         return OneLayerTanh(H, device)
     elif model == 'reducedrank':
         return ReducedRank(H, device)
+    elif model == 'ffrelu':
+        return FFReLU(H, device)
     raise NotImplementedError('Model %s not valid.' % model)
 
 
@@ -104,6 +108,59 @@ class ReducedRank():
             logprob[r, :] = y_rv.log_prob(y)
         
         log_p = logprob.to(self.device)
-        
 
         return log_p
+
+
+class FFReLU():
+
+    def __init__(self, H, device):
+        self.H = H
+
+        self.input_dim = 13
+        self.output_dim = 1
+
+        self.trueRLCT = None
+        self.truem = None
+
+        self.w_dim = (self.input_dim + self.output_dim) * H
+        self.device = device
+
+    def load_data(self, sample_size, batch_size):
+
+        # generate x
+        m = MultivariateNormal(torch.zeros(self.input_dim), torch.eye(
+            self.input_dim))  # the input_dim=output_dim + 3, output_dim = H (the number of hidden units)
+        X = m.sample(torch.Size([sample_size]))
+
+        # generate y
+        w1 = ttd.Normal(0, 1).sample((self.H, self.input_dim))
+        means = torch.relu(w1 @ X.T)  # number of samples of w * sample size of X
+        w2 = ttd.Normal(0, 1).sample((self.output_dim, self.H))
+        means = w2 @ means  # number of samples of w * sample size of X
+        y_rv = ttd.Normal(means.T, 1.0)
+        Y = y_rv.sample()
+
+        loader = torch.utils.data.DataLoader(TensorDataset(X, Y), batch_size=batch_size, shuffle=True)
+        nSn = -y_rv.log_prob(Y).sum()
+        return loader, nSn
+
+    def loglik(self, x, y, w):
+
+        w1_dim = self.H * self.input_dim
+        R = w.shape[0]
+        logprob = torch.empty(R, x.shape[0])
+        for r in range(R):
+            w1 = w[r, 0:w1_dim].reshape(self.H, self.input_dim)
+            w2 = w[r, w1_dim:].reshape(self.output_dim, self.H)
+            means = torch.relu(w1 @ x.T)
+            means = w2 @ means
+            means = means.to(self.device) # number of samples of w * sample size of X
+
+            y_rv = ttd.Normal(means.T, 1.0)
+            logprob[r, :] = y_rv.log_prob(y).T
+
+        log_p = logprob.to(self.device)
+
+        return log_p
+

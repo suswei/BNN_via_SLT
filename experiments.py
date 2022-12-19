@@ -15,6 +15,7 @@ def set_sweep_config():
 
     tanh_Hs = [15, 99, 255]
     rr_Hs = [4, 10, 16]
+    ffrelu_Hs = [32, 200, 512]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -35,6 +36,21 @@ def set_sweep_config():
     hyperparameter_config = {
         'dataset': ['reducedrank'],
         'H': rr_Hs,
+        'sample_size': sample_sizes,
+        'prior_param': ['0 1'],
+        'base_dist': ['gengamma', 'gaussian_std'],
+        'grad_flag': [False],
+        'lr': [0.001],
+        'nf_couplingpair': nf_couplingpairs,
+        'nf_hidden': no_hiddens,
+    }
+    keys, values = zip(*hyperparameter_config.items())
+    hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    ###############################################################################
+    hyperparameter_config = {
+        'dataset': ['ffrelu'],
+        'H': ffrelu_Hs,
         'sample_size': sample_sizes,
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std'],
