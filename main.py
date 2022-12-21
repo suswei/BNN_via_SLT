@@ -7,7 +7,7 @@ from utils import *
 
 def train(args, writer=None):
 
-    resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
+    resolution_network = RealNVP_orig(args.base_dist, args.nf_couplingpair, args.nf_hidden,
                                  args.w_dim, args.sample_size, args.device, args.grad_flag)
     params = list(resolution_network.named_parameters())
     def is_varparam(n):
@@ -55,6 +55,9 @@ def train(args, writer=None):
             loglik_elbo_vec = args.P.loglik(data, target, ws)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
+
+            Eqlogq = resolution_network.log_prob(ws)
+            xi, det = resolution_network.f(ws)
 
             running_loss += -elbo.item()
 
