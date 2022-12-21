@@ -62,7 +62,7 @@ def main():
                 except:
                     print('missing taskid {}'.format(taskid))
 
-    summary_pd = pd.DataFrame({'dataset': dataset_list,
+    df = pd.DataFrame({'dataset': dataset_list,
                                '$H$': Hs_list,
                                '$\log n$': ns_list,
                                'seed': seed_list,
@@ -73,8 +73,10 @@ def main():
                                'predloglik': predloglik_list,
                                })
 
-    summary_pd['predloglik'] = summary_pd['predloglik'].astype(float)
+    df['predloglik'] = df['predloglik'].astype(float)
 
+    df.to_pickle("summary_{}.pkl".format(args.path))
+    # df = pd.read_pickle("my_data.pkl")
 
     ####################################################################################################################
 
@@ -82,7 +84,7 @@ def main():
     # 
     # for n in unique_ns:
     # 
-    #     temp = summary_pd.loc[(summary_pd['$\log n$'] == n)]
+    #     temp = df.loc[(df['$\log n$'] == n)]
     #     title = '{}_n{}'.format(args.path, n)
     # 
     #     print(title)
@@ -95,7 +97,7 @@ def main():
     #     os.makedirs('output')
     #
     for metric in ['elbo+$nS_n$', 'predloglik']:
-        pdsave = summary_pd.groupby(['$\log n$', '$H$', 'method','lr'])[metric].describe()
+        pdsave = df.groupby(['$\log n$', '$H$', 'method','lr'])[metric].describe()
         print(pdsave)
     #     with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
     #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
@@ -103,7 +105,7 @@ def main():
     unique_Hs = list(set(Hs_list))
 
     for H in unique_Hs:
-        temp = summary_pd.loc[(summary_pd['$H$'] == H)]
+        temp = df.loc[(df['$H$'] == H)]
         temp.set_index('$\log n$', inplace=True)
 
         for metric in ['predloglik', 'elbo+$nS_n$']:
