@@ -9,9 +9,9 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32]
-    nf_couplingpairs = [2, 4]
-    no_hiddens = [4, 16]
+    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(6.0))) * 32, int(round(np.exp(6.5))) * 32]
+    nf_couplingpairs = [4, 8]
+    no_hiddens = [16, 32]
 
     tanh_Hs = [15, 99, 255]
     rr_Hs = [4, 10, 16]
@@ -25,7 +25,7 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std'],
         'grad_flag': [False],
-        'lr': [0.001],
+        'lr': [0.01, 0.001, 0.001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -40,7 +40,7 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std'],
         'grad_flag': [False],
-        'lr': [0.001],
+        'lr':  [0.01, 0.001, 0.001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -55,7 +55,7 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian_std'],
         'grad_flag': [False],
-        'lr': [0.001],
+        'lr':  [0.01, 0.001, 0.001],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -80,9 +80,9 @@ def main(taskid):
               "--data %s %s %s "
               "--var_mode %s %s %s %s "
               "--lr %s "
-              "--epochs 2000 " #TODO: need to make sure we are training to convergence
+              "--epochs 1500 " 
               "--display_interval 100 "
-              "--seeds 1 2 3 4 5 "
+              "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],

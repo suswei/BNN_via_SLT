@@ -101,6 +101,7 @@ class RealNVP(nn.Module):
 
         return w, log_det_J
 
+    # TODO: there really should be a log_prob child again
     # def log_prob(self, x):
     #     z, logp = self.f(x)
     #     return self.prior.log_prob(z) + logp

@@ -13,7 +13,6 @@ def train(args, writer=None):
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
 
-    # TODO: convergence is quite sensitive to source distribution learning rates
     args.lr_lmbda = args.lr*100
     args.lr_k = args.lr*10
     args.lr_beta = args.lr*100
@@ -35,6 +34,10 @@ def train(args, writer=None):
     optimizer = torch.optim.Adam(grouped_parameters)
     torch.autograd.set_detect_anomaly(True)
 
+    the_last_loss = 1e10
+    patience = 5 #TODO: this needs to be saved
+    trigger_times = 0
+
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
@@ -52,6 +55,7 @@ def train(args, writer=None):
             if torch.any(torch.isnan(ws)):
                 print('nan ws')
 
+            # TODO: this code block has similar repetitions
             loglik_elbo_vec = args.P.loglik(data, target, ws)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
             elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
@@ -62,19 +66,42 @@ def train(args, writer=None):
             loss.backward()
             optimizer.step()
 
+            # Early stopping based on elbo on train set (not sure val set makes sense)
+            # TODO: early stopping on train or validation set?
+            the_current_loss = -elbo
+            # print('The current loss:', the_current_loss)
+
+            if the_current_loss > the_last_loss:
+                trigger_times += 1
+                # print('trigger times:', trigger_times)
+
+                if trigger_times >= patience:
+                    print('Early stopping!\nStart to test process.')
+                    # TODO: Shouldn’t we load previously best model instead of most recent model?
+                    return resolution_network
+
+            else:
+                # print('trigger times: 0')
+                trigger_times = 0
+
+            the_last_loss = the_current_loss
+
         if epoch % args.display_interval == 0:
 
             evalR = 10
-            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, predloglik \
+            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
                 = evaluate(resolution_network, args, R=evalR)
-            print('epoch {}: predloglik {}, loss {}, nSn {}, (R = {}) elbo {} '
+            print('epoch {}: elbo_loglik_val {}, loss {}, nSn {}, (R = {}) elbo {} '
                   '= loglik {} - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
-                  .format(epoch, predloglik, loss, args.nSn, evalR,
+                  .format(epoch, elbo_loglik_val, loss, args.nSn, evalR,
                           elbo, elbo_loglik.mean(),
                           complexity, ent, logprior.mean(), log_jacobians.mean()))
+
+
+
             if args.tensorboard:
                 writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
-                writer.add_scalar('predloglik', predloglik.detach().cpu().numpy(), epoch)
+                writer.add_scalar('elbo_loglik_val', elbo_loglik_val.detach().cpu().numpy(), epoch)
 
     return resolution_network
 
@@ -106,9 +133,8 @@ def evaluate(resolution_network, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
             temp = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
-            temp = temp.mean(dim=1)
+            temp = temp.sum(dim=1)
             elbo_loglik_val += temp
-            # TODO: is RMSE interesting to look at?
 
         elbo = elbo_loglik.mean() - complexity
 
@@ -127,7 +153,6 @@ def main():
                         help='[0]: tanh or rr '
                              '[1]: H '
                              '[2]: sample size ')
-                             # '[3]: batch size'
 
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
@@ -137,7 +162,7 @@ def main():
                              '[2]: nf_hidden'
                              '[3]: grad_flag')
 
-    parser.add_argument('--epochs', type=int, default=500)
+    parser.add_argument('--epochs', type=int, default=10000)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
 
@@ -152,7 +177,8 @@ def main():
     args.dataset, args.H, args.sample_size = args.data
     args.H = int(args.H)
     args.sample_size = int(args.sample_size)
-    args.batch_size = args.sample_size #TODO: taking away batch size as hyperparameter
+    print('only full batch supported, setting batch size to sample size')
+    args.batch_size = args.sample_size
 
     # parse args.prior_dist
     # TODO: needs to take into account other prior options in utils.py
@@ -187,15 +213,16 @@ def main():
         args.train_loader, args.nSn = args.P.load_data(args.sample_size, args.sample_size)
         args.val_loader, _ = args.P.load_data(1000, 1000)
         args.w_dim = args.P.w_dim
+        args.trueRLCT = args.P.trueRLCT
         args.upper = 1
 
         net = train(args, writer)
 
         evalR = 1000
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, predloglik = evaluate(net, args, R=evalR)
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=evalR)
         if args.tensorboard:
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
-            writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
+            # writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
 
         print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
               .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
@@ -209,7 +236,7 @@ def main():
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
-                        'predloglik': predloglik.mean(),
+                        # 'predloglik': predloglik.mean(), #TODO: something wrong with this calculation
                         'asy_log_pDn': asy_log_pDn}
 
         if args.path is not None:

@@ -24,6 +24,8 @@ def main():
 
     dataset_list = []
     Hs_list = []
+    wdim_list = []
+    trueRLCT_list = []
     ns_list = []
     seed_list = []
     prior_list = []
@@ -47,9 +49,13 @@ def main():
                     sim_args = torch.load('{}/args.pt'.format(current_path), map_location=torch.device('cpu'))
 
                     dataset_list += [sim_args['dataset']]
-                    Hs_list += [sim_args['H']]
                     ns_list += [np.log(sim_args['sample_size'])]
                     seed_list += [sim_args['seed']]
+
+                    Hs_list += [sim_args['H']]
+                    wdim_list += [sim_args['w_dim']]
+                    trueRLCT_list += [sim_args['trueRLCT']]
+
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
                     method_list += ['{}\_{}\_{}\_{}'.format(sim_args['base_dist'], sim_args['nf_couplingpair'], sim_args['nf_hidden'], sim_args['grad_flag'])]
                     lr_list += [sim_args['lr']]
@@ -63,7 +69,7 @@ def main():
                     print('missing taskid {}'.format(taskid))
 
     df = pd.DataFrame({'dataset': dataset_list,
-                               '$H$': Hs_list,
+                               '$H$': Hs_list, '$d_w$': wdim_list, '$\lambda$': trueRLCT_list,
                                '$\log n$': ns_list,
                                'seed': seed_list,
                                'method': method_list,
