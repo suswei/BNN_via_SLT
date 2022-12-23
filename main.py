@@ -35,7 +35,7 @@ def train(args, writer=None):
     torch.autograd.set_detect_anomaly(True)
 
     the_last_loss = 1e10
-    patience = 5 #TODO: this needs to be saved
+    args.patience = 10
     trigger_times = 0
 
     for epoch in range(1, args.epochs):
@@ -75,7 +75,7 @@ def train(args, writer=None):
                 trigger_times += 1
                 # print('trigger times:', trigger_times)
 
-                if trigger_times >= patience:
+                if trigger_times >= args.patience:
                     print('Early stopping!\nStart to test process.')
                     # TODO: Shouldn’t we load previously best model instead of most recent model?
                     return resolution_network
@@ -88,14 +88,10 @@ def train(args, writer=None):
 
         if epoch % args.display_interval == 0:
 
-            evalR = 10
-            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val \
-                = evaluate(resolution_network, args, R=evalR)
-            print('epoch {}: elbo_loglik_val {}, loss {}, nSn {}, (R = {}) elbo {} '
-                  '= loglik {} - [complexity {} = Eqlogq {} - logprior {} - logjacob {} ], '
-                  .format(epoch, elbo_loglik_val, loss, args.nSn, evalR,
-                          elbo, elbo_loglik.mean(),
-                          complexity, ent, logprior.mean(), log_jacobians.mean()))
+            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val, logpred \
+                = evaluate(resolution_network, args, R=10)
+            print('epoch {}: elbo {}, nSn {}, logpred {} '
+                  .format(epoch, elbo, args.nSn, logpred))
 
 
 
@@ -125,20 +121,20 @@ def evaluate(resolution_network, args, R):
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
-            temp = args.P.loglik(data, target, ws)
-            temp = temp.sum(dim=1)
-            elbo_loglik += temp
+            elbo_loglik += args.P.loglik(data, target, ws).sum(dim=1)
 
         elbo_loglik_val = 0.0
+        logpred = 0.0
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
-            temp = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
-            temp = temp.sum(dim=1)
-            elbo_loglik_val += temp
+            loglik = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
+            logpred += torch.log(torch.exp(loglik).mean(dim=0)).sum(dim=0)
+            elbo_loglik_val += loglik.sum(dim=1)
 
+        logpred = logpred/args.val_size
         elbo = elbo_loglik.mean() - complexity
 
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean(), elbo_loglik_val.mean()
+        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean(), elbo_loglik_val.mean(), logpred
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -211,15 +207,15 @@ def main():
 
         args.P = load_P(args.dataset, args.H, args.device)
         args.train_loader, args.nSn = args.P.load_data(args.sample_size, args.sample_size)
-        args.val_loader, _ = args.P.load_data(1000, 1000)
+        args.val_size = 1000
+        args.val_loader, _ = args.P.load_data(args.val_size, args.val_size)
         args.w_dim = args.P.w_dim
         args.trueRLCT = args.P.trueRLCT
         args.upper = 1
 
         net = train(args, writer)
 
-        evalR = 1000
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val = evaluate(net, args, R=evalR)
+        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val, logpred = evaluate(net, args, R=1000)
         if args.tensorboard:
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
             # writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
@@ -236,7 +232,7 @@ def main():
         results_dict = {'elbo': elbo,
                         'elbo_loglik': elbo_loglik,
                         'complexity': complexity,
-                        # 'predloglik': predloglik.mean(), #TODO: something wrong with this calculation
+                        'predloglik': logpred,
                         'asy_log_pDn': asy_log_pDn}
 
         if args.path is not None:
