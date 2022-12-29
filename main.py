@@ -38,8 +38,6 @@ def train(args, writer=None):
 
     for epoch in range(1, args.epochs):
 
-        running_loss = 0.0
-
         for batch_idx, (data, target) in enumerate(args.train_loader):
 
             data, target = data.to(args.device), target.to(args.device)
@@ -48,32 +46,26 @@ def train(args, writer=None):
             optimizer.zero_grad()
 
             xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
-            ws, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
+            ws, q_log_prob = resolution_network.log_prob(xis)
 
+            prior_log_prob = log_prior(args, ws).mean()
+            elbo_complexity = q_log_prob - prior_log_prob
+            elbo_loglik = args.P.loglik(data, target, ws).mean(dim=0).sum()  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
 
-            # TODO: this code block has similar repetitions
-            loglik_elbo_vec = args.P.loglik(data, target, ws)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
-            complexity = Eqj_logqj(resolution_network, args).sum() - log_prior(args, ws).mean() - log_jacobians.mean()  # q_entropy no optimization
-            elbo = loglik_elbo_vec.mean(dim=0).sum() - complexity * (args.batch_size / args.sample_size)
-
-            running_loss += -elbo.item()
-
+            elbo = elbo_loglik - elbo_complexity * (args.batch_size / args.sample_size)
             loss = -elbo
             loss.backward()
             optimizer.step()
 
         if epoch % args.display_interval == 0:
 
-            elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val, logpred \
+            elbo, test_lpd \
                 = evaluate(resolution_network, args, R=10)
-            print('epoch {}: elbo {}, nSn {}, logpred {} '
-                  .format(epoch, elbo, args.nSn, logpred))
-
-
+            print('epoch {}: elbo {}, nSn {}, test_lpd {} '
+                  .format(epoch, elbo, args.nSn, test_lpd))
 
             if args.tensorboard:
                 writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
-                writer.add_scalar('elbo_loglik_val', elbo_loglik_val.detach().cpu().numpy(), epoch)
 
     return resolution_network
 
@@ -84,33 +76,25 @@ def evaluate(resolution_network, args, R):
 
     with torch.no_grad():
 
-        xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)# [R, args.w_dim]
-        ws, log_jacobians = resolution_network(xis)  # [R, args.w_dim], [R]
+        xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)  # [R, args.w_dim]
+        ws, q_log_prob = resolution_network.log_prob(xis)
 
-        print('ws min {} max {}'.format(ws.min(), ws.max()))
-        # print('xis[0] point mass? {}'.format(torch.max(xis, dim=0).values[0] - torch.min(xis, dim=0).values[0]))
-        print('xis min {} max {}'.format(xis.min(), xis.max()))
-
-        ent = Eqj_logqj(resolution_network, args).sum()
-        complexity = ent - log_prior(args, ws).mean() - log_jacobians.mean()
-
+        prior_log_prob = log_prior(args, ws).mean()
+        elbo_complexity = q_log_prob - prior_log_prob
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
             elbo_loglik += args.P.loglik(data, target, ws).sum(dim=1)
+        elbo = elbo_loglik.mean() - elbo_complexity
 
-        elbo_loglik_val = 0.0
-        logpred = 0.0
+        test_lpd = 0.0
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
             loglik = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
-            logpred += torch.log(torch.exp(loglik).mean(dim=0)).sum(dim=0)
-            elbo_loglik_val += loglik.sum(dim=1)
+            test_lpd += torch.log(torch.exp(loglik).mean(dim=0)).sum(dim=0)
+        test_lpd = test_lpd/args.val_size
 
-        logpred = logpred/args.val_size
-        elbo = elbo_loglik.mean() - complexity
-
-        return elbo, elbo_loglik.mean(), complexity, ent, log_prior(args, ws).mean(), log_jacobians.mean(), elbo_loglik_val.mean(), logpred
+        return elbo, test_lpd
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -134,7 +118,7 @@ def main():
                              '[2]: nf_hidden'
                              '[3]: grad_flag')
 
-    parser.add_argument('--epochs', type=int, default=10000)
+    parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
 
@@ -191,10 +175,10 @@ def main():
 
         print(args)
 
-        elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val, logpred = evaluate(net, args, R=1000)
+        elbo, test_lpd = evaluate(net, args, R=1000)
         if args.tensorboard:
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
-            writer.add_scalar('predloglik', logpred.mean(), args.epochs)
+            writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
 
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         if args.P.trueRLCT is not None:
@@ -204,9 +188,7 @@ def main():
             asy_log_pDn = - args.P.w_dim/2 * np.log(args.sample_size)
             print('-d/2 log n: {}'.format(asy_log_pDn))
         results_dict = {'elbo': elbo,
-                        'elbo_loglik': elbo_loglik,
-                        'complexity': complexity,
-                        'predloglik': logpred,
+                        'test_lpd': test_lpd,
                         'asy_log_pDn': asy_log_pDn}
 
         if args.path is not None:

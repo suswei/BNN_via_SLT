@@ -60,39 +60,4 @@ def log_prior(args, ws):
         # return torch.log(1/(args.theta_upper-args.theta_lower)).sum() # assuming [-2,2]^d prior
         return torch.zeros(1)
 
-# q_j(\xi_j) \propto \xi_j^{h_j} \exp(-\beta_j \xi_j^{2k_j})
-# E_{q_j} \log q_j = \frac{h_j}{2k_j} ( \psi(\lambda_j) - \log \beta_j ) - \lambda_j - \log Z_j
-def Eqj_logqj(resolution_network, args):
-
-    if args.base_dist == 'gengamma' or args.base_dist == 'gengammatrunc':
-
-        # TODO: anything better than absolute value here?
-        betas = torch.abs(resolution_network.betas)
-        ks = torch.abs(resolution_network.ks)
-        lmbdas = torch.abs(resolution_network.lmbdas)
-
-        if args.base_dist == 'gengammatrunc':
-            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, b=args.upper)
-        else:
-            logZ = qj_gengamma_lognorm(lmbdas, ks, betas, b=None)
-
-        return (lmbdas - 1 / (2 * ks))*(torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ
-
-    elif args.base_dist == 'gaussian_match' or args.base_dist == 'gaussian':
-
-        return -1 / 2 * torch.log(2 * np.pi * torch.exp(resolution_network.log_sigma)**2) - 1/2
-
-
-# normalizing constnat of q_j(\xi_j) \propto \xi_j^{h_j'} \exp(-\beta_j \xi_j^{2k_j'}) supported on [0,b] where b could be infty
-def qj_gengamma_lognorm(lmbdas, ks, betas, b=None):
-
-    logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
-    if b is not None:
-        return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks)))) # The backward pass with respect to first argument is not yet supported.
-    else:
-        return logZ
-
-    return logZ
-
-
 

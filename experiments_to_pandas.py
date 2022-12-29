@@ -31,6 +31,7 @@ def main():
     seed_list = []
     prior_list = []
     method_list = []
+    gradflag_list = []
     lr_list = []
 
     asy_list = []
@@ -60,12 +61,13 @@ def main():
                     trueRLCT_list += [sim_args['trueRLCT']]
 
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
-                    method_list += ['{}\_{}\_{}\_{}'.format(sim_args['base_dist'], sim_args['nf_couplingpair'], sim_args['nf_hidden'], sim_args['grad_flag'])]
+                    method_list += ['{}\_{}\_{}'.format(sim_args['base_dist'], sim_args['nf_couplingpair'], sim_args['nf_hidden'])]
+                    gradflag_list += [sim_args['grad_flag']]
                     lr_list += [sim_args['lr']]
 
                     # evaluation metrics
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                    predloglik_list += [results['predloglik'].detach().numpy()]
+                    predloglik_list += [results['test_lpd'].detach().numpy()]
                     asy_list += [results['asy_log_pDn']]
 
                 except:
@@ -76,13 +78,13 @@ def main():
                                '$\log n$': ns_list,
                                'seed': seed_list,
                                'method': method_list,  '$dim_q$': qdim_list,
-                               'lr': lr_list,
+                               'lr': lr_list, 'grad_flag': gradflag_list,
                                '$-\lambda \log n$': asy_list,
                                'ELBO+$nS_n$': ev_list,
-                               'predloglik': predloglik_list,
+                               'test_lpd': predloglik_list,
                                })
 
-    df['predloglik'] = df['predloglik'].astype(float)
+    df['test_lpd'] = df['test_lpd'].astype(float)
 
     df.to_pickle("summary_{}.pkl".format(args.path))
     # df = pd.read_pickle("my_data.pkl")
@@ -105,7 +107,7 @@ def main():
     # if not os.path.exists('output'):
     #     os.makedirs('output')
     #
-    for metric in ['ELBO+$nS_n$', 'predloglik']:
+    for metric in ['ELBO+$nS_n$', 'test_lpd']:
         pdsave = df.groupby(['$\log n$', '$H$', 'method','lr'])[metric].describe()
         print(pdsave)
     #     with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
@@ -117,7 +119,7 @@ def main():
         temp = df.loc[(df['$H$'] == H)]
         temp.set_index('$\log n$', inplace=True)
 
-        for metric in ['predloglik', 'ELBO+$nS_n$']:
+        for metric in ['test_lpd', 'ELBO+$nS_n$']:
             # fig, ax = plt.subplots()
             temp.groupby('method')[metric].plot(legend=True, style='o-')
             plt.title('{} H={}'.format(args.path, H))

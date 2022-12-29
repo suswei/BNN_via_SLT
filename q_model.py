@@ -35,11 +35,11 @@ def setup_affinecoupling(nf_couplingpair, nf_hidden, w_dim):
 
 
 # https://github.com/senya-ashukha/real-nvp-pytorch/blob/master/real-nvp-pytorch.ipynb
-#TODO: it woudl be nice to implement simpler NFs such as planar flows
 class RealNVP(nn.Module):
     def __init__(self, base_dist, nf_couplingpair, nf_hidden, w_dim, sample_size, device=None, grad_flag=True):
         super(RealNVP, self).__init__()
 
+        self.base_dist = base_dist
         # initialization of lmbda, k, beta in generalized gamma base distribution
         lmbda1 = torch.ones(1, 1)
         lmbdas_rest = torch.ones(w_dim - 1, 1)
@@ -101,16 +101,31 @@ class RealNVP(nn.Module):
 
         return w, log_det_J
 
-    # TODO: there really should be a log_prob child again
-    # def log_prob(self, x):
-    #     z, logp = self.f(x)
-    #     return self.prior.log_prob(z) + logp
-    #
-    # def sample(self, batchSize):
-    #     z = self.prior.sample((batchSize, 1))
-    #     logp = self.prior.log_prob(z)
-    #     x = self.g(z)
-    #     return x
+    def log_prob(self, xi):
+        w, log_det_J = self.forward(xi)
+        return w, self.base_log_prob() - log_det_J.mean() # TODO: check sign of log_det_J
+
+    def base_log_prob(self):
+        """
+        Analytic E_{q_0} \log q_0
+        """
+        if self.base_dist == 'gengamma' or self.base_dist == 'gengammatrunc':
+
+            # TODO: anything better than absolute value here?
+            betas = torch.abs(self.betas)
+            ks = torch.abs(self.ks)
+            lmbdas = torch.abs(self.lmbdas)
+
+            if self.base_dist == 'gengammatrunc':
+                logZ = qj_gengamma_lognorm(lmbdas, ks, betas, b=self.upper)
+            else:
+                logZ = qj_gengamma_lognorm(lmbdas, ks, betas, b=None)
+
+            return ((lmbdas - 1 / (2 * ks)) * (torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ).sum()
+
+        elif self.base_dist == 'gaussian_match' or self.base_dist == 'gaussian':
+
+            return (-1 / 2 * torch.log(2 * np.pi * torch.exp(self.log_sigma) ** 2) - 1 / 2).sum()
 
     def sample_xis(self, R, base_dist, upper=None):
 
@@ -136,3 +151,13 @@ class RealNVP(nn.Module):
         xis = xis.to(self.device)
 
         return xis
+
+def qj_gengamma_lognorm(lmbdas, ks, betas, b=None):
+
+    logZ = torch.lgamma(lmbdas) - torch.log(2*ks) - lmbdas*torch.log(betas)
+    if b is not None:
+        return logZ + torch.log(torch.igamma(lmbdas, betas * (b ** (2 * ks)))) # The backward pass with respect to first argument is not yet supported.
+    else:
+        return logZ
+
+    return logZ
