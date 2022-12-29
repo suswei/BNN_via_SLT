@@ -27,7 +27,7 @@ def get_lmbda_dim(Hs, dataset):
     return trueRLCT, dim
 
 
-def log_prior(args, ws):
+def prior_log_prob(args, ws):
     """
 
     :param args:

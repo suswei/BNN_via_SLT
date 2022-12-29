@@ -47,12 +47,10 @@ def train(args, writer=None):
 
             xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
             ws, q_log_prob = resolution_network.log_prob(xis)
-
-            prior_log_prob = log_prior(args, ws).mean()
-            elbo_complexity = q_log_prob - prior_log_prob
+            elbo_complexity = q_log_prob - prior_log_prob(args, ws).mean()
             elbo_loglik = args.P.loglik(data, target, ws).mean(dim=0).sum()  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
-
             elbo = elbo_loglik - elbo_complexity * (args.batch_size / args.sample_size)
+
             loss = -elbo
             loss.backward()
             optimizer.step()
@@ -79,8 +77,7 @@ def evaluate(resolution_network, args, R):
         xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)  # [R, args.w_dim]
         ws, q_log_prob = resolution_network.log_prob(xis)
 
-        prior_log_prob = log_prior(args, ws).mean()
-        elbo_complexity = q_log_prob - prior_log_prob
+        elbo_complexity = q_log_prob - prior_log_prob(args, ws).mean()
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
