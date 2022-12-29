@@ -75,7 +75,7 @@ class RealNVP(nn.Module):
             self.mu = torch.nn.Parameter(gengamma_mean.squeeze(dim=1), requires_grad=grad_flag)
             self.log_sigma = torch.nn.Parameter(gengamma_logsigma.squeeze(dim=1), requires_grad=grad_flag)
 
-        elif base_dist == 'gaussian_std':
+        elif base_dist == 'gaussian':
 
             self.mu = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
             self.log_sigma = torch.nn.Parameter(torch.zeros(w_dim), requires_grad=grad_flag)
@@ -129,7 +129,7 @@ class RealNVP(nn.Module):
                 if xis.shape[0] == 0:
                     print('no xis')
 
-        elif base_dist == 'gaussian_match' or base_dist == 'gaussian_std':
+        elif base_dist == 'gaussian_match' or base_dist == 'gaussian':
 
             xis = MultivariateNormal(self.mu, torch.diag(torch.exp(self.log_sigma)**2)).rsample(torch.Size([R]))
 

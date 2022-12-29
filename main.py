@@ -10,6 +10,8 @@ def train(args, writer=None):
     resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
                                  args.w_dim, args.sample_size, args.device, args.grad_flag)
     params = list(resolution_network.named_parameters())
+
+    args.qdim = sum(p.numel() for p in resolution_network.parameters() if p.requires_grad)
     def is_varparam(n):
         return 'lmbdas' in n or 'ks' in n or 'betas' in n or 'mu' in n or 'log_sigma' in n
 
@@ -34,10 +36,6 @@ def train(args, writer=None):
     optimizer = torch.optim.Adam(grouped_parameters)
     torch.autograd.set_detect_anomaly(True)
 
-    the_last_loss = 1e10
-    args.patience = 10
-    trigger_times = 0
-
     for epoch in range(1, args.epochs):
 
         running_loss = 0.0
@@ -50,10 +48,8 @@ def train(args, writer=None):
             optimizer.zero_grad()
 
             xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
-
             ws, log_jacobians = resolution_network(xis)  # log_jacobians [R, 1]  E_q log |g'(xi)|
-            if torch.any(torch.isnan(ws)):
-                print('nan ws')
+
 
             # TODO: this code block has similar repetitions
             loglik_elbo_vec = args.P.loglik(data, target, ws)  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
@@ -65,26 +61,6 @@ def train(args, writer=None):
             loss = -elbo
             loss.backward()
             optimizer.step()
-
-            # Early stopping based on elbo on train set (not sure val set makes sense)
-            # TODO: early stopping on train or validation set?
-            the_current_loss = -elbo
-            # print('The current loss:', the_current_loss)
-
-            if the_current_loss > the_last_loss:
-                trigger_times += 1
-                # print('trigger times:', trigger_times)
-
-                if trigger_times >= args.patience:
-                    print('Early stopping!\nStart to test process.')
-                    # TODO: Shouldn’t we load previously best model instead of most recent model?
-                    return resolution_network
-
-            else:
-                # print('trigger times: 0')
-                trigger_times = 0
-
-            the_last_loss = the_current_loss
 
         if epoch % args.display_interval == 0:
 
@@ -153,7 +129,7 @@ def main():
     parser.add_argument('--prior_dist', nargs='*', default=['gaussian', 0, 1])
 
     parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, True],
-                        help='[0]: gengamma or gengammatrunc or gaussian_std or gaussian_match'
+                        help='[0]: gengamma or gengammatrunc or gaussian or gaussian_match'
                              '[1]: nf_couplingpair'
                              '[2]: nf_hidden'
                              '[3]: grad_flag')
@@ -177,7 +153,6 @@ def main():
     args.batch_size = args.sample_size
 
     # parse args.prior_dist
-    # TODO: needs to take into account other prior options in utils.py
     args.prior, args.prior_mean, args.prior_var = args.prior_dist
     args.prior_mean = float(args.prior_mean)
     args.prior_var = float(args.prior_var)
@@ -190,7 +165,6 @@ def main():
 
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    print(args)
 
     for seed in args.seeds:
 
@@ -215,13 +189,13 @@ def main():
 
         net = train(args, writer)
 
+        print(args)
+
         elbo, elbo_loglik, complexity, ent, logprior, log_jacobians, elbo_loglik_val, logpred = evaluate(net, args, R=1000)
         if args.tensorboard:
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
-            # writer.add_scalar('predloglik', predloglik.mean(), args.epochs) # this is a popular diagnostic but it's very problematic as it could have nothing to do with the optimization objective
+            writer.add_scalar('predloglik', logpred.mean(), args.epochs)
 
-        print('nSn {}, (R = {}) elbo {} = loglik {} - [complexity {} = Eq_j log q_j {} - logprior {} - logjacob {} ]'
-              .format(args.nSn, evalR, elbo, elbo_loglik.mean(), complexity, ent, logprior.mean(), log_jacobians.mean()))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         if args.P.trueRLCT is not None:
             asy_log_pDn = -args.P.trueRLCT*np.log(args.sample_size) + (args.P.truem-1.0)*np.log(np.log(args.sample_size))
@@ -240,7 +214,6 @@ def main():
             if not os.path.exists(path):
                 os.makedirs(path)
             torch.save(vars(args), '{}/args.pt'.format(path))
-            # torch.save(net.state_dict(), '{}/state_dict.pt'.format(args.path))
             torch.save(results_dict, '{}/results.pt'.format(path))
 
 

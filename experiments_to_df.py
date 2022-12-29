@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 
 def main():
 
-    parser = argparse.ArgumentParser(description='puts experimental results into a pandas data frame')
-    parser.add_argument('--path', type=str, help='tanh or reducedrank')
+    parser = argparse.ArgumentParser(description='puts experimental results into a pandas dataframe')
+    parser.add_argument('--path', type=str, help='folder that contains hyp.pt, taskid folders, and seeds within each taskid')
     args = parser.parse_args()
 
     hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path))
@@ -25,6 +25,7 @@ def main():
     dataset_list = []
     Hs_list = []
     wdim_list = []
+    qdim_list = []
     trueRLCT_list = []
     ns_list = []
     seed_list = []
@@ -54,6 +55,8 @@ def main():
 
                     Hs_list += [sim_args['H']]
                     wdim_list += [sim_args['w_dim']]
+                    qdim_list += [sim_args['qdim']]
+
                     trueRLCT_list += [sim_args['trueRLCT']]
 
                     prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
@@ -69,13 +72,13 @@ def main():
                     print('missing taskid {}'.format(taskid))
 
     df = pd.DataFrame({'dataset': dataset_list,
-                               '$H$': Hs_list, '$d_w$': wdim_list, '$\lambda$': trueRLCT_list,
+                               '$H$': Hs_list, '$dim_w$': wdim_list, '$\lambda$': trueRLCT_list,
                                '$\log n$': ns_list,
                                'seed': seed_list,
-                               'method': method_list,
+                               'method': method_list,  '$dim_q$': qdim_list,
                                'lr': lr_list,
                                '$-\lambda \log n$': asy_list,
-                               'elbo+$nS_n$': ev_list,
+                               'ELBO+$nS_n$': ev_list,
                                'predloglik': predloglik_list,
                                })
 
@@ -94,7 +97,7 @@ def main():
     #     title = '{}_n{}'.format(args.path, n)
     # 
     #     print(title)
-    #     pdsave = temp.groupby(['$H$', 'method'])['elbo+$nS_n$'].describe()
+    #     pdsave = temp.groupby(['$H$', 'method'])['ELBO+$nS_n$'].describe()
     #     print(pdsave)
     #     with open('output/{}.tex'.format(title), 'w') as tf:
     #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
@@ -102,7 +105,7 @@ def main():
     # if not os.path.exists('output'):
     #     os.makedirs('output')
     #
-    for metric in ['elbo+$nS_n$', 'predloglik']:
+    for metric in ['ELBO+$nS_n$', 'predloglik']:
         pdsave = df.groupby(['$\log n$', '$H$', 'method','lr'])[metric].describe()
         print(pdsave)
     #     with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
@@ -114,7 +117,7 @@ def main():
         temp = df.loc[(df['$H$'] == H)]
         temp.set_index('$\log n$', inplace=True)
 
-        for metric in ['predloglik', 'elbo+$nS_n$']:
+        for metric in ['predloglik', 'ELBO+$nS_n$']:
             # fig, ax = plt.subplots()
             temp.groupby('method')[metric].plot(legend=True, style='o-')
             plt.title('{} H={}'.format(args.path, H))

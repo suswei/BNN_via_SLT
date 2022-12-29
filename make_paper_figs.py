@@ -31,5 +31,5 @@ os.system("python3 main.py --data tanh 15 1500 True --prior_dist gaussian 0 100 
           "--var_mode gengamma 2 16 False --display_interval 100 --epochs 100 --seed 1 --viz")
 
 os.system("python3 main.py --data tanh 15 1500 True --prior_dist gaussian 0 100 "
-          "--var_mode gaussian_std 2 16 False --display_interval 100 --epochs 2000 --seed 1 --viz")
+          "--var_mode gaussian 2 16 False --display_interval 100 --epochs 2000 --seed 1 --viz")
 

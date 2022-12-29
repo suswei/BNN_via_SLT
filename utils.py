@@ -27,7 +27,6 @@ def get_lmbda_dim(Hs, dataset):
     return trueRLCT, dim
 
 
-# TODO: implement mixture prior, log uniform prior, horseshoe prior
 def log_prior(args, ws):
     """
 
@@ -79,7 +78,7 @@ def Eqj_logqj(resolution_network, args):
 
         return (lmbdas - 1 / (2 * ks))*(torch.digamma(lmbdas) - torch.log(betas)) - lmbdas - logZ
 
-    elif args.base_dist == 'gaussian_match' or args.base_dist == 'gaussian_std':
+    elif args.base_dist == 'gaussian_match' or args.base_dist == 'gaussian':
 
         return -1 / 2 * torch.log(2 * np.pi * torch.exp(resolution_network.log_sigma)**2) - 1/2
 

@@ -23,7 +23,7 @@ def set_sweep_config():
         'H': tanh_Hs,
         'sample_size': sample_sizes,
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std'],
+        'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr': [0.01, 0.001],
         'nf_couplingpair': nf_couplingpairs,
@@ -38,7 +38,7 @@ def set_sweep_config():
         'H': rr_Hs,
         'sample_size': sample_sizes,
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std'],
+        'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':  [0.01, 0.001],
         'nf_couplingpair': nf_couplingpairs,
@@ -53,7 +53,7 @@ def set_sweep_config():
         'H': ffrelu_Hs,
         'sample_size': sample_sizes,
         'prior_param': ['0 1'],
-        'base_dist': ['gengamma', 'gaussian_std'],
+        'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':  [0.01, 0.001],
         'nf_couplingpair': nf_couplingpairs,
@@ -80,9 +80,9 @@ def main(taskid):
               "--data %s %s %s "
               "--var_mode %s %s %s %s "
               "--lr %s "
-              "--epochs 1500 " 
-              "--display_interval 100 "
-              "--seeds 1 2 3 4 5 6 7 8 9 10 "
+              "--epochs 100 " 
+              "--display_interval 1000 "
+              "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],
