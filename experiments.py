@@ -10,8 +10,8 @@ def set_sweep_config():
     hyperparameter_experiments = []
 
     sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(5.75))) * 32, int(round(np.exp(6.0))) * 32]
-    nf_couplingpairs = [2, 4]
-    no_hiddens = [16]
+    nf_couplingpairs = [2]
+    no_hiddens = [4, 16]
 
     tanh_Hs = [99, 255]
     rr_Hs = [10, 16]
@@ -79,10 +79,11 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s "
               "--var_mode %s %s %s %s "
+              "--trainR 10 "
               "--lr %s "
-              "--epochs 5000 " 
+              "--epochs 2000 " 
               "--display_interval 1000 "
-              "--seeds 1 2 3 4 5 6 7 8 9 10 "
+              "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],
