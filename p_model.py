@@ -6,22 +6,26 @@ from torch.distributions.normal import Normal
 from torch.utils.data import TensorDataset
 from torch import nn
 from torch.nn.functional import relu
+import numpy as np
 
-def load_P(model, H, device):
+
+def load_P(model, H, device, prior_mean, prior_var):
 
     if model == 'tanh':
-        return OneLayerTanh(H, device)
+        return OneLayerTanh(H, device, prior_mean, prior_var)
     elif model == 'reducedrank':
-        return ReducedRank(H, device)
+        return ReducedRank(H, device, prior_mean, prior_var)
     elif model == 'ffrelu':
-        return FFReLU(H, device)
+        return FFReLU(H, device, prior_mean, prior_var)
     raise NotImplementedError('Model %s not valid.' % model)
 
 
 class OneLayerTanh():
-    def __init__(self, H, device):
+    def __init__(self, H, device, prior_mean, prior_var):
 
         self.H = H
+        self.prior_mean = prior_mean
+        self.prior_var = prior_var
 
         max_integer = int(H**(1/2))
         self.trueRLCT = (H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
@@ -58,11 +62,17 @@ class OneLayerTanh():
         log_p = y_rv.log_prob(y.repeat(1, w.shape[0]).T.unsqueeze(dim=2))
 
         return log_p
-
+    def logprior(self, ws):
+        return - self.w_dim/2*np.log(2*np.pi) \
+               - (1/2)*self.w_dim*np.log(self.prior_var) \
+               - torch.diag(torch.matmul(ws-self.prior_mean, (ws-self.prior_mean).T))/(2*self.prior_var)
 
 class ReducedRank():
-    def __init__(self, H, device):
+    def __init__(self, H, device, prior_mean, prior_var):
         self.H = H
+        self.prior_mean = prior_mean
+        self.prior_var = prior_var
+
         self.output_dim = H
         self.input_dim = self.output_dim + 3
         self.a_params = torch.transpose(
@@ -111,11 +121,18 @@ class ReducedRank():
 
         return log_p
 
+    def logprior(self, ws):
+        return - self.w_dim/2*np.log(2*np.pi) \
+               - (1/2)*self.w_dim*np.log(self.prior_var) \
+               - torch.diag(torch.matmul(ws-self.prior_mean, (ws-self.prior_mean).T))/(2*self.prior_var)
+
 
 class FFReLU():
 
-    def __init__(self, H, device):
+    def __init__(self, H, device, prior_mean, prior_var):
         self.H = H
+        self.prior_mean = prior_mean
+        self.prior_var = prior_var
 
         self.input_dim = 13
         self.output_dim = 1
@@ -164,3 +181,7 @@ class FFReLU():
 
         return log_p
 
+    def logprior(self, ws):
+        return - self.w_dim/2*np.log(2*np.pi) \
+               - (1/2)*self.w_dim*np.log(self.prior_var) \
+               - torch.diag(torch.matmul(ws-self.prior_mean, (ws-self.prior_mean).T))/(2*self.prior_var)

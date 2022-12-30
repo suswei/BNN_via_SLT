@@ -9,13 +9,13 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(6.0))) * 32, int(round(np.exp(6.5))) * 32]
-    nf_couplingpairs = [4, 8]
-    no_hiddens = [16, 32]
+    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(5.75))) * 32, int(round(np.exp(6.0))) * 32]
+    nf_couplingpairs = [2, 4]
+    no_hiddens = [16]
 
-    tanh_Hs = [15, 99, 255]
-    rr_Hs = [4, 10, 16]
-    ffrelu_Hs = [32, 200, 512]
+    tanh_Hs = [99, 255]
+    rr_Hs = [10, 16]
+    ffrelu_Hs = [15, 35]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -80,9 +80,9 @@ def main(taskid):
               "--data %s %s %s "
               "--var_mode %s %s %s %s "
               "--lr %s "
-              "--epochs 100 " 
+              "--epochs 5000 " 
               "--display_interval 1000 "
-              "--seeds 1 2 3 4 5 "
+              "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],
