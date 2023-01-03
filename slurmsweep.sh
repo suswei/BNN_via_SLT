@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="ffrelu"
+#SBATCH --job-name="meanzerotanh"
 #SBATCH --partition=gpu-a100
 #SBATCH --nodes=1
 
@@ -17,7 +17,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-287
+#SBATCH --array=0-319%50
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)

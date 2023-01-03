@@ -11,8 +11,10 @@ import numpy as np
 
 def load_P(model, H, device, prior_mean, prior_var):
 
-    if model == 'tanh':
-        return OneLayerTanh(H, device, prior_mean, prior_var)
+    if model == 'tanh_zeromean':
+        return OneLayerTanh(H, device, prior_mean, prior_var, True)
+    elif model == 'tanh':
+        return OneLayerTanh(H, device, prior_mean, prior_var, False)
     elif model == 'reducedrank':
         return ReducedRank(H, device, prior_mean, prior_var)
     elif model == 'ffrelu':
@@ -21,27 +23,37 @@ def load_P(model, H, device, prior_mean, prior_var):
 
 
 class OneLayerTanh():
-    def __init__(self, H, device, prior_mean, prior_var):
+    def __init__(self, H, device, prior_mean, prior_var, zeromean):
 
         self.H = H
         self.prior_mean = prior_mean
         self.prior_var = prior_var
+        self.zeromean = zeromean
 
-        max_integer = int(H**(1/2))
-        self.trueRLCT = (H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
-        if max_integer ** 2 == H:
-            self.truem = 2
+        if self.zeromean:
+            max_integer = int(H**(1/2))
+            self.trueRLCT = (H + max_integer * max_integer + max_integer) / (4 * max_integer + 2)
+            if max_integer ** 2 == H:
+                self.truem = 2
+            else:
+                self.truem = 1
         else:
-            self.truem = 1
+            self.trueRLCT = None
+            self.truem = None
 
         self.w_dim = 2 * H
         self.device = device
 
     def load_data(self, sample_size, batch_size):
-        m = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
-        X = m.sample(torch.Size([sample_size]))
-        a = torch.randn(self.H, 1)
-        b = torch.randn(self.H, 1)
+        X_dist = Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
+        X = X_dist.sample(torch.Size([sample_size]))
+        if self.zeromean:
+            a = torch.zeros(self.H, 1)
+            b = torch.zeros(self.H, 1)
+        else:
+            a = torch.randn(self.H, 1)
+            b = torch.randn(self.H, 1)
+
         means = torch.matmul(a.T, torch.tanh(b * X.T))
         y_rv = Normal(means.T, 1.0)
         Y = y_rv.sample()
@@ -90,9 +102,9 @@ class ReducedRank():
 
     def load_data(self, sample_size, batch_size):
         # generate x
-        m = MultivariateNormal(torch.zeros(self.input_dim), torch.eye(
+        X_dist = MultivariateNormal(torch.zeros(self.input_dim), torch.eye(
             self.input_dim))  # the input_dim=output_dim + 3, output_dim = H (the number of hidden units)
-        X = m.sample(torch.Size([sample_size]))
+        X = X_dist.sample(torch.Size([sample_size]))
         # generate y
         mean = torch.matmul(torch.matmul(X, self.a_params), self.b_params)
         y_rv = MultivariateNormal(mean, torch.eye(self.output_dim))

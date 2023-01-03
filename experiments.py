@@ -9,23 +9,27 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(5.75))) * 32, int(round(np.exp(6.0))) * 32]
-    nf_couplingpairs = [2]
+    sample_sizes = [int(round(np.exp(4))) * 32,
+                    int(round(np.exp(4.25))) * 32,
+                    int(round(np.exp(4.5))) * 32,
+                    int(round(np.exp(4.75))) * 32,
+                    int(round(np.exp(5.0))) * 32]
+    nf_couplingpairs = [2, 4]
     no_hiddens = [4, 16]
 
-    tanh_Hs = [99, 255]
-    rr_Hs = [10, 16]
-    ffrelu_Hs = [15, 35]
+    tanh_Hs = [1399, 3583]
+    rr_Hs = [38, 16]
+    ffrelu_Hs = [200, 512]
 
     ####################################################################################################################
     hyperparameter_config = {
-        'dataset': ['tanh'],
+        'dataset': ['tanh_zeromean', 'tanh'],
         'H': tanh_Hs,
         'sample_size': sample_sizes,
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
-        'lr': [0.01, 0.001],
+        'lr': [0.01],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -40,7 +44,7 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
-        'lr':  [0.01, 0.001],
+        'lr':  [0.01],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
@@ -55,7 +59,7 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
-        'lr':  [0.01, 0.001],
+        'lr':  [0.01],
         'nf_couplingpair': nf_couplingpairs,
         'nf_hidden': no_hiddens,
     }
