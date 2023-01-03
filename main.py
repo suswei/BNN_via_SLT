@@ -90,7 +90,7 @@ def evaluate(resolution_network, args, R):
             data, target = data.to(args.device), target.to(args.device)
             loglik = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
             # test_lpd += torch.log(torch.exp(loglik).mean(dim=0)).sum(dim=0) # numerically unstable
-            test_lpd += logsumexp(loglik, axis=0, b=1.0/loglik.shape[0]).sum()
+            test_lpd += logsumexp(loglik.detach().cpu().numpy(), axis=0, b=1.0/loglik.shape[0]).sum()
         test_lpd = test_lpd/args.val_size
 
         return elbo, test_lpd
