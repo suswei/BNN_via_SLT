@@ -38,10 +38,6 @@ fi
 
 # Run the job from the directory where it was launched (default)
 mkdir -p results
-mkdir -p results/tanh
-mkdir -p results/tanh_zeromean
-mkdir -p results/reducedrank
-mkdir -p results/ffrelu
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh

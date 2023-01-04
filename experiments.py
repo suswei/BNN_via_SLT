@@ -66,7 +66,7 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = '{}/taskid{}/'.format(temp['dataset'], taskid)
+    path = 'results/{}/taskid{}/'.format(temp['dataset'], taskid)
     if not os.path.exists(path):
         os.makedirs(path)
     torch.save(hyperparameter_experiments, '{}/hyp.pt'.format(temp['dataset']))

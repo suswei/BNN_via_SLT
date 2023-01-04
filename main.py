@@ -104,7 +104,7 @@ def estimate_nSn(args):
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
             optimizer.zero_grad()
-            loss = -P.loglik_w1_w2(data, target, P.w1, P.w2).mean()
+            loss = -P.loglik_w1_w2(data, target, P.w1.to(args.device), P.w2.to(args.device)).mean()
             loss.backward()
             optimizer.step()
 
@@ -117,7 +117,7 @@ def estimate_nSn(args):
 
         if epoch % 100 == 0:
             print('epoch {}: train loss {}, validation loss {}, patience {}'.format(epoch, loss, validation_loss, early_stopper.counter))
-            print('epoch {}: estmated nSn {}, true nSn {}'.format(epoch, -P.loglik_w1_w2(data, target, P.w1, P.w2).sum(), args.nSn))
+            print('epoch {}: estmated nSn {}, true nSn {}'.format(epoch, -P.loglik_w1_w2(data, target, P.w1.to(args.device), P.w2.to(args.device)).sum(), args.nSn))
 
     return -P.loglik_w1_w2(data, target, P.w1, P.w2).sum()
 
