@@ -9,17 +9,11 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    sample_sizes = [int(round(np.exp(4))) * 32,
-                    int(round(np.exp(4.25))) * 32,
-                    int(round(np.exp(4.5))) * 32,
-                    int(round(np.exp(4.75))) * 32,
-                    int(round(np.exp(5.0))) * 32]
-    nf_couplingpairs = [2, 4]
-    no_hiddens = [4, 16]
+    sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(5.75))) * 32, int(round(np.exp(6.0))) * 32]
 
-    tanh_Hs = [99, 255]
-    rr_Hs = [10, 16]
-    ffrelu_Hs = [200, 512]
+    tanh_Hs = [255]
+    rr_Hs = [16]
+    ffrelu_Hs = [35]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -30,8 +24,7 @@ def set_sweep_config():
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr': [0.01],
-        'nf_couplingpair': nf_couplingpairs,
-        'nf_hidden': no_hiddens,
+        'nf': ['2 4', '4 16']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -45,8 +38,7 @@ def set_sweep_config():
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':  [0.01],
-        'nf_couplingpair': nf_couplingpairs,
-        'nf_hidden': no_hiddens,
+        'nf': ['2 4', '4 16']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -60,8 +52,7 @@ def set_sweep_config():
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':  [0.01],
-        'nf_couplingpair': nf_couplingpairs,
-        'nf_hidden': no_hiddens,
+        'nf': ['2 4', '4 16']
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -82,15 +73,15 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--data %s %s %s "
-              "--var_mode %s %s %s %s "
+              "--var_mode %s %s %s "
               "--trainR 10 "
               "--lr %s "
               "--epochs 2000 " 
               "--display_interval 1000 "
-              "--seeds 1 2 3 4 5 6 7 8 9 10 "
+              "--seeds 1 2 3 4 5 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
-                 temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],
+                 temp['base_dist'], temp['nf'], temp['grad_flag'], temp['lr'],
                  path)
               )
 

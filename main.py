@@ -220,7 +220,7 @@ def main():
                         'asy_log_pDn': asy_log_pDn}
 
         if args.path is not None:
-            path = '{}/seed{}'.format(args.path, args.seed)
+            path = 'results/{}/seed{}'.format(args.path, args.seed)
             if not os.path.exists(path):
                 os.makedirs(path)
             torch.save(vars(args), '{}/args.pt'.format(path))

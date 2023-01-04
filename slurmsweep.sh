@@ -17,7 +17,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=150-319%50
+#SBATCH --array=0-95
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -37,9 +37,11 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p tanh
-mkdir -p reducedrank
-mkdir -p ffrelu
+mkdir -p results
+mkdir -p results/tanh
+mkdir -p results/tanh_zeromean
+mkdir -p results/reducedrank
+mkdir -p results/ffrelu
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh
