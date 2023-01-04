@@ -11,9 +11,12 @@ def set_sweep_config():
 
     sample_sizes = [int(round(np.exp(4))) * 32, int(round(np.exp(4.5))) * 32, int(round(np.exp(5))) * 32, int(round(np.exp(5.5))) * 32, int(round(np.exp(5.75))) * 32, int(round(np.exp(6.0))) * 32]
 
-    tanh_Hs = [255]
-    rr_Hs = [16]
-    ffrelu_Hs = [35]
+    tanh_Hs = [15, 115, 280, 1280, 3690]
+    rr_Hs = [2, 16, 40, 180, 525]
+    ffrelu_Hs = [3, 10, 16, 35, 60]
+
+    nfs = ['2 4', '2 16', '4 4', '4 16']
+    lrs = [0.001, 0.01]
 
     ####################################################################################################################
     hyperparameter_config = {
@@ -23,8 +26,8 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
-        'lr': [0.01],
-        'nf': ['2 4', '4 16']
+        'lr':  lrs,
+        'nf': nfs
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -37,8 +40,8 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
-        'lr':  [0.01],
-        'nf': ['2 4', '4 16']
+        'lr':   lrs,
+        'nf': nfs
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -51,8 +54,8 @@ def set_sweep_config():
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
-        'lr':  [0.01],
-        'nf': ['2 4', '4 16']
+        'lr':  lrs,
+        'nf': nfs
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -74,11 +77,11 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s %s "
               "--var_mode %s %s %s "
-              "--trainR 10 "
+              "--trainR 5 "
               "--lr %s "
               "--epochs 2000 " 
               "--display_interval 1000 "
-              "--seeds 1 2 3 4 5 "
+              "--seeds 1 2 3 4 5 6 7 8 9 10"
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf'], temp['grad_flag'], temp['lr'],
