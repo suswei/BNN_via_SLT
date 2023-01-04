@@ -6,7 +6,7 @@ from utils import *
 from scipy.special import logsumexp
 
 
-def train(args, writer=None):
+def train(args, P, writer=None):
 
     resolution_network = RealNVP(args.base_dist, args.nf_couplingpair, args.nf_hidden,
                                  args.w_dim, args.sample_size, args.device, args.grad_flag)
@@ -48,8 +48,8 @@ def train(args, writer=None):
 
             xis = resolution_network.sample_xis(args.trainR, args.base_dist, upper=args.upper)  # [R, args.w_dim]
             ws, q_log_prob = resolution_network.log_prob(xis)
-            elbo_complexity = q_log_prob - args.P.logprior(ws).mean()
-            elbo_loglik = args.P.loglik(data, target, ws).mean(dim=0).sum()  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
+            elbo_complexity = q_log_prob - P.logprior(ws).mean()
+            elbo_loglik = P.loglik(data, target, ws).mean(dim=0).sum()  # [R, minibatch_size] E_q \sum_i=1^m p(y_i |x_i , g(\xi))
             elbo = elbo_loglik - elbo_complexity * (args.batch_size / args.sample_size)
 
             loss = -elbo
@@ -69,7 +69,7 @@ def train(args, writer=None):
     return resolution_network
 
 
-def evaluate_elbo_testlpd(resolution_network, args, R):
+def evaluate_elbo_testlpd(resolution_network, P, args, R):
 
     resolution_network.eval()
     with torch.no_grad():
@@ -77,17 +77,17 @@ def evaluate_elbo_testlpd(resolution_network, args, R):
         xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)  # [R, args.w_dim]
         ws, q_log_prob = resolution_network.log_prob(xis)
 
-        elbo_complexity = q_log_prob - args.P.logprior(ws).mean()
+        elbo_complexity = q_log_prob - P.logprior(ws).mean()
         elbo_loglik = 0.0
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
-            elbo_loglik += args.P.loglik(data, target, ws).sum(dim=1)
+            elbo_loglik += P.loglik(data, target, ws).sum(dim=1)
         elbo = elbo_loglik.mean() - elbo_complexity
 
         test_lpd = 0.0
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
-            loglik = args.P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
+            loglik = P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
             # test_lpd += torch.log(torch.exp(loglik).mean(dim=0)).sum(dim=0) # numerically unstable
             test_lpd += logsumexp(loglik.detach().cpu().numpy(), axis=0, b=1.0/loglik.shape[0]).sum()
         test_lpd = test_lpd/args.val_size
@@ -188,20 +188,20 @@ def main():
         else:
             writer=None
 
-        args.P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
-        args.train_loader, args.nSn = args.P.load_data(args.sample_size, args.sample_size)
+        P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
+        args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
         args.val_size = 1000
-        args.val_loader, _ = args.P.load_data(args.val_size, args.val_size)
-        args.w_dim = args.P.w_dim
-        args.trueRLCT = args.P.trueRLCT
+        args.val_loader, _ = P.load_data(args.val_size, args.val_size)
+        args.w_dim = P.w_dim
+        args.trueRLCT = P.trueRLCT
         args.upper = 1
 
-        net = train(args, writer)
+        net = train(args, P, writer)
 
         print(args)
 
-        elbo, test_lpd = evaluate_elbo_testlpd(net, args, R=1000)
-        args.estimated_nSn = estimate_nSn(args)
+        elbo, test_lpd = evaluate_elbo_testlpd(net, P, args, R=1000)
+        args.estimated_nSn = estimate_nSn(args).detach().cpu().numpy()
 
         if args.tensorboard:
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
@@ -209,11 +209,11 @@ def main():
 
         print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-        if args.P.trueRLCT is not None:
-            asy_log_pDn = -args.P.trueRLCT*np.log(args.sample_size) + (args.P.truem-1.0)*np.log(np.log(args.sample_size))
+        if P.trueRLCT is not None:
+            asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
             print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))
         else:
-            asy_log_pDn = - args.P.w_dim/2 * np.log(args.sample_size)
+            asy_log_pDn = - P.w_dim/2 * np.log(args.sample_size)
             print('-d/2 log n: {}'.format(asy_log_pDn))
         results_dict = {'elbo': elbo,
                         'test_lpd': test_lpd,

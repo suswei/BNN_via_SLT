@@ -46,34 +46,30 @@ def main():
         for root, subdirectories, files in os.walk(path):
             for subdirectory in subdirectories:
                 current_path = os.path.join(root, subdirectory)
-                try:
 
-                    results = torch.load('{}/results.pt'.format(current_path),  map_location=torch.device('cpu'))
-                    sim_args = torch.load('{}/args.pt'.format(current_path), map_location=torch.device('cpu'))
+                results = torch.load('{}/results.pt'.format(current_path),  map_location=torch.device('cpu'))
+                sim_args = torch.load('{}/args.pt'.format(current_path), map_location=torch.device('cpu'))
 
-                    dataset_list += [sim_args['dataset']]
-                    ns_list += [np.log(sim_args['sample_size'])]
-                    seed_list += [sim_args['seed']]
+                dataset_list += [sim_args['dataset']]
+                ns_list += [np.log(sim_args['sample_size'])]
+                seed_list += [sim_args['seed']]
 
-                    Hs_list += [sim_args['H']]
-                    wdim_list += [sim_args['w_dim']]
-                    qdim_list += [sim_args['qdim']]
+                Hs_list += [sim_args['H']]
+                wdim_list += [sim_args['w_dim']]
+                qdim_list += [sim_args['qdim']]
 
-                    trueRLCT_list += [sim_args['trueRLCT']]
+                trueRLCT_list += [sim_args['trueRLCT']]
 
-                    prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
-                    method_list += ['{}\_{}\_{}'.format(sim_args['base_dist'], sim_args['nf_couplingpair'], sim_args['nf_hidden'])]
-                    gradflag_list += [sim_args['grad_flag']]
-                    lr_list += [sim_args['lr']]
+                prior_list += ['({}, {})'.format(sim_args['prior_mean'],sim_args['prior_var'])]
+                method_list += ['{}\_{}\_{}'.format(sim_args['base_dist'], sim_args['nf_couplingpair'], sim_args['nf_hidden'])]
+                gradflag_list += [sim_args['grad_flag']]
+                lr_list += [sim_args['lr']]
 
-                    # evaluation metrics
-                    ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                    ev_hat_list += [results['elbo'].detach().numpy() + sim_args['estimated_nSn'].numpy()]
-                    predloglik_list += [results['test_lpd'].detach().numpy()]
-                    asy_list += [results['asy_log_pDn']]
-
-                except:
-                    print('missing taskid {}'.format(taskid))
+                # evaluation metrics
+                ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+                ev_hat_list += [results['elbo'].detach().numpy() + sim_args['estimated_nSn'].numpy()]
+                predloglik_list += [results['test_lpd']]
+                asy_list += [results['asy_log_pDn']]
 
     df = pd.DataFrame({'dataset': dataset_list,
                                '$H$': Hs_list, '$dim_w$': wdim_list, '$\lambda$': trueRLCT_list,
