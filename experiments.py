@@ -87,7 +87,7 @@ def main(taskid):
               "--lr %s "
               "--epochs 2000 " 
               "--display_interval 1000 "
-              "--seeds 1 2 3 4 5 "
+              "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'], temp['sample_size'],
                  temp['base_dist'], temp['nf_couplingpair'], temp['nf_hidden'], temp['grad_flag'], temp['lr'],

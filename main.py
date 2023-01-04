@@ -59,7 +59,7 @@ def train(args, writer=None):
         if epoch % args.display_interval == 0:
 
             elbo, test_lpd \
-                = evaluate(resolution_network, args, R=10)
+                = evaluate_elbo_testlpd(resolution_network, args, R=10)
             print('epoch {}: elbo {}, nSn {}, test_lpd {} '
                   .format(epoch, elbo, args.nSn, test_lpd))
 
@@ -69,10 +69,9 @@ def train(args, writer=None):
     return resolution_network
 
 
-def evaluate(resolution_network, args, R):
+def evaluate_elbo_testlpd(resolution_network, args, R):
 
     resolution_network.eval()
-
     with torch.no_grad():
 
         xis = resolution_network.sample_xis(R, args.base_dist, upper=args.upper)  # [R, args.w_dim]
@@ -94,6 +93,33 @@ def evaluate(resolution_network, args, R):
         test_lpd = test_lpd/args.val_size
 
         return elbo, test_lpd
+
+
+def estimate_nSn(args):
+    P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, True)
+    early_stopper = EarlyStopper(patience=5, min_delta=1.0)
+    optimizer = torch.optim.Adam(P.parameters(), lr=0.01)
+    for epoch in range(1, 2000):
+        P.train()
+        for batch_idx, (data, target) in enumerate(args.train_loader):
+            data, target = data.to(args.device), target.to(args.device)
+            optimizer.zero_grad()
+            loss = -P.loglik_w1_w2(data, target, P.w1, P.w2).mean()
+            loss.backward()
+            optimizer.step()
+
+        P.eval()
+        with torch.no_grad():
+            for batch_idx, (val_data, val_target) in enumerate(args.val_loader):
+                validation_loss = -P.loglik_w1_w2(val_data, val_target, P.w1, P.w2).mean()
+            if early_stopper.early_stop(validation_loss):
+                break
+
+        if epoch % 100 == 0:
+            print('epoch {}: train loss {}, validation loss {}, patience {}'.format(epoch, loss, validation_loss, early_stopper.counter))
+            print('epoch {}: estmated nSn {}, true nSn {}'.format(epoch, -P.loglik_w1_w2(data, target, P.w1, P.w2).sum(), args.nSn))
+
+    return -P.loglik_w1_w2(data, target, P.w1, P.w2).sum()
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
@@ -162,7 +188,7 @@ def main():
         else:
             writer=None
 
-        args.P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var)
+        args.P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
         args.train_loader, args.nSn = args.P.load_data(args.sample_size, args.sample_size)
         args.val_size = 1000
         args.val_loader, _ = args.P.load_data(args.val_size, args.val_size)
@@ -174,11 +200,14 @@ def main():
 
         print(args)
 
-        elbo, test_lpd = evaluate(net, args, R=1000)
+        elbo, test_lpd = evaluate_elbo_testlpd(net, args, R=1000)
+        args.estimated_nSn = estimate_nSn(args)
+
         if args.tensorboard:
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
             writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
 
+        print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         if args.P.trueRLCT is not None:
             asy_log_pDn = -args.P.trueRLCT*np.log(args.sample_size) + (args.P.truem-1.0)*np.log(np.log(args.sample_size))

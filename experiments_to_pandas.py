@@ -36,6 +36,7 @@ def main():
 
     asy_list = []
     ev_list = []
+    ev_hat_list = []
     predloglik_list = []
 
     ####################################################################################################################
@@ -67,6 +68,7 @@ def main():
 
                     # evaluation metrics
                     ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+                    ev_hat_list += [results['elbo'].detach().numpy() + sim_args['estimated_nSn'].numpy()]
                     predloglik_list += [results['test_lpd'].detach().numpy()]
                     asy_list += [results['asy_log_pDn']]
 
@@ -81,6 +83,7 @@ def main():
                                'lr': lr_list, 'grad_flag': gradflag_list,
                                '$-\lambda \log n$': asy_list,
                                'ELBO+$nS_n$': ev_list,
+                               'ELBO+$n\hat S_n$': ev_hat_list,
                                'test_lpd': predloglik_list,
                                })
 
