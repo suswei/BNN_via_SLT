@@ -59,7 +59,7 @@ def train(args, P, writer=None):
         if epoch % args.display_interval == 0:
 
             elbo, test_lpd \
-                = evaluate_elbo_testlpd(resolution_network, args, R=10)
+                = evaluate_elbo_testlpd(resolution_network, P, args, R=10)
             print('epoch {}: elbo {}, nSn {}, test_lpd {} '
                   .format(epoch, elbo, args.nSn, test_lpd))
 
@@ -220,7 +220,7 @@ def main():
                         'asy_log_pDn': asy_log_pDn}
 
         if args.path is not None:
-            path = '{}/seed{}'.format(args.path, args.seed)
+            path = 'results/{}/seed{}'.format(args.path, args.seed)
             if not os.path.exists(path):
                 os.makedirs(path)
             torch.save(vars(args), '{}/args.pt'.format(path))
