@@ -99,7 +99,7 @@ def estimate_nSn(args):
     P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, True)
     early_stopper = EarlyStopper(patience=5, min_delta=1.0)
     optimizer = torch.optim.Adam(P.parameters(), lr=0.01)
-    for epoch in range(1, 2000):
+    for epoch in range(0, 2000):
         P.train()
         for batch_idx, (data, target) in enumerate(args.train_loader):
             data, target = data.to(args.device), target.to(args.device)
@@ -115,11 +115,12 @@ def estimate_nSn(args):
             if early_stopper.early_stop(validation_loss):
                 break
 
-        if epoch % 100 == 0:
+        if epoch % 100 == 0 or epoch == 1999:
             print('epoch {}: train loss {}, validation loss {}, patience {}'.format(epoch, loss, validation_loss, early_stopper.counter))
-            print('epoch {}: estmated nSn {}, true nSn {}'.format(epoch, -P.loglik_w1_w2(data, target, P.w1.to(args.device), P.w2.to(args.device)).sum(), args.nSn))
+            estimated_nSn = -P.loglik_w1_w2(data, target, P.w1.to(args.device), P.w2.to(args.device)).sum()
+            print('epoch {}: estmated nSn {}, true nSn {}'.format(epoch, estimated_nSn, args.nSn))
 
-    return -P.loglik_w1_w2(data, target, P.w1, P.w2).sum()
+    return estimated_nSn
 
 
 # for given sample size and supposed lambda, learn resolution map g and return acheived ELBO (plus entropy)
