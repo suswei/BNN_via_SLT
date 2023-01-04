@@ -59,7 +59,7 @@ def train(args, P, writer=None):
         if epoch % args.display_interval == 0:
 
             elbo, test_lpd \
-                = evaluate_elbo_testlpd(resolution_network, args, R=10)
+                = evaluate_elbo_testlpd(resolution_network, P, args, R=10)
             print('epoch {}: elbo {}, nSn {}, test_lpd {} '
                   .format(epoch, elbo, args.nSn, test_lpd))
 
