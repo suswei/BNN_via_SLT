@@ -67,7 +67,7 @@ def main():
 
                 # evaluation metrics
                 ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                ev_hat_list += [results['elbo'].detach().numpy() + sim_args['estimated_nSn'].numpy()]
+                ev_hat_list += [results['elbo'].detach().numpy() + sim_args['estimated_nSn'].detach().numpy()]
                 predloglik_list += [results['test_lpd']]
                 asy_list += [results['asy_log_pDn']]
 
@@ -85,7 +85,7 @@ def main():
 
     df['test_lpd'] = df['test_lpd'].astype(float)
 
-    df.to_pickle("summary_{}.pkl".format(args.path))
+    df.to_pickle("results/summary_{}.pkl".format(sim_args['dataset']))
     # df = pd.read_pickle("my_data.pkl")
 
     ####################################################################################################################
