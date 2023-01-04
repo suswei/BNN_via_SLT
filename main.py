@@ -111,7 +111,7 @@ def estimate_nSn(args):
         P.eval()
         with torch.no_grad():
             for batch_idx, (val_data, val_target) in enumerate(args.val_loader):
-                validation_loss = -P.loglik_w1_w2(val_data, val_target, P.w1, P.w2).mean()
+                validation_loss = -P.loglik_w1_w2(val_data.to(args.device), val_target.to(args.device), P.w1.to(args.device), P.w2.to(args.device)).mean()
             if early_stopper.early_stop(validation_loss):
                 break
 

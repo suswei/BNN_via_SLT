@@ -69,7 +69,7 @@ def main(taskid):
     path = 'results/{}/taskid{}/'.format(temp['dataset'], taskid)
     if not os.path.exists(path):
         os.makedirs(path)
-    torch.save(hyperparameter_experiments, '{}/hyp.pt'.format(temp['dataset']))
+    torch.save(hyperparameter_experiments, 'results/{}/hyp.pt'.format(temp['dataset']))
 
     os.system("python3 main.py "
               "--data %s %s %s "
