@@ -2,7 +2,6 @@ import torch
 import argparse
 import os
 import numpy as np
-
 import pandas as pd
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -10,17 +9,12 @@ pd.set_option('display.width', 1000)
 # pd.options.display.float_format = '{:.2f}'.format
 pd.set_option("display.precision", 4)
 
-import matplotlib.pyplot as plt
-
 
 def main():
 
     parser = argparse.ArgumentParser(description='puts experimental results into a pandas dataframe')
-    parser.add_argument('--path', type=str, help='folder that contains hyp.pt, taskid folders, and seeds within each taskid')
+    parser.add_argument('--path', type=str, help='folder that contains taskid folders, and seeds within each taskid')
     args = parser.parse_args()
-
-    hyperparameter_experiments = torch.load('{}/hyp.pt'.format(args.path))
-    tasks = hyperparameter_experiments.__len__()
 
     dataset_list = []
     Hs_list = []
@@ -40,7 +34,7 @@ def main():
     predloglik_list = []
 
     ####################################################################################################################
-    for taskid in range(tasks):
+    for taskid in range(len(os.listdir('{}'.format(args.path)))):
 
         path = '{}/taskid{}/'.format(args.path, taskid)
         for root, subdirectories, files in os.walk(path):
@@ -84,50 +78,8 @@ def main():
                                })
 
     df['test_lpd'] = df['test_lpd'].astype(float)
-
-    df.to_pickle("results/summary_{}.pkl".format(sim_args['dataset']))
-    # df = pd.read_pickle("my_data.pkl")
-
-    ####################################################################################################################
-
-    # unique_ns = list(set(ns_list))
-    # 
-    # for n in unique_ns:
-    # 
-    #     temp = df.loc[(df['$\log n$'] == n)]
-    #     title = '{}_n{}'.format(args.path, n)
-    # 
-    #     print(title)
-    #     pdsave = temp.groupby(['$H$', 'method'])['ELBO+$nS_n$'].describe()
-    #     print(pdsave)
-    #     with open('output/{}.tex'.format(title), 'w') as tf:
-    #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
-
-    # if not os.path.exists('output'):
-    #     os.makedirs('output')
-    #
-    for metric in ['ELBO+$nS_n$', 'test_lpd']:
-        pdsave = df.groupby(['$\log n$', '$H$', 'method','lr'])[metric].describe()
-        print(pdsave)
-    #     with open('output/{}_{}.tex'.format(args.path, metric), 'w') as tf:
-    #         tf.write(pdsave.to_latex(escape=False,  float_format="%.2f", columns=['count', 'mean', 'std'], multirow=True))
-
-    unique_Hs = list(set(Hs_list))
-
-    for H in unique_Hs:
-        temp = df.loc[(df['$H$'] == H)]
-        temp.set_index('$\log n$', inplace=True)
-
-        for metric in ['test_lpd', 'ELBO+$nS_n$']:
-            # fig, ax = plt.subplots()
-            temp.groupby('method')[metric].plot(legend=True, style='o-')
-            plt.title('{} H={}'.format(args.path, H))
-            plt.ylabel('{}'.format(metric))
-            plt.show()
-            # for key, group in temp.groupby('method'):
-            #     group.plot('$\log n$', metric, label=key, ax=ax)
-            # plt.show()
-
+    df.to_pickle("results/summary.pkl")
+    print(df)
 
 if __name__ == "__main__":
     main()

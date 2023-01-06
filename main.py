@@ -96,9 +96,10 @@ def evaluate_elbo_testlpd(resolution_network, P, args, R):
 
 
 def estimate_nSn(args):
+
     P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, True)
     early_stopper = EarlyStopper(patience=5, min_delta=1.0)
-    optimizer = torch.optim.Adam(P.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(P.parameters(), lr=0.001)
     for epoch in range(0, 2000):
         P.train()
         for batch_idx, (data, target) in enumerate(args.train_loader):
@@ -131,10 +132,10 @@ def main():
 
     parser.add_argument('--seeds', nargs='*', default=[1])
 
-    parser.add_argument('--data', nargs='*', default=['tanh', 16, 5000],
+    parser.add_argument('--data', nargs='*', default=['tanh', 16],
                         help='[0]: tanh or rr '
-                             '[1]: H '
-                             '[2]: sample size ')
+                             '[1]: H ')
+    parser.add_argument('--ns', nargs='*', default=[1000])
 
     parser.add_argument('--prior_dist', nargs='*', default=[0, 1], help='only supports Gaussian, pass in mean and variance')
 
@@ -155,12 +156,6 @@ def main():
 
     args = parser.parse_args()
 
-    # parse args.data
-    args.dataset, args.H, args.sample_size = args.data
-    args.H = int(args.H)
-    args.sample_size = int(args.sample_size)
-    print('only full batch supported, setting batch size to sample size')
-    args.batch_size = args.sample_size
 
     # parse args.prior_dist
     args.prior_mean, args.prior_var = args.prior_dist
@@ -175,53 +170,61 @@ def main():
 
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    args.dataset, args.H = args.data
+    args.H = int(args.H)
 
-    for seed in args.seeds:
+    for n in args.ns:
 
-        args.seed = int(seed)
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
+        # parse args.data
+        print('only full batch supported, setting batch size to sample size')
+        args.sample_size = int(n)
+        args.batch_size = args.sample_size
 
-        args_str = '{}_{}_seed{}'.format(args.data, args.var_mode, args.seed)
-        if args.tensorboard:
-            from torch.utils.tensorboard import SummaryWriter
-            writer = SummaryWriter('tensorboard/{}'.format(args_str))
-        else:
-            writer=None
+        for seed in args.seeds:
 
-        P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
-        args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
-        args.val_size = 1000
-        args.val_loader, _ = P.load_data(args.val_size, args.val_size)
-        args.w_dim = P.w_dim
-        args.trueRLCT = P.trueRLCT
-        args.upper = 1
+            args.seed = int(seed)
+            torch.manual_seed(args.seed)
+            np.random.seed(args.seed)
 
-        net = train(args, P, writer)
+            args_str = '{}_n{}_{}_seed{}'.format(args.dataset, args.sample_size, args.var_mode, args.seed)
+            if args.tensorboard:
+                from torch.utils.tensorboard import SummaryWriter
+                writer = SummaryWriter('tensorboard/{}'.format(args_str))
+            else:
+                writer=None
 
-        print(args)
+            P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
+            args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
+            args.val_size = 1000
+            args.val_loader, _ = P.load_data(args.val_size, args.val_size)
+            args.w_dim = P.w_dim
+            args.trueRLCT = P.trueRLCT
+            args.upper = 1
 
-        elbo, test_lpd = evaluate_elbo_testlpd(net, P, args, R=1000)
-        args.estimated_nSn = estimate_nSn(args).detach().cpu().numpy()
+            net = train(args, P, writer)
 
-        if args.tensorboard:
-            writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
-            writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
+            print(args)
 
-        # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
-        print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-        if P.trueRLCT is not None:
-            asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
-            print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))
-        else:
-            asy_log_pDn = - P.w_dim/2 * np.log(args.sample_size)
-            print('-d/2 log n: {}'.format(asy_log_pDn))
-        results_dict = {'elbo': elbo,
-                        'test_lpd': test_lpd,
-                        'asy_log_pDn': asy_log_pDn}
+            elbo, test_lpd = evaluate_elbo_testlpd(net, P, args, R=1000)
+            args.estimated_nSn = estimate_nSn(args)
 
-        if args.path is not None:
-            path = 'results/{}/seed{}'.format(args.path, args.seed)
+            if args.tensorboard:
+                writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
+                writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
+
+            # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
+            print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+            if P.trueRLCT is not None:
+                asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
+                print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))
+            else:
+                asy_log_pDn = - P.w_dim/2 * np.log(args.sample_size)
+                print('-d/2 log n: {}'.format(asy_log_pDn))
+            results_dict = {'elbo': elbo,
+                            'test_lpd': test_lpd,
+                            'asy_log_pDn': asy_log_pDn}
+
+            path = '{}/n{}_seed{}'.format(args.path, args.sample_size, args.seed)
             if not os.path.exists(path):
                 os.makedirs(path)
             torch.save(vars(args), '{}/args.pt'.format(path))

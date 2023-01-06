@@ -14,10 +14,10 @@
 #SBATCH --mem=5G
 
 # The maximum running time of the job in days-hours:mins:sec
-#SBATCH --time=0-48:0:00
+#SBATCH --time=4-0:0:00
 
 # Batch arrays
-#SBATCH --array=777-877
+#SBATCH --array=0-255
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -37,7 +37,6 @@ if [ "x$SLURM_JOB_ID" == "x" ]; then
 fi
 
 # Run the job from the directory where it was launched (default)
-mkdir -p results
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh
