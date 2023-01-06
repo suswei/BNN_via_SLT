@@ -208,7 +208,7 @@ def main():
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
             writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
 
-        print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
+        # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         if P.trueRLCT is not None:
             asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
