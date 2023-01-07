@@ -3,11 +3,12 @@ import argparse
 import os
 import numpy as np
 import pandas as pd
-pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 # pd.options.display.float_format = '{:.2f}'.format
 pd.set_option("display.precision", 4)
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -70,7 +71,8 @@ def main():
                                '$\log n$': ns_list,
                                'seed': seed_list,
                                'method': method_list,  '$dim_q$': qdim_list,
-                               'lr': lr_list, 'grad_flag': gradflag_list,
+                               'lr': lr_list,
+                               'grad_flag': gradflag_list,
                                '$-\lambda \log n$': asy_list,
                                'ELBO+$nS_n$': ev_list,
                                'ELBO+$n\hat S_n$': ev_hat_list,
@@ -79,7 +81,30 @@ def main():
 
     df['test_lpd'] = df['test_lpd'].astype(float)
     df.to_pickle("results/summary.pkl")
+    df = df.loc[df['ELBO+$nS_n$']>=-20000] # remove instances where convergence was clearly not reached
+
     print(df)
+
+    for metric in ['ELBO+$nS_n$', 'test_lpd']:
+        pdsave = df.groupby(['dataset','$\log n$', '$H$', 'method','lr'])[metric].describe()
+        print(pdsave)
+
+    unique_Hs = list(set(Hs_list))
+    unique_datasets = list(set(dataset_list))
+    for dataset in unique_datasets:
+        for H in unique_Hs:
+            temp = df.loc[(df['$H$'] == H)]
+            temp = temp.loc[(temp['dataset'] == dataset)]
+
+            temp = temp.loc[(temp['lr'] == 0.01)]
+            temp.set_index('$\log n$', inplace=True)
+
+            for metric in ['test_lpd', 'ELBO+$nS_n$']:
+                temp.groupby('method')[metric].plot(legend=True, style='o-')
+                plt.title('{} H={}'.format(dataset, H))
+                plt.ylabel('{}'.format(metric))
+                plt.show()
+
 
 if __name__ == "__main__":
     main()
