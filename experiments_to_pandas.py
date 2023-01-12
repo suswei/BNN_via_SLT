@@ -30,9 +30,10 @@ def main():
     lr_list = []
 
     asy_list = []
-    ev_list = []
-    ev_hat_list = []
-    predloglik_list = []
+    normalized_mvfe_list = []
+    normalized_mvfe_hat_list = []
+    vge_list = []
+    # predloglik_list = []
 
     ####################################################################################################################
     for taskid in range(len(os.listdir('{}'.format(args.path)))):
@@ -61,9 +62,12 @@ def main():
                 lr_list += [sim_args['lr']]
 
                 # evaluation metrics
-                ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                ev_hat_list += [results['elbo'].detach().numpy() + sim_args['estimated_nSn'].detach().numpy()]
-                predloglik_list += [results['test_lpd']]
+                normalized_mvfe_list += [- results['elbo'].detach().numpy() - sim_args['nSn'].numpy()]
+                # ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
+                normalized_mvfe_hat_list += [- results['elbo'].detach().numpy() - sim_args['estimated_nSn'].detach().numpy()]
+
+                vge_list += [-sim_args['nSn'].numpy()/sim_args['sample_size'] - results['test_lpd']]
+                # predloglik_list += [results['test_lpd']]
                 asy_list += [results['asy_log_pDn']]
 
     df = pd.DataFrame({'dataset': dataset_list,
@@ -74,36 +78,36 @@ def main():
                                'lr': lr_list,
                                'grad_flag': gradflag_list,
                                '$-\lambda \log n$': asy_list,
-                               'ELBO+$nS_n$': ev_list,
-                               'ELBO+$n\hat S_n$': ev_hat_list,
-                               'test_lpd': predloglik_list,
+                               'normalized MVFE': normalized_mvfe_list,
+                               'normalized MVFE (with estimated entropy)$': normalized_mvfe_hat_list,
+                               'VGE': vge_list,
                                })
 
-    df['test_lpd'] = df['test_lpd'].astype(float)
+    df['VGE'] = df['VGE'].astype(float)
     df.to_pickle("results/summary.pkl")
-    df = df.loc[df['ELBO+$nS_n$']>=-20000] # remove instances where convergence was clearly not reached
 
+    df = df.loc[df['normalized MVFE'] <= 20000]
     print(df)
 
-    for metric in ['ELBO+$nS_n$', 'test_lpd']:
-        pdsave = df.groupby(['dataset','$\log n$', '$H$', 'method','lr'])[metric].describe()
-        print(pdsave)
-
-    unique_Hs = list(set(Hs_list))
-    unique_datasets = list(set(dataset_list))
-    for dataset in unique_datasets:
-        for H in unique_Hs:
-            temp = df.loc[(df['$H$'] == H)]
-            temp = temp.loc[(temp['dataset'] == dataset)]
-
-            temp = temp.loc[(temp['lr'] == 0.01)]
-            temp.set_index('$\log n$', inplace=True)
-
-            for metric in ['test_lpd', 'ELBO+$nS_n$']:
-                temp.groupby('method')[metric].plot(legend=True, style='o-')
-                plt.title('{} H={}'.format(dataset, H))
-                plt.ylabel('{}'.format(metric))
-                plt.show()
+    # for metric in ['ELBO+$nS_n$', 'test_lpd']:
+    #     pdsave = df.groupby(['dataset','$\log n$', '$H$', 'method','lr'])[metric].describe()
+    #     print(pdsave)
+    #
+    # unique_Hs = list(set(Hs_list))
+    # unique_datasets = list(set(dataset_list))
+    # for dataset in unique_datasets:
+    #     for H in unique_Hs:
+    #         temp = df.loc[(df['$H$'] == H)]
+    #         temp = temp.loc[(temp['dataset'] == dataset)]
+    #
+    #         temp = temp.loc[(temp['lr'] == 0.01)]
+    #         temp.set_index('$\log n$', inplace=True)
+    #
+    #         for metric in ['test_lpd', 'ELBO+$nS_n$']:
+    #             temp.groupby('method')[metric].plot(legend=True, style='o-')
+    #             plt.title('{} H={}'.format(dataset, H))
+    #             plt.ylabel('{}'.format(metric))
+    #             plt.show()
 
 
 if __name__ == "__main__":
