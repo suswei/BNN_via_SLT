@@ -64,7 +64,7 @@ def main():
                 # evaluation metrics
                 normalized_mvfe_list += [- results['elbo'].detach().numpy() - sim_args['nSn'].numpy()]
                 # ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                normalized_mvfe_hat_list += [- results['elbo'].detach().numpy() - sim_args['estimated_nSn'].detach().numpy()]
+                # normalized_mvfe_hat_list += [- results['elbo'].detach().numpy() - sim_args['estimated_nSn'].detach().numpy()]
 
                 vge_list += [-sim_args['nSn'].numpy()/sim_args['sample_size'] - results['test_lpd']]
                 # predloglik_list += [results['test_lpd']]
@@ -79,7 +79,7 @@ def main():
                                'grad_flag': gradflag_list,
                                '$-\lambda \log n$': asy_list,
                                'normalized MVFE': normalized_mvfe_list,
-                               'normalized MVFE (with estimated entropy)$': normalized_mvfe_hat_list,
+                               # 'normalized MVFE (with estimated entropy)$': normalized_mvfe_hat_list,
                                'VGE': vge_list,
                                })
 
@@ -88,6 +88,7 @@ def main():
 
     df = df.loc[df['normalized MVFE'] <= 20000]
     print(df)
+    print(df.describe())
 
     # for metric in ['ELBO+$nS_n$', 'test_lpd']:
     #     pdsave = df.groupby(['dataset','$\log n$', '$H$', 'method','lr'])[metric].describe()

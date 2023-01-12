@@ -60,8 +60,9 @@ def train(args, P, writer=None):
 
             elbo, test_lpd \
                 = evaluate_elbo_testlpd(resolution_network, P, args, R=10)
-            print('epoch {}: elbo {}, nSn {}, test_lpd {} '
-                  .format(epoch, elbo, args.nSn, test_lpd))
+            print('epoch {}: elbo {}, nSn {}, test_lpd {}, vge {}'
+                  .format(epoch, elbo, args.nSn, test_lpd, -args.nSn_val/args.val_size - test_lpd))
+
 
             if args.tensorboard:
                 writer.add_scalar('elbo', elbo.detach().cpu().numpy(), epoch)
@@ -148,6 +149,8 @@ def main():
     parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--trainR', type=int, default=5)
+    parser.add_argument('--estimate_entropy', action='store_true')
+
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -195,8 +198,8 @@ def main():
 
             P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
             args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
-            args.val_size = 1000
-            args.val_loader, _ = P.load_data(args.val_size, args.val_size)
+            args.val_size = 10000
+            args.val_loader, args.nSn_val = P.load_data(args.val_size, args.val_size)
             args.w_dim = P.w_dim
             args.trueRLCT = P.trueRLCT
             args.upper = 1
@@ -206,7 +209,10 @@ def main():
             print(args)
 
             elbo, test_lpd = evaluate_elbo_testlpd(net, P, args, R=1000)
-            args.estimated_nSn = estimate_nSn(args)
+            if args.estimate_entropy:
+                args.estimated_nSn = estimate_nSn(args)
+            else:
+                args.estimated_nSn = None
 
             if args.tensorboard:
                 writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
@@ -214,6 +220,7 @@ def main():
 
             # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
             print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+            print('vge {}'.format(-args.nSn_val/args.val_size - test_lpd))
             if P.trueRLCT is not None:
                 asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
                 print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))

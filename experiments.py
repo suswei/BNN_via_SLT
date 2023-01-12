@@ -13,7 +13,7 @@ def set_sweep_config():
     ####################################################################################################################
     hyperparameter_config = {
         'dataset': ['tanh_zeromean', 'tanh'],
-        'H': [15, 115, 280, 1280],
+        'H': [15, 115, 280],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
@@ -26,7 +26,7 @@ def set_sweep_config():
     ###############################################################################
     hyperparameter_config = {
         'dataset': ['reducedrank'],
-        'H': [2, 16, 40, 180],
+        'H': [2, 16, 40],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
@@ -39,7 +39,7 @@ def set_sweep_config():
     ###############################################################################
     hyperparameter_config = {
         'dataset': ['ffrelu'],
-        'H': [3, 10, 16, 35],
+        'H': [3, 10, 16],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
@@ -62,13 +62,14 @@ def main(taskid):
 
     os.system("python3 main.py "
               "--data %s %s "
-              "--ns 1760 2880 4736 7840 10048 "
+              # "--ns 1760 2880 4736 7840 10048 "            
+              "--ns 2880 4736 7840 "
               "--var_mode %s %s %s "
               "--trainR 10 "
               "--lr %s "
               "--epochs 2000 " 
-              "--display_interval 2000 "
-              "--seeds 1 2 3 4 5 "
+              "--display_interval 200 "
+              "--seeds 1 2 3 4 5 6 7 8 9 10 "
               "--path %s "
               % (temp['dataset'], temp['H'],
                  temp['base_dist'], temp['nf'], temp['grad_flag'], temp['lr'],
