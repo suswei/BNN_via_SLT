@@ -7,18 +7,20 @@ def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    nfs = ['1 4']
-    lrs = [0.001]
+    nfs = ['1 4', '2 16']
+    lrs = [0.01]
+    seeds = list(range(1, 31))
 
     ####################################################################################################################
     hyperparameter_config = {
         'dataset': ['tanh_zeromean', 'tanh'],
-        'H': [15],
+        'H': [15, 50, 115],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':  lrs,
-        'nf': nfs
+        'nf': nfs,
+        'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -26,12 +28,13 @@ def set_sweep_config():
     ###############################################################################
     hyperparameter_config = {
         'dataset': ['reducedrank'],
-        'H': [2],
+        'H': [2, 7, 10],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':   lrs,
-        'nf': nfs
+        'nf': nfs,
+        'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -39,12 +42,13 @@ def set_sweep_config():
     ###############################################################################
     hyperparameter_config = {
         'dataset': ['ffrelu'],
-        'H': [3],
+        'H': [3, 7, 16],
         'prior_param': ['0 1'],
         'base_dist': ['gengamma', 'gaussian'],
         'grad_flag': [False],
         'lr':  lrs,
-        'nf': nfs
+        'nf': nfs,
+        'seed': seeds
     }
     keys, values = zip(*hyperparameter_config.items())
     hyperparameter_experiments += [dict(zip(keys, v)) for v in itertools.product(*values)]
@@ -63,17 +67,15 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s "
               # "--ns 1760 2880 4736 7840 10048 "            
-              # "--ns 2880 4736 7840 "
               "--ns 200 239 285 341 408 489 584 699 836 1000 "
               "--var_mode %s %s %s "
-              "--trainR 10 "
               "--lr %s "
-              "--epochs 1000 " 
               "--display_interval 1000 "
-              "--seeds 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 "
+              "--seed %s "
               "--path %s "
               % (temp['dataset'], temp['H'],
                  temp['base_dist'], temp['nf'], temp['grad_flag'], temp['lr'],
+                 temp['seed'],
                  path)
               )
 

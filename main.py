@@ -131,13 +131,11 @@ def main():
     # Training settings
     parser = argparse.ArgumentParser(description='?')
 
-    parser.add_argument('--seeds', nargs='*', default=[1])
-
+    parser.add_argument('--seed', type=int, default=1985)
     parser.add_argument('--data', nargs='*', default=['tanh', 16],
                         help='[0]: tanh or rr '
                              '[1]: H ')
     parser.add_argument('--ns', nargs='*', default=[1000])
-
     parser.add_argument('--prior_dist', nargs='*', default=[0, 1], help='only supports Gaussian, pass in mean and variance')
 
     parser.add_argument('--var_mode', nargs='*', default=['gengamma', 2, 16, True],
@@ -145,16 +143,13 @@ def main():
                              '[1]: nf_couplingpair'
                              '[2]: nf_hidden'
                              '[3]: grad_flag')
-
     parser.add_argument('--epochs', type=int, default=1000)
-    parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--trainR', type=int, default=5)
-    parser.add_argument('--estimate_entropy', action='store_true')
-
+    parser.add_argument('--lr', type=float, default=1e-2)
+    parser.add_argument('--trainR', type=int, default=10)
+    parser.add_argument('--estimate_entropy', action='store_true') #TODO: this doesn't look like it can be safely turned on
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
-    parser.add_argument('--viz', action='store_true')
     parser.add_argument('--tensorboard', action='store_true')
 
     args = parser.parse_args()
@@ -183,59 +178,57 @@ def main():
         args.sample_size = int(n)
         args.batch_size = args.sample_size
 
-        for seed in args.seeds:
 
-            args.seed = int(seed)
-            torch.manual_seed(args.seed)
-            np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        np.random.seed(args.seed)
 
-            args_str = '{}_n{}_{}_seed{}'.format(args.dataset, args.sample_size, args.var_mode, args.seed)
-            if args.tensorboard:
-                from torch.utils.tensorboard import SummaryWriter
-                writer = SummaryWriter('tensorboard/{}'.format(args_str))
-            else:
-                writer=None
+        args_str = '{}_n{}_{}_seed{}'.format(args.dataset, args.sample_size, args.var_mode, args.seed)
+        if args.tensorboard:
+            from torch.utils.tensorboard import SummaryWriter
+            writer = SummaryWriter('tensorboard/{}'.format(args_str))
+        else:
+            writer=None
 
-            P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
-            args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
-            args.val_size = 10000
-            args.val_loader, args.nSn_val = P.load_data(args.val_size, args.val_size)
-            args.w_dim = P.w_dim
-            args.trueRLCT = P.trueRLCT
-            args.upper = 1
+        P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
+        args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
+        args.val_size = 10000
+        args.val_loader, args.nSn_val = P.load_data(args.val_size, args.val_size)
+        args.w_dim = P.w_dim
+        args.trueRLCT = P.trueRLCT
+        args.upper = 1
 
-            net = train(args, P, writer)
+        net = train(args, P, writer)
 
-            print(args)
+        print(args)
 
-            elbo, test_lpd = evaluate_elbo_testlpd(net, P, args, R=1000)
-            if args.estimate_entropy:
-                args.estimated_nSn = estimate_nSn(args)
-            else:
-                args.estimated_nSn = None
+        elbo, test_lpd = evaluate_elbo_testlpd(net, P, args, R=1000)
+        if args.estimate_entropy:
+            args.estimated_nSn = estimate_nSn(args)
+        else:
+            args.estimated_nSn = None
 
-            if args.tensorboard:
-                writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
-                writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
+        if args.tensorboard:
+            writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
+            writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
 
-            # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
-            print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
-            print('vge {}'.format(-args.nSn_val/args.val_size - test_lpd))
-            if P.trueRLCT is not None:
-                asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
-                print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))
-            else:
-                asy_log_pDn = - P.w_dim/2 * np.log(args.sample_size)
-                print('-d/2 log n: {}'.format(asy_log_pDn))
-            results_dict = {'elbo': elbo,
-                            'test_lpd': test_lpd,
-                            'asy_log_pDn': asy_log_pDn}
+        # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
+        print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
+        print('vge {}'.format(-args.nSn_val/args.val_size - test_lpd))
+        if P.trueRLCT is not None:
+            asy_log_pDn = -P.trueRLCT*np.log(args.sample_size) + (P.truem-1.0)*np.log(np.log(args.sample_size))
+            print('-lambda log n + (m-1) log log n: {}'.format(asy_log_pDn))
+        else:
+            asy_log_pDn = - P.w_dim/2 * np.log(args.sample_size)
+            print('-d/2 log n: {}'.format(asy_log_pDn))
+        results_dict = {'elbo': elbo,
+                        'test_lpd': test_lpd,
+                        'asy_log_pDn': asy_log_pDn}
 
-            path = '{}/n{}_seed{}'.format(args.path, args.sample_size, args.seed)
-            if not os.path.exists(path):
-                os.makedirs(path)
-            torch.save(vars(args), '{}/args.pt'.format(path))
-            torch.save(results_dict, '{}/results.pt'.format(path))
+        path = '{}/n{}_seed{}'.format(args.path, args.sample_size, args.seed)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        torch.save(vars(args), '{}/args.pt'.format(path))
+        torch.save(results_dict, '{}/results.pt'.format(path))
 
 
 if __name__ == "__main__":

@@ -84,7 +84,7 @@ def main():
                                })
 
     df['VGE'] = df['VGE'].astype(float)
-    df.to_pickle("{}/summary2.pkl".format(args.path))
+    df.to_pickle("{}/summary.pkl".format(args.path))
 
     df = df.loc[df['normalized MVFE'] <= 20000]
     print(df)
