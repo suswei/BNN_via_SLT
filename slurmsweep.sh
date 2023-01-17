@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="extensive"
+#SBATCH --job-name="vgesanity"
 #SBATCH --partition=gpu-a100
 #SBATCH --nodes=1
 
@@ -17,7 +17,7 @@
 #SBATCH --time=4-0:0:00
 
 # Batch arrays
-#SBATCH --array=0-191
+#SBATCH --array=0-7
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
