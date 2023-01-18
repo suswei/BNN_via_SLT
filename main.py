@@ -178,10 +178,6 @@ def main():
         args.sample_size = int(n)
         args.batch_size = args.sample_size
 
-
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
-
         args_str = '{}_n{}_{}_seed{}'.format(args.dataset, args.sample_size, args.var_mode, args.seed)
         if args.tensorboard:
             from torch.utils.tensorboard import SummaryWriter
@@ -190,12 +186,16 @@ def main():
             writer=None
 
         P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
+        print(torch.sum(P.w1))
         args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
         args.val_size = 10000
         args.val_loader, args.nSn_val = P.load_data(args.val_size, args.val_size)
         args.w_dim = P.w_dim
         args.trueRLCT = P.trueRLCT
         args.upper = 1
+
+        torch.manual_seed(args.seed)
+        np.random.seed(args.seed)
 
         net = train(args, P, writer)
 

@@ -11,6 +11,8 @@ import numpy as np
 
 def load_P(model, H, device, prior_mean, prior_var, requires_grad):
 
+    torch.manual_seed(3407)
+
     if model == 'tanh_zeromean':
         return OneLayerTanh(H, device, prior_mean, prior_var, True, requires_grad)
     elif model == 'tanh':
@@ -49,7 +51,7 @@ class OneLayerTanh(nn.Module):
             self.w1 = torch.nn.Parameter(torch.zeros(self.H, 1), requires_grad=requires_grad)
             self.w2 = torch.nn.Parameter(torch.zeros(self.H, 1), requires_grad=requires_grad)
         else:
-            self.w1 = torch.nn.Parameter(torch.randn(self.H, 1), requires_grad=requires_grad)
+            self.w1 = torch.nn.Parameter(torch.randn(self.H, 1), requires_grad=requires_grad) #TODO: should be fixed for different n-seed combinations?
             self.w2 = torch.nn.Parameter(torch.randn(self.H, 1), requires_grad=requires_grad)
 
     def load_data(self, sample_size, batch_size):
@@ -189,7 +191,7 @@ class FFReLU(nn.Module):
         self.w_dim = (self.input_dim + self.output_dim) * H
         self.device = device
 
-        self.w1 = torch.nn.Parameter(ttd.Normal(0, 1).sample((self.H, self.input_dim)), requires_grad=requires_grad)
+        self.w1 = torch.nn.Parameter(ttd.Normal(0, 1).sample((self.H, self.input_dim)), requires_grad=requires_grad) #TODO: should be fixed for different n-seed combinations?
         self.w2 = torch.nn.Parameter(ttd.Normal(0, 1).sample((self.output_dim, self.H)), requires_grad=requires_grad)
 
     def load_data(self, sample_size, batch_size):
