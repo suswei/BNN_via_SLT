@@ -67,10 +67,12 @@ def main(taskid):
     os.system("python3 main.py "
               "--data %s %s "
               # "--ns 1760 2880 4736 7840 10048 "            
-              "--ns 200 239 285 341 408 489 584 699 836 1000 "
+              # "--ns 200 239 285 341 408 489 584 699 836 1000 "  #np.rint(np.logspace(2.3, 3.0, 10)).astype(int)
+              "--ns 1000 1196 1431 1711 2047 2448 2929 3503 4190 5012 " # np.rint(np.logspace(3.0, 3.7, 10)).astype(int)
               "--var_mode %s %s %s "
               "--lr %s "
-              "--display_interval 1000 "
+              "--epochs 2000 "
+              "--display_interval 2000 "
               "--seed %s "
               "--path %s "
               % (temp['dataset'], temp['H'],
