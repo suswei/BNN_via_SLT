@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="largens"
+#SBATCH --job-name="nf4_16"
 
 # Partition for the job:
 #SBATCH --partition=physical
@@ -20,7 +20,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-1439
+#SBATCH --array=0-959
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
