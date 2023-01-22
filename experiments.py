@@ -1,13 +1,15 @@
 import sys
 import os
 import itertools
+import git
+import time
 
 
 def set_sweep_config():
 
     hyperparameter_experiments = []
 
-    nfs = ['4 16']
+    nfs = ['2 4', '2 16', '4 4']
     lrs = [0.001]
     seeds = list(range(1, 31))
 
@@ -62,7 +64,12 @@ def main(taskid):
     taskid = int(taskid[0])
     temp = hyperparameter_experiments[taskid]
 
-    path = 'results/taskid{}/'.format(taskid)
+    timestr = time.strftime("%m%d")
+    repo = git.Repo(search_parent_directories=True)
+    sha = repo.head.object.hexsha
+    sha = sha[0:7]
+
+    path = '{}_results{}/taskid{}/'.format(timestr, sha, taskid)
 
     os.system("python3 main.py "
               "--data %s %s "

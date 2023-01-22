@@ -186,7 +186,6 @@ def main():
             writer=None
 
         P = load_P(args.dataset, args.H, args.device, args.prior_mean, args.prior_var, False)
-        print(torch.sum(P.w1))
         args.train_loader, args.nSn = P.load_data(args.sample_size, args.sample_size)
         args.val_size = 10000
         args.val_loader, args.nSn_val = P.load_data(args.val_size, args.val_size)

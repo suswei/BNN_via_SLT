@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="nf4_16"
+#SBATCH --job-name="manyGtheta"
 
 # Partition for the job:
 #SBATCH --partition=physical
@@ -20,7 +20,7 @@
 #SBATCH --time=0-48:0:00
 
 # Batch arrays
-#SBATCH --array=0-959
+#SBATCH --array=0-2879
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -43,6 +43,7 @@ fi
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh
+module load gitpython/3.1.14
 module load fosscuda/2020b
 module load pytorch/1.10.0-python-3.8.6
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}

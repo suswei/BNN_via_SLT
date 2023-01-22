@@ -66,8 +66,7 @@ def main():
                 # ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
                 # normalized_mvfe_hat_list += [- results['elbo'].detach().numpy() - sim_args['estimated_nSn'].detach().numpy()]
 
-                vge_list += [-sim_args['nSn_val'].numpy()/10000 - results['test_lpd']]
-                # predloglik_list += [results['test_lpd']]
+                vge_list += [-sim_args['nSn_val'].numpy()/sim_args['val_size'] - results['test_lpd']]
                 asy_list += [results['asy_log_pDn']]
 
     df = pd.DataFrame({'dataset': dataset_list,
@@ -84,7 +83,7 @@ def main():
                                })
 
     df['VGE'] = df['VGE'].astype(float)
-    df.to_pickle("{}/summary.pkl".format(args.path))
+    df.to_pickle("{}/{}.pkl".format(args.path, args.path))
 
     df = df.loc[df['normalized MVFE'] <= 20000]
     print(df)
