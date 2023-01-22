@@ -226,7 +226,10 @@ def main():
         path = '{}/n{}_seed{}'.format(args.path, args.sample_size, args.seed)
         if not os.path.exists(path):
             os.makedirs(path)
-        torch.save(vars(args), '{}/args.pt'.format(path))
+        args_dict = vars(args)
+        del args_dict['train_loader']
+        del args_dict['val_loader']
+        torch.save(args_dict, '{}/args.pt'.format(path))
         torch.save(results_dict, '{}/results.pt'.format(path))
 
 
