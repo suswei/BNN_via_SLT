@@ -103,7 +103,7 @@ class RealNVP(nn.Module):
 
     def log_prob(self, xi):
         w, log_det_J = self.forward(xi)
-        return w, self.base_log_prob() - log_det_J.mean() # TODO: check sign of log_det_J
+        return w, self.base_log_prob() - log_det_J.mean()
 
     def base_log_prob(self):
         """
@@ -111,7 +111,6 @@ class RealNVP(nn.Module):
         """
         if self.base_dist == 'gengamma' or self.base_dist == 'gengammatrunc':
 
-            # TODO: anything better than absolute value here?
             betas = torch.abs(self.betas)
             ks = torch.abs(self.ks)
             lmbdas = torch.abs(self.lmbdas)

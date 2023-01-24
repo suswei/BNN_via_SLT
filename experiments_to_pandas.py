@@ -6,9 +6,7 @@ import pandas as pd
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-# pd.options.display.float_format = '{:.2f}'.format
 pd.set_option("display.precision", 4)
-import matplotlib.pyplot as plt
 
 
 def main():
@@ -31,9 +29,7 @@ def main():
 
     asy_list = []
     normalized_mvfe_list = []
-    normalized_mvfe_hat_list = []
     vge_list = []
-    # predloglik_list = []
 
     ####################################################################################################################
     for taskid in range(len(os.listdir('{}'.format(args.path)))):
@@ -63,9 +59,6 @@ def main():
 
                 # evaluation metrics
                 normalized_mvfe_list += [- results['elbo'].detach().numpy() - sim_args['nSn'].numpy()]
-                # ev_list += [results['elbo'].detach().numpy() + sim_args['nSn'].numpy()]
-                # normalized_mvfe_hat_list += [- results['elbo'].detach().numpy() - sim_args['estimated_nSn'].detach().numpy()]
-
                 vge_list += [-sim_args['nSn_val'].numpy()/sim_args['val_size'] - results['test_lpd']]
                 asy_list += [results['asy_log_pDn']]
 
@@ -78,36 +71,11 @@ def main():
                                'grad_flag': gradflag_list,
                                '$-\lambda \log n$': asy_list,
                                'normalized MVFE': normalized_mvfe_list,
-                               # 'normalized MVFE (with estimated entropy)$': normalized_mvfe_hat_list,
                                'VGE': vge_list,
                                })
 
     df['VGE'] = df['VGE'].astype(float)
     df.to_pickle("{}/{}.pkl".format(args.path, args.path))
-
-    df = df.loc[df['normalized MVFE'] <= 20000]
-    print(df)
-    print(df.describe())
-
-    # for metric in ['ELBO+$nS_n$', 'test_lpd']:
-    #     pdsave = df.groupby(['dataset','$\log n$', '$H$', 'method','lr'])[metric].describe()
-    #     print(pdsave)
-    #
-    # unique_Hs = list(set(Hs_list))
-    # unique_datasets = list(set(dataset_list))
-    # for dataset in unique_datasets:
-    #     for H in unique_Hs:
-    #         temp = df.loc[(df['$H$'] == H)]
-    #         temp = temp.loc[(temp['dataset'] == dataset)]
-    #
-    #         temp = temp.loc[(temp['lr'] == 0.01)]
-    #         temp.set_index('$\log n$', inplace=True)
-    #
-    #         for metric in ['test_lpd', 'ELBO+$nS_n$']:
-    #             temp.groupby('method')[metric].plot(legend=True, style='o-')
-    #             plt.title('{} H={}'.format(dataset, H))
-    #             plt.ylabel('{}'.format(metric))
-    #             plt.show()
 
 
 if __name__ == "__main__":

@@ -33,7 +33,6 @@ def train(args, P, writer=None):
     ]
 
     resolution_network.to(args.device)
-
     optimizer = torch.optim.Adam(grouped_parameters)
     torch.autograd.set_detect_anomaly(True)
 
@@ -89,7 +88,6 @@ def evaluate_elbo_testlpd(resolution_network, P, args, R):
         for batch_idx, (data, target) in enumerate(args.val_loader):
             data, target = data.to(args.device), target.to(args.device)
             loglik = P.loglik(data, target, ws) # temp.shape = [number of ws, sample size of data]
-            # test_lpd += torch.log(torch.exp(loglik).mean(dim=0)).sum(dim=0) # numerically unstable
             test_lpd += logsumexp(loglik.detach().cpu().numpy(), axis=0, b=1.0/loglik.shape[0]).sum()
         test_lpd = test_lpd/args.val_size
 
@@ -146,7 +144,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--trainR', type=int, default=10)
-    parser.add_argument('--estimate_entropy', action='store_true') #TODO: this doesn't look like it can be safely turned on
+    parser.add_argument('--estimate_entropy', action='store_true')
 
     parser.add_argument('--display_interval', type=int, default=100)
     parser.add_argument('--path', type=str)
@@ -210,7 +208,6 @@ def main():
             writer.add_scalar('elbo', elbo.detach().cpu().numpy(), args.epochs)
             writer.add_scalar('test_lpd', test_lpd.mean(), args.epochs)
 
-        # print('elbo {} plus est. entropy {} = {} for sample size n {}'.format(elbo, args.estimated_nSn, elbo+args.estimated_nSn, args.sample_size))
         print('elbo {} plus entropy {} = {} for sample size n {}'.format(elbo, args.nSn, elbo+args.nSn, args.sample_size))
         print('vge {}'.format(-args.nSn_val/args.val_size - test_lpd))
         if P.trueRLCT is not None:

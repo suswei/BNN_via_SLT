@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # The name of the job:
-#SBATCH --job-name="vgesanity"
+#SBATCH --job-name="icml"
 #SBATCH --partition=gpu-a100
 #SBATCH --nodes=1
 
@@ -17,7 +17,7 @@
 #SBATCH --time=4-0:0:00
 
 # Batch arrays
-#SBATCH --array=0-199
+#SBATCH --array=0-3839
 
 # Send yourself an email when the job:
 # aborts abnormally (fails)
@@ -40,6 +40,7 @@ fi
 
 # The job command(s):
 source /usr/local/module/spartan_new.sh
+module load gitpython/3.1.14
 module load fosscuda/2020b
 module load pytorch/1.10.0-python-3.8.6
 MKL_THREADING_LAYER=GNU python3 experiments.py ${SLURM_ARRAY_TASK_ID}
