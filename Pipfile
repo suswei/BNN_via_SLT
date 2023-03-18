@@ -13,6 +13,7 @@ seaborn = "*"
 pyro-ppl = "*"
 pyvarinf = "*"
 statsmodels = "*"
+tornado = "<6"
 
 [dev-packages]
 black = "*"

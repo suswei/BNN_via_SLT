@@ -34,6 +34,10 @@ COL_LINESCORE = "line_score"
 BASE_DISTRIBUTIONS = ["gengamma", "gaussian"]
 INDEX_COLS = [COL_DATASET, COL_BASEDIST, COL_NUM_LAYERS, COL_NUM_UNITS]
 
+SLOPE_VAR_NAME_DICT = {
+    COL_MVFE: "$\\hat{\\lambda}_{vfe}$",
+    COL_VGE: "$\\hat{\\lambda}_{vge}$",
+}
 
 FILENAME_PREFIX_DICT = {
     COL_ELBO_S: "ELBO_nS_vs_logn",
@@ -141,10 +145,7 @@ def plot_experiments(
     plot_stats="mean",
     plot_least_square_line=True,
 ):
-    slope_var_name_dict = {
-        COL_MVFE: "$\\hat{\\lambda}_{vfe}$",
-        COL_VGE: "$\\hat{\\lambda}_{vge}$",
-    }
+
     basedist_color_map = {"gengamma": "Greens", "gaussian": "Reds"}
 
     num_rows = len(plot_grid)
@@ -209,7 +210,7 @@ def plot_experiments(
                     ax.plot(
                         x, intercept + slope * x, linestyle="dashed", color=c, alpha=0.8
                     )
-                    slope_var_name = slope_var_name_dict.get(plot_yvar, "slope")
+                    slope_var_name = SLOPE_VAR_NAME_DICT.get(plot_yvar, "slope")
                     label = (
                         f"{base_dist}_{n}_{m},"
                         f" $R^2$={np.around(rsquared_value, 2)},"
@@ -288,6 +289,77 @@ def generate_plot_config(
     return plot_grid, df_plot
 
 
+def plot_lambdas_comparisons(recs, rsquared_thresh=0.9):
+    df1 = recs[COL_MVFE][[COL_BASEDIST, COL_NUM_LAYERS, COL_NUM_UNITS, SLOPE_VAR_NAME_DICT[COL_MVFE], "$R^2$-value"]]
+    df2 = recs[COL_VGE][[COL_BASEDIST, COL_NUM_LAYERS, COL_NUM_UNITS, SLOPE_VAR_NAME_DICT[COL_VGE], "$R^2$-value"]]
+    idx_cols = [COL_DATASET, COL_H, COL_BASEDIST,  COL_NUM_LAYERS, COL_NUM_UNITS]
+    df1 = df1.reset_index().set_index(idx_cols)
+    df2 = df2.reset_index().set_index(idx_cols)
+    df = df1.join(df2, lsuffix="_vfe", rsuffix="_vge")
+    df["vi_architecture"] = ['_'.join(map(str, x[2:])) for x in df.index]
+    df_p = df[(df["$R^2$-value_vfe"] > rsquared_thresh) & (df["$R^2$-value_vge"] > rsquared_thresh)]
+    
+
+    fig_lambda_scatter, ax = plt.subplots(figsize=(8, 8))
+    xvar_name = SLOPE_VAR_NAME_DICT[COL_MVFE]
+    yvar_name = SLOPE_VAR_NAME_DICT[COL_VGE]
+    sns.scatterplot(
+        data=df_p,
+        x=xvar_name, 
+        y=yvar_name, 
+        hue=COL_BASEDIST, 
+        style=COL_DATASET, 
+        legend="auto", 
+        ax=ax
+    )
+    xmax = ax.get_xlim()[1]
+    xrange = np.linspace(0, xmax, num=50)
+    ax.plot(xrange, xrange, "b--", alpha=0.5)
+
+
+    fig_lambda_boxplot, ax = plt.subplots(figsize=(8, 8))
+    sns.boxplot(
+        data=df_p.reset_index(), 
+        x="dataset", 
+        y=SLOPE_VAR_NAME_DICT[COL_VGE], 
+        hue="base_dist", 
+        ax=ax, 
+        color="white", 
+    )
+    sns.stripplot(
+        data=df_p.reset_index(), 
+        x="dataset", 
+        y=SLOPE_VAR_NAME_DICT[COL_VGE], 
+        hue="base_dist", 
+        dodge=True,
+        ax=ax
+    )
+    ax.set_yscale("log")
+
+
+    fig_vge_compare, ax = plt.subplots(figsize=(8, 8))
+    a = {}
+    for index, row in df_p.iterrows():
+        dset, h, bdist, nl, nu = index
+        key = '_'.join(map(str, [dset, h, nl, nu]))
+        if key not in a:
+            a[key] = {}
+        a[key][bdist] = row[SLOPE_VAR_NAME_DICT[COL_VGE]]
+    dfx = pd.DataFrame.from_dict(a, orient="index")
+    dfx = dfx.dropna(axis=0)
+    ax.plot(
+        dfx["gaussian"], 
+        dfx["gengamma"], 
+        "kx"
+    )
+    ax.set_xlabel("Gaussian base dist $\\hat{\\lambda}_{vge}$")
+    ax.set_ylabel("Gengamma base dist $\\hat{\\lambda}_{vge}$")
+    xmax = ax.get_xlim()[1]
+    xrange = np.linspace(0, xmax, num=50)
+    ax.plot(xrange, xrange, "b--", alpha=0.5)
+    
+    return fig_lambda_scatter, fig_lambda_boxplot, fig_vge_compare
+
 def main():
     # parse commandline arguments
     commandline_args = argparser().parse_args()
@@ -329,6 +401,7 @@ def main():
     df_group[COL_LINESCORE] = compute_line_score(df_group)
 
     # Plot....
+    recs = {}
     for base_dist_choice in [BASE_DISTRIBUTIONS] + [
         [distname] for distname in BASE_DISTRIBUTIONS
     ]:
@@ -345,8 +418,22 @@ def main():
                 + f"_{'_'.join(base_dist_choice)}"
                 + ".png"
             )
+            
+            if base_dist_choice == BASE_DISTRIBUTIONS: # only record one where all base dist were represented
+                recs[plot_var] = pd.DataFrame(
+                    rec, 
+                    columns=[
+                    COL_DATASET, COL_BASEDIST, COL_NUM_LAYERS, 
+                    COL_NUM_UNITS, COL_H, SLOPE_VAR_NAME_DICT[plot_var], 
+                    "intercept", "$R^2$-value", "$\\lambda$"
+                    ]
+                ).set_index([COL_DATASET, COL_H])
             savefig(fig, image_filename)
-
+    
+    fig_lambda_scatter, fig_lambda_boxplot, fig_vge_compare = plot_lambdas_comparisons(recs, rsquared_thresh=0.9)
+    savefig(fig_lambda_scatter, "lambda_vfe_vge_compare.png")
+    savefig(fig_lambda_boxplot, "lambda_vge_boxplot_basedist_compare.png")
+    savefig(fig_vge_compare, "lambda_vge_scatter_basedist_compare.png")
     # Plot best line only
     for plot_var in [COL_MVFE, COL_VGE]:
         plot_grid, df_plot = generate_plot_config(
