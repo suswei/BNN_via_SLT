@@ -313,8 +313,10 @@ def plot_lambdas_comparisons(recs, rsquared_thresh=0.9):
         ax=ax
     )
     xmax = ax.get_xlim()[1]
+    ymax = ax.get_ylim()[1]
     xrange = np.linspace(0, xmax, num=50)
     ax.plot(xrange, xrange, "b--", alpha=0.5)
+    ax.set_ylim(0, ymax)
 
 
     fig_lambda_boxplot, ax = plt.subplots(figsize=(8, 8))
