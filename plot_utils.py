@@ -12,6 +12,16 @@ import sys
 import argparse
 import logging
 
+# Set the global font size for labels and titles
+plt.rcParams['text.usetex'] = True
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['axes.labelsize'] = 14 
+plt.rcParams['axes.titlesize'] = 14
+plt.rcParams['xtick.labelsize'] = 10
+plt.rcParams['ytick.labelsize'] = 10
+plt.rcParams['legend.fontsize'] = 12
+
+
 COL_DATASET = "dataset"
 COL_BASEDIST = "base_dist"
 COL_NUM_LAYERS = "num_layers"
@@ -147,13 +157,15 @@ def plot_experiments(
 ):
 
     basedist_color_map = {"gengamma": "Greens", "gaussian": "Reds"}
+    basedist_marker_map = {"gengamma": "x", "gaussian": "^"}
 
     num_rows = len(plot_grid)
     num_cols = len(plot_grid[0])
     fig, axes = plt.subplots(
         num_rows, num_cols, figsize=(6 * num_cols, 6 * num_rows), sharex=False
     )
-    if len(axes.shape) == 1:
+    axes = np.array(axes)
+    if len(axes.shape) <= 1:
         axes = axes.reshape(-1, 1)
 
     rec = []
@@ -191,6 +203,7 @@ def plot_experiments(
                 lmbda = df[(COL_LAMBDA, plot_stats)]
                 cmap = matplotlib.colormaps[basedist_color_map[base_dist]]
                 c = cmap((complexities.index((n, m)) + 1) / len(complexities))
+                marker = basedist_marker_map[base_dist]
                 if plot_least_square_line:
                     linefit_result = sm.OLS(np.array(y), np.array(x)).fit()
                     if plot_yvar == COL_VGE:
@@ -211,13 +224,14 @@ def plot_experiments(
                         x, intercept + slope * x, linestyle="dashed", color=c, alpha=0.8
                     )
                     slope_var_name = SLOPE_VAR_NAME_DICT.get(plot_yvar, "slope")
+                    base_dist_str = 'N' if base_dist=='gaussian' else '$\\gamma$'
                     label = (
-                        f"{base_dist}_{n}_{m},"
+                        f"{base_dist_str}_{n}_{m},"
                         f" $R^2$={np.around(rsquared_value, 2)},"
                         f" {slope_var_name}={np.around(slope, 2)}"
-                    )
+                    )    
                 else:
-                    label = f"{base_dist}_{n}_{m}"
+                    label = f"{base_dist_str}_{n}_{m}"
                     slope = intercept = rsquared_value = None
 
                 rec.append(
@@ -236,16 +250,17 @@ def plot_experiments(
                 ax.errorbar(
                     x,
                     y,
-                    fmt="x-",
+                    fmt=f"{marker}-",
                     yerr=e,
                     capsize=5,
                     elinewidth=1,
                     capthick=1,
                     label=label,
                     color=c,
+                    markersize=8
                 )
 
-                ax.legend(prop={"size": 7})
+                ax.legend()
                 ax.set_title(f"{dataset}, H={h}")
                 ax.set_xlabel(xlabel)
                 ax.set_ylabel(plot_yvar)
@@ -310,7 +325,8 @@ def plot_lambdas_comparisons(recs, rsquared_thresh=0.9):
         hue=COL_BASEDIST, 
         style=COL_DATASET, 
         legend="auto", 
-        ax=ax
+        ax=ax, 
+        s=100
     )
     xmax = ax.get_xlim()[1]
     ymax = ax.get_ylim()[1]
@@ -392,7 +408,9 @@ def main():
     ax.set_yscale("log")
     ax.set_title(f"After filtering, nrows: {df_data.shape[0]}")
     savefig(fig, "MVFE_histogram_before_and_after_filtering.png")
-
+    df_data.drop(["method", "grad_flag"], axis=1, inplace=True)
+    # print(df_data["method"])
+    # return
     df_group = (
         df_data.reset_index()
         .groupby(INDEX_COLS + [COL_LR, COL_H, COL_LOGN])
@@ -458,7 +476,7 @@ def main():
         [("reducedrank", 16, COL_MVFE), ("reducedrank", 16, COL_VGE)],
         [("tanh", 280, COL_MVFE), ("tanh", 280, COL_VGE)],
     ]
-    # plot_grid = _transpose_list(plot_grid)
+    plot_grid = _transpose_list(plot_grid)
     _, df_plot = generate_plot_config(
         df_group,
         plot_base_dist=BASE_DISTRIBUTIONS,
@@ -466,7 +484,8 @@ def main():
         plot_var=COL_MVFE,  # this parameter is ignored since we are hardcoding the plot_grid this time.
     )
     fig, axes, rec = plot_experiments(plot_grid, df_plot, plot_least_square_line=True)
-    image_filename = "experiment_result_plots_vertical.png"
+    # image_filename = "experiment_result_plots_vertical.png"
+    image_filename = "experiment_result_plots_horizontal.png"
     savefig(fig, image_filename)
 
     # Plotting only architecture with the least complexity
