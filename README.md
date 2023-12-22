@@ -29,3 +29,7 @@ To generate plots from the pickled files:
 ```
 python plot_utils.py --output_dirpath "/path/to/output/directory" --datafilepaths /path/to/data1.pkl /path/to/data2.pkl
 ```
+----
+# Other content
+- `experiment_output` contains outputs of running `experiments.py` and `experiments_to_pandas.py` as instructed above. This is the dataset used to generate all figures and results in the paper. 
+- `demo.ipynb` is a standalone Jupyter notebook with a small demonstration. 
