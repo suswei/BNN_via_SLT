@@ -1,10 +1,14 @@
 
 ----
-# Plotting data generated from experiments
+# Instructions
 Install necessary package using [pipenv](https://pipenv.pypa.io/en/latest/):
 ```
 cd /path/to/git/repo/root/
 pipenv install .
+```
+or 
+```
+pip install -r requirement.txt
 ```
 
 To run the full set of experiments: 

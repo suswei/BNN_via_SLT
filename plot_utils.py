@@ -164,7 +164,8 @@ def plot_experiments(
     fig, axes = plt.subplots(
         num_rows, num_cols, figsize=(6 * num_cols, 6 * num_rows), sharex=False
     )
-    if len(axes.shape) == 1:
+    axes = np.array(axes)
+    if len(axes.shape) <= 1:
         axes = axes.reshape(-1, 1)
 
     rec = []
@@ -407,7 +408,9 @@ def main():
     ax.set_yscale("log")
     ax.set_title(f"After filtering, nrows: {df_data.shape[0]}")
     savefig(fig, "MVFE_histogram_before_and_after_filtering.png")
-
+    df_data.drop(["method", "grad_flag"], axis=1, inplace=True)
+    # print(df_data["method"])
+    # return
     df_group = (
         df_data.reset_index()
         .groupby(INDEX_COLS + [COL_LR, COL_H, COL_LOGN])
